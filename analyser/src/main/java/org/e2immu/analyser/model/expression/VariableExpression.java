@@ -297,12 +297,13 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult scopeResult = evaluateScope(context, fwd);
-        if (scopeResult != null) builder.compose(scopeResult, lv -> lv.maximum(LV.LINK_DEPENDENT));
+        if (scopeResult != null) builder.compose(scopeResult, lv -> null); // will be overwritten anyway lv.maximum(LV.LINK_DEPENDENT));
         EvaluationResult indexResult = evaluateIndex(context, fwd);
         if (indexResult != null) builder.compose(indexResult, lv -> null);
 
         LinkedVariables linkedVariables = LinkedVariables.of(variable, LV.LINK_STATICALLY_ASSIGNED);
-        builder.mergeLinkedVariablesOfExpression(linkedVariables);
+        // explicitly overwrite the linked variables of the dependent/scope
+        builder.setLinkedVariablesOfExpression(linkedVariables);
 
         Variable source;
         if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {

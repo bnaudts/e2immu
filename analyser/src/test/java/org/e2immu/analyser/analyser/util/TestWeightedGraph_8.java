@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestWeightedGraph_8 extends CommonWG {
 
@@ -47,7 +46,7 @@ public class TestWeightedGraph_8 extends CommonWG {
         Map<Variable, LV> startAt = shortestPath.links(keys, null);
         assertEquals(2, startAt.size());
         assertEquals(v0, startAt.get(keys));
-        assertEquals(v4, startAt.get(map));
+        assertTrue(startAt.get(map).isCommonHC());
         assertNull(startAt.get(values));
     }
 
@@ -57,7 +56,7 @@ public class TestWeightedGraph_8 extends CommonWG {
         Map<Variable, LV> startAt = shortestPath.links(values, null);
         assertEquals(2, startAt.size());
         assertEquals(v0, startAt.get(values));
-        assertEquals(v4, startAt.get(map));
+        assertTrue(startAt.get(map).isCommonHC());
         assertNull(startAt.get(keys));
     }
 
@@ -67,7 +66,7 @@ public class TestWeightedGraph_8 extends CommonWG {
         Map<Variable, LV> startAt = shortestPath.links(map, null);
         assertEquals(3, startAt.size());
         assertEquals(v0, startAt.get(map));
-        assertEquals(v4, startAt.get(keys));
-        assertEquals(v4, startAt.get(values));
+        assertTrue(startAt.get(keys).isCommonHC());
+        assertTrue(startAt.get(values).isCommonHC());
     }
 }

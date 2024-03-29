@@ -24,8 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.e2immu.analyser.analyser.LV.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestWeightedGraph_0 extends CommonWG {
 
@@ -76,7 +75,7 @@ public class TestWeightedGraph_0 extends CommonWG {
         Map<Variable, LV> startAt = shortestPath.links(cycle, null);
         assertEquals(3, startAt.size());
         assertEquals(v0, startAt.get(cycle));
-        assertEquals(v4, startAt.get(thisVar));
+        assertTrue(startAt.get(thisVar).isCommonHC());
         assertEquals(delay, startAt.get(removed));
     }
 

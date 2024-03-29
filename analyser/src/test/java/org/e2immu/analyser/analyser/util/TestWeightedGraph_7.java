@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestWeightedGraph_7 extends CommonWG {
 
@@ -86,11 +85,11 @@ public class TestWeightedGraph_7 extends CommonWG {
     public void testTV() {
         Map<Variable, LV> links = shortestPath.links(thisVar, null);
         assertEquals(v0, links.get(thisVar)); // start all
-        assertEquals(v4, links.get(map)); // then <0> of map
-        assertEquals(v4, links.get(entries)); // <0> of entries
-        assertEquals(v4, links.get(entry)); // <0> of entry
-        assertEquals(v4, links.get(l)); // * of l
-        assertEquals(v4, links.get(t)); // * of t
+        assertTrue( links.get(map).isCommonHC()); // then <0> of map
+        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
+        assertTrue(links.get(entry).isCommonHC()); // <0> of entry
+        assertTrue(links.get(l).isCommonHC()); // * of l
+        assertTrue(links.get(t).isCommonHC()); // * of t
     }
 
     @Test
@@ -98,11 +97,11 @@ public class TestWeightedGraph_7 extends CommonWG {
     public void testL() {
         Map<Variable, LV> links = shortestPath.links(l, null);
         assertEquals(v0, links.get(l)); // start all
-        assertEquals(v4, links.get(entry)); // then <0> of entry
+        assertTrue(links.get(entry).isCommonHC()); // then <0> of entry
         assertNull(links.get(t)); // not reachable
-        assertEquals(v4, links.get(entries)); // <0> of entries
-        assertEquals(v4, links.get(map)); // <0> of map
-        assertEquals(v4, links.get(thisVar)); // <0> of thisVar
+        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
+        assertTrue(links.get(map).isCommonHC()); // <0> of map
+        assertTrue(links.get(thisVar).isCommonHC()); // <0> of thisVar
     }
 
     @Test
@@ -110,9 +109,9 @@ public class TestWeightedGraph_7 extends CommonWG {
     public void testT() {
         Map<Variable, LV> links = shortestPath.links(t, null);
         assertEquals(v0, links.get(t)); // start all
-        assertEquals(v4, links.get(entry)); // then <0> of entry
+        assertTrue(links.get(entry).isCommonHC()); // then <0> of entry
         assertNull(links.get(l)); // not reachable
-        assertEquals(v4, links.get(entries)); // <0> of entries
+        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
     }
 
 }

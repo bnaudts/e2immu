@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CauseOfDelay;
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
@@ -18,7 +19,7 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 public class CommonWG {
     final LV v0 = LINK_STATICALLY_ASSIGNED;
     final LV v2 = LINK_DEPENDENT;
-    final LV v4 = LINK_COMMON_HC;
+    final LV v4 = LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.All.INSTANCE);
     final LV delay = LV.delay(DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI)));
 
     protected static Variable makeVariable(String name) {

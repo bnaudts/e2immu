@@ -66,6 +66,7 @@ public class ComputeLinkedVariables {
     private final StatementAnalysis statementAnalysis;
     private final List<WeightedGraph.Cluster> clusters;
     private final Set<Variable> variablesInClusters;
+    private final WeightedGraph weightedGraph; // for testing
     private final WeightedGraph.Cluster returnValueCluster;
     private final Variable returnVariable;
     private final ShortestPath shortestPath;
@@ -76,6 +77,7 @@ public class ComputeLinkedVariables {
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
+                                   WeightedGraph weightedGraph,
                                    ShortestPath shortestPath,
                                    Set<Variable> variablesInClusters,
                                    List<WeightedGraph.Cluster> clusters,
@@ -94,6 +96,7 @@ public class ComputeLinkedVariables {
         this.linkingNotYetSet = linkingNotYetSet;
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
         this.variablesInClusters = variablesInClusters;
+        this.weightedGraph = weightedGraph;
     }
 
     public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
@@ -109,8 +112,10 @@ public class ComputeLinkedVariables {
         Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();
 
+
         Set<VariableInfoContainer> start = statementAnalysis.variableEntryStream(stage)
                 .map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
+        Map<Variable, LinkedVariables> scopeVariableLinks = computeScopeVariableLinks(start);
         boolean iteration1Plus = false;
         while (!start.isEmpty()) {
             Set<VariableInfoContainer> linked = new HashSet<>();
@@ -121,7 +126,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     VariableInfo viE = vic.best(EVALUATION);
                     LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
-                            weightedGraph, vi1, viE, variable);
+                            scopeVariableLinks, weightedGraph, vi1, viE, variable);
                     for (Map.Entry<Variable, LV> e : linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
@@ -143,16 +148,34 @@ public class ComputeLinkedVariables {
         WeightedGraph.ClusterResult cr = weightedGraph.staticClusters();
         ShortestPath shortestPath = weightedGraph.shortestPath();
 
-        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, shortestPath,
+        return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, shortestPath,
                 cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
                 cr.rv(), breakDelayLevel, oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
+    }
+
+    private static Map<Variable, LinkedVariables> computeScopeVariableLinks(Set<VariableInfoContainer> start) {
+        Map<Variable, LinkedVariables> res = new HashMap<>();
+        for (VariableInfoContainer vic : start) {
+            Variable variable = vic.current().variable();
+            if (variable instanceof FieldReference fr) {
+                LinkedVariables lvs = linkToScope(fr);
+                if (!lvs.isEmpty()) {
+                    res.merge(variable, lvs, LinkedVariables::merge);
+                    lvs.stream().forEach(e -> {
+                        res.merge(e.getKey(), LinkedVariables.of(variable, e.getValue()), LinkedVariables::merge);
+                    });
+                }
+            }
+        }
+        return res;
     }
 
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
                                        BiPredicate<VariableInfoContainer, Variable> ignore,
                                        Set<Variable> reassigned,
                                        Function<Variable, LinkedVariables> externalLinkedVariables,
+                                       Map<Variable, LinkedVariables> scopeVariables,
                                        WeightedGraph weightedGraph,
                                        VariableInfo vi1,
                                        VariableInfo viE,
@@ -163,28 +186,30 @@ public class ComputeLinkedVariables {
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
-        LinkedVariables refToScope = variable instanceof FieldReference fr ? combined.merge(linkToScope(fr)) : combined;
+        LinkedVariables scope = scopeVariables.get(variable);
+        LinkedVariables refToScope = scope != null ? combined.merge(scope) : combined;
 
-        LinkedVariables curated = refToScope
+        LinkedVariables afterRemove = refToScope
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
-        if (variable instanceof This) {
-            curated = LinkedVariables.EMPTY;
-        } else if (viE != vi1
+        LinkedVariables afterChangeToDelay;
+        if (viE != vi1
                    && viE.getValue() instanceof DelayedVariableExpression dve
                    && dve.msg.startsWith("<vl:")
-                   && !curated.isDelayed()) {
-            curated = curated.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
+                   && !afterRemove.isDelayed()) {
+            afterChangeToDelay = afterRemove.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
+        } else {
+            afterChangeToDelay = afterRemove;
         }
-        weightedGraph.addNode(variable, curated.variables());
-        return curated;
+        weightedGraph.addNode(variable, afterChangeToDelay.variables());
+        return afterChangeToDelay;
     }
 
     private static LinkedVariables linkToScope(FieldReference fr) {
         Set<Variable> variables = fr.scope().variablesWithoutCondition().stream()
-                .filter(v -> !(v instanceof This))
                 .collect(Collectors.toUnmodifiableSet());
         LV link = fr.scope().isDelayed() ? LV.delay(fr.scope().causesOfDelay()) : LINK_DEPENDENT;
         Map<Variable, LV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
+        if (map.isEmpty()) return EMPTY;
         return LinkedVariables.of(map);
     }
 
@@ -493,7 +518,7 @@ public class ComputeLinkedVariables {
         Map<Variable, LV> newMap = new HashMap<>();
         for (Map.Entry<Variable, LV> entry : map.entrySet()) {
             LV newLv;
-            if (entry.getValue() == LV.LINK_COMMON_HC) {
+            if (entry.getValue().isCommonHC()) {
                 // TODO 20240327 this is not efficient
                 HiddenContent hcMine = HiddenContent.from(variable.parameterizedType());
                 HiddenContentSelector mine = hcMine == null ? HiddenContentSelector.All.INSTANCE : hcMine.selectAll();
@@ -503,7 +528,7 @@ public class ComputeLinkedVariables {
             } else {
                 newLv = entry.getValue();
             }
-            if(newLv != null) {
+            if (newLv != null) {
                 newMap.put(entry.getKey(), newLv);
             }
         }
@@ -797,7 +822,7 @@ public class ComputeLinkedVariables {
         return returnValueCluster;
     }
 
-    public List<WeightedGraph.Cluster> getClusters() {
-        return clusters;
+    public WeightedGraph getWeightedGraph() {
+        return weightedGraph;
     }
 }

@@ -29,8 +29,7 @@ import java.util.*;
 
 import static org.e2immu.analyser.analyser.LV.LINK_STATICALLY_ASSIGNED;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*
 testing the increase in maxIncl
@@ -42,11 +41,12 @@ public class TestWeightedGraph_4 extends CommonWG {
     List<WeightedGraph> wgs;
 
     /*
-     x ---3---> a ---3---> i
+    NOTE: unidirectional arrows of 4 don't exist anymore, but that's not a problem in this test.
+     x ---4---> a ---3---> i
                 ^          |
                 |2         |4
                 v          v
-     y ---3---> b          j
+     y ---4---> b          j
      */
     @BeforeEach
     public void beforeEach() {
@@ -94,10 +94,10 @@ public class TestWeightedGraph_4 extends CommonWG {
             assertEquals(5, startAtX.size());
             assertEquals(v0, startAtX.get(x));
             assertNull(startAtX.get(y));
-            assertEquals(v4, startAtX.get(a));
-            assertEquals(v4, startAtX.get(b));
-            assertEquals(v4, startAtX.get(i));
-            assertEquals(v4, startAtX.get(j));
+            assertTrue(startAtX.get(a).isCommonHC());
+            assertTrue(startAtX.get(b).isCommonHC());
+            assertTrue(startAtX.get(i).isCommonHC());
+            assertTrue(startAtX.get(j).isCommonHC());
         }
     }
 
@@ -110,8 +110,8 @@ public class TestWeightedGraph_4 extends CommonWG {
             assertNull(startAtToDo.get(y));
             assertEquals(v0, startAtToDo.get(a));
             assertEquals(v2, startAtToDo.get(b));
-            assertEquals(v4, startAtToDo.get(i));
-            assertEquals(v4, startAtToDo.get(j));
+            assertTrue(startAtToDo.get(i).isCommonHC());
+            assertTrue(startAtToDo.get(j).isCommonHC());
         }
     }
 }

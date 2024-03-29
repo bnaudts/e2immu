@@ -36,7 +36,11 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
 
     // testing!
     public LocalVariable(String name, ParameterizedType parameterizedType) {
-        this(Set.of(), name, parameterizedType, List.of(), parameterizedType.typeInfo, VariableNature.METHOD_WIDE);
+        this(Set.of(), name, parameterizedType, List.of(),
+                parameterizedType.typeParameter != null
+                        ? parameterizedType.typeParameter.getOwner().getLeft()
+                        : parameterizedType.typeInfo,
+                VariableNature.METHOD_WIDE);
     }
 
     public LocalVariable {
