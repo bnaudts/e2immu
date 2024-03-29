@@ -83,7 +83,8 @@ class MergeLinkingAndGroupProperties {
                 oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
                 variablesWhereMergeOverwrites,
-                linkedVariablesFromBlocks, evaluationContext);
+                linkedVariablesFromBlocks, evaluationContext.getAnalyserContext().getCache(),
+                evaluationContext.breakDelayLevel());
 
         boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched,
                 toRemove, linkedVariablesMap.keySet());

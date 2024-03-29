@@ -102,8 +102,9 @@ public class ComputeLinkedVariables {
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
                                                 Set<Variable> reassigned,
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
-                                                EvaluationContext evaluationContext) {
-        WeightedGraph weightedGraph = new WeightedGraphImpl(evaluationContext.getAnalyserContext().getCache());
+                                                Cache weightedGraphCache,
+                                                BreakDelayLevel breakDelayLevel) {
+        WeightedGraph weightedGraph = new WeightedGraphImpl(weightedGraphCache);
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> done = new HashSet<>();
         Set<Variable> linkingNotYetSet = new HashSet<>();
@@ -144,7 +145,7 @@ public class ComputeLinkedVariables {
 
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, shortestPath,
                 cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
-                cr.rv(), evaluationContext.breakDelayLevel(), oneBranchHasBecomeUnreachable,
+                cr.rv(), breakDelayLevel, oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
 
@@ -787,4 +788,16 @@ public class ComputeLinkedVariables {
         return immutable.isDelayed() || MultiLevel.isMutable(immutable);
     }
 
+
+    public Set<Variable> getVariablesInClusters() {
+        return variablesInClusters;
+    }
+
+    public WeightedGraph.Cluster getReturnValueCluster() {
+        return returnValueCluster;
+    }
+
+    public List<WeightedGraph.Cluster> getClusters() {
+        return clusters;
+    }
 }
