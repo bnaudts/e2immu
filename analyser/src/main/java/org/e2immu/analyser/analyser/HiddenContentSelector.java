@@ -92,7 +92,7 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
 
         @Override
         public String toString() {
-            return mutable ? "M*" : "*";
+            return mutable ? "*M" : "*";
         }
     }
 

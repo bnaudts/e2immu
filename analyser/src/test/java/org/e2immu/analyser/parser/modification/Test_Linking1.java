@@ -14,17 +14,24 @@
 
 package org.e2immu.analyser.parser.modification;
 
+import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Linking1 extends CommonTestRunner {
 
@@ -40,26 +47,30 @@ public class Test_Linking1 extends CommonTestRunner {
                     case "m0" -> {
                         assertCurrentValue(d, 0, "supplier.get()");
                         assertLinked(d, it(0, "supplier:4"));
+                        assertSingleLv(d, 2, "*-4-<0>");
                     }
                     case "m1" -> {
                         assertCurrentValue(d, 2, "supplier.get()");
-                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:2"));
+                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
+                        assertSingleLv(d, 2, "*M-4-<0M>");
                     }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "supplier.get()");
                         assertLinked(d, it(0, ""));
                     }
                     case "m3" -> {
-                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0)");
+                        assertCurrentValue(d, 2, "stream.filter(/*inline test*/3==m.i$0)");
                         assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
                     }
                     case "m4" -> {
-                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst()");
-                        assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
+                        assertCurrentValue(d, 2, "stream.filter(/*inline test*/3==m.i$0).findFirst()");
+                        assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:4"));
+                        assertSingleLv(d, 2, "<0M>-4-<0M>");
                     }
                     case "m5" -> {
-                        assertCurrentValue(d, 3, "stream.filter(/*inline test*/3==m.i$0).findFirst().orElseThrow()");
-                        assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:2"));
+                        assertCurrentValue(d, 2, "stream.filter(/*inline test*/3==m.i$0).findFirst().orElseThrow()");
+                        assertLinked(d, it(0, 1, "stream:-1"), it(2, "stream:4"));
+                        assertSingleLv(d, 2, "*M-4-<0M>");
                     }
                     case "m6" -> {
                         assertCurrentValue(d, 1, "stream.filter(/*inline test*/3==i)");
@@ -80,6 +91,12 @@ public class Test_Linking1 extends CommonTestRunner {
                     case "m10" -> {
                         assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst()");
                         assertLinked(d, it(0, "stream:4"));
+                    }
+                    case "test" -> {
+                        if ("$8".equals(d.methodInfo().typeInfo.simpleName)) {
+                            assertCurrentValue(d, 0, "predicate.test(i)");
+                            assertLinked(d, it(0, "")); // important! should not become predicate:4
+                        }
                     }
                     case "m11" -> {
                         assertCurrentValue(d, 1, "stream.filter(/*inline test*/predicate.test(i)).findFirst().orElseThrow()");
@@ -120,7 +137,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     case "m16" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "out");
-                            assertLinked(d, it(0, "out:0"));
+                            assertLinked(d, it(0, 1, "in:-1,out:0"), it(0, "in:4,out:0"));
                         }
                     }
                     case "m17" -> {
@@ -128,30 +145,32 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "supplier:4"));
                     }
                     case "m18" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:2}*/)");
-                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:2"));
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
+                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
+                        assertSingleLv(d, 2, "<0M>-4-<0M>");
                     }
                     case "m19" -> {
                         assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
                         assertLinked(d, it(0, "list:4"));
                     }
                     case "m20" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:2}*/)");
-                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        assertSingleLv(d, 2, "<0M>-4-<0M>");
                     }
                     case "m21" -> {
                         assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
                         assertLinked(d, it(0, "list:4"));
                     }
                     case "m22" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
-                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                     }
                     case "m22b" -> {
                         if ("1".equals(d.statementId())) {
                             // "get" is expanded to "list::get"
-                            assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
-                            assertLinked(d, it(0, 1, "get:-1,list:-1"), it(2, "get:2,list:2"));
+                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                            assertLinked(d, it(0, 1, "get:-1,list:-1"), it(2, "get:4,list:4"));
                         }
                     }
                     case "m23" -> {
@@ -165,7 +184,7 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m24" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
                     }
                     default -> {
@@ -186,7 +205,8 @@ public class Test_Linking1 extends CommonTestRunner {
                 case "m16" -> {
                     if ("1".equals(d.statementId())) {
                         if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
-                            assertLinked(d, it(0, 1, "out:-1"), it(2, "out:2"));
+                            assertLinked(d, it(0, 1, "out:-1"), it(2, "out:4"));
+                            assertSingleLv(d, 2, "<0M>-4-<0M>");
                         }
                     }
                 }
@@ -197,7 +217,8 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
                 case "m22b" -> {
                     if ("0".equals(d.statementId()) && "get".equals(d.variableName())) {
-                        assertLinked(d, it(0, "list:2"));
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        assertSingleLv(d, 2, "<0M>-4-<0M>");
                     }
                 }
                 case "m23b" -> {
@@ -208,11 +229,34 @@ public class Test_Linking1 extends CommonTestRunner {
             }
         };
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "$8".equals(d.methodInfo().typeInfo.simpleName)) {
+                assertEquals("predicate.test(i)", d.evaluationResult().value().toString());
+                assertEquals("", d.evaluationResult().linkedVariablesOfExpression().toString());
+                MethodAnalysis m = d.evaluationResult().evaluationContext()
+                        .getAnalyserContext().getMethodAnalysis(d.methodInfo());
+                DV modified = m.getProperty(Property.MODIFIED_METHOD);
+                if (d.iteration() > 0) {
+                    assertEquals(DV.TRUE_DV, modified);
+                } else {
+                    assertTrue(modified.isDelayed());
+                }
+            }
+        };
+
         // finalizer on a parameter
         testClass("Linking_1", 6, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
+    private static void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, String expected) {
+        String value = d.variableInfo().getLinkedVariables().stream()
+                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
+        if (d.iteration() >= 2) {
+            assertEquals(expected, value);
+        }
+    }
 
 }

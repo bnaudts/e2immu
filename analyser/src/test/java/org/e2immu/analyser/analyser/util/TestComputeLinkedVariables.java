@@ -53,7 +53,6 @@ public class TestComputeLinkedVariables {
         }
     };
 
-    private final ParameterizedType someTypeWithoutHC = primitives.stringParameterizedType();
     private final StringConstant valueOfSomeTypeWithoutHc = new StringConstant(primitives, X);
     private final TypeInfo currentType = new TypeInfo("com.foo", "Bar");
 
@@ -170,11 +169,11 @@ public class TestComputeLinkedVariables {
 
         // corresponds to the fictional statement "return this.set.add(x)", where "add"
         // returns a set dependent on this.set, and "x" becomes hidden content of this.set
-        // method -2-> this.set <-4-> x; thi link from this.set to this will be added
+        // method -2-> this.set <-4-> x; the link from this.set to this will be added
+        // this.set <- 2 -> thisVar, because set is mutable
         Function<Variable, LinkedVariables> lvs = v -> switch (v.fullyQualifiedName()) {
-            case X -> LinkedVariables.of(thisSet, hc0ToAll);
-            case THIS -> LinkedVariables.EMPTY;
-            case SET -> LinkedVariables.of(x, hc0ToAll);
+            case X, THIS -> LinkedVariables.EMPTY;
+            case SET -> LinkedVariables.of(x, hc0ToAll, thisVar, LV.LINK_DEPENDENT);
             case METHOD -> LinkedVariables.of(thisSet, LV.LINK_DEPENDENT);
             default -> throw new UnsupportedOperationException("Variable " + v.fullyQualifiedName());
         };

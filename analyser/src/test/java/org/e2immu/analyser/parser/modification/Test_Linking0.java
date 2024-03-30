@@ -29,6 +29,7 @@ import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
@@ -71,10 +72,14 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m1" -> {
                         assertCurrentValue(d, 2, "list.get(0)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        if (d.iteration() >= 2) {
+                            assertEquals("*M-4-<0M>", singleLv(d));
+                        }
                     }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "list.get(0)");
                         assertLinked(d, it(0, "list:4"));
+                        assertEquals("*-4-<0>", singleLv(d));
                     }
                     case "m3", "m5" -> {
                         assertCurrentValue(d, 0, "list.subList(0,1)");
@@ -91,14 +96,29 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m7" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        if (d.iteration() >= 2) {
+                            assertEquals("<0M>-4-<0M>", singleLv(d));
+                        }
                     }
                     case "m8" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
                         assertLinked(d, it(0, "list:4"));
+                        assertEquals("<0>-4-<0>", singleLv(d));
                     }
-                    case "m9", "m10", "m11" -> {
+                    case "m9" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, "map:4"));
+                        assertEquals("<1>-4-<1>", singleLv(d));
+                    }
+                    case "m10" -> {
+                        assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
+                        assertLinked(d, it(0, "map:4"));
+                        assertEquals("<0>-4-<0>", singleLv(d));
+                    }
+                    case "m11" -> {
+                        assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
+                        assertLinked(d, it(0, "map:4"));
+                        assertEquals("<0,1>-4-<0,1>", singleLv(d));
                     }
                     case "m12" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
@@ -107,6 +127,9 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m13" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, 1, "map:-1"), it(2, "map:4"));
+                        if (d.iteration() >= 2) {
+                            assertEquals("<0,1M>-4-<0,1M>", singleLv(d));
+                        }
                     }
                     case "m14" -> {
                         assertCurrentValue(d, 2, "list.subList(0,1).subList(0,1)");
@@ -146,14 +169,14 @@ public class Test_Linking0 extends CommonTestRunner {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "list");
                             assertLinked(d, it(0, 1, "list:0,m:-1"),
-                                    it(2, "list:0,m:2"));
+                                    it(2, "list:0,m:4"));
                         }
                     }
                     case "m22" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "list");
                             assertLinked(d, it(0, 1, "list:0,x0:-1,x1:-1"),
-                                    it(2, "list:0,x0:2,x1:2"));
+                                    it(2, "list:0,x0:4,x1:4"));
                         }
                     }
                     case "m24" -> {
@@ -172,6 +195,11 @@ public class Test_Linking0 extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
+    }
+
+    private static String singleLv(StatementAnalyserVariableVisitor.Data d) {
+        return d.variableInfo().getLinkedVariables().stream()
+                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
     }
 
 

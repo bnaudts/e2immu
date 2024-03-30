@@ -33,45 +33,41 @@ public interface HiddenContent {
         ParameterizedType formal = parameterizedType.typeInfo.asParameterizedType(analyserContext);
         HiddenContent hcFormal = from(formal);
         if (hcFormal.isNone()) {
-            // no hidden content in formal, so not in concrete neither
-            return HiddenContentSelector.None.INSTANCE;
-        }
-        if (formal.equals(parameterizedType)) {
-            // no correction needed
-            return hcFormal.selectAll();
+            // the formal type has no type parameters. Given that we're in the context of a ->4-> link,
+            // we must be dealing with the "All" side, and a type without type parameters
+            DV immutableOfParameterizedType = analyserContext.typeImmutable(parameterizedType);
+            if (immutableOfParameterizedType.isDelayed()) {
+                return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
+            }
+            boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfParameterizedType);
+            if (immutable) return HiddenContentSelector.None.INSTANCE;
+            boolean mutable = MultiLevel.isMutable(immutableOfParameterizedType);
+            return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
         }
         HiddenContentImpl hci = (HiddenContentImpl) hcFormal;
-        if (hci.sequence != null) {
-            Set<Integer> done = new HashSet<>();
-            Map<Integer, Boolean> res = new HashMap<>();
-            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-            for (IndexedType indexedType : hci.sequence) {
-                Integer tpi = indexedType.isTypeParameter();
-                if (tpi != null && done.add(tpi)) {
-                    ParameterizedType inConcrete = indexedType.find(parameterizedType);
-                    DV immutableDv = analyserContext.typeImmutable(inConcrete);
-                    if (immutableDv.isDelayed()) {
-                        causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
-                    } else {
-                        boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
-                        if (!immutable) {
-                            boolean mutable = MultiLevel.isMutable(immutableDv);
-                            res.put(tpi, mutable);
-                        }
+        assert hci.sequence != null;
+        Set<Integer> done = new HashSet<>();
+        Map<Integer, Boolean> res = new HashMap<>();
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        for (IndexedType indexedType : hci.sequence) {
+            Integer tpi = indexedType.isTypeParameter();
+            if (tpi != null && done.add(tpi)) {
+                ParameterizedType inConcrete = indexedType.find(parameterizedType);
+                DV immutableDv = analyserContext.typeImmutable(inConcrete);
+                if (immutableDv.isDelayed()) {
+                    causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
+                } else {
+                    boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
+                    if (!immutable) {
+                        boolean mutable = MultiLevel.isMutable(immutableDv);
+                        res.put(tpi, mutable);
                     }
                 }
             }
-            if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
-            if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            return new HiddenContentSelector.CsSet(res);
         }
-        // whole type, so parameterizedType is the concrete type
-        DV immutableOfParameterizedType = analyserContext.typeImmutable(parameterizedType);
-        if (immutableOfParameterizedType.isDelayed()) {
-            return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
-        }
-        boolean mutable = MultiLevel.isMutable(immutableOfParameterizedType);
-        return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
+        if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
+        if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+        return new HiddenContentSelector.CsSet(res);
     }
 
     static HiddenContent from(ParameterizedType pt) {
