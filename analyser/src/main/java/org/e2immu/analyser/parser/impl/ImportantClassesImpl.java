@@ -28,7 +28,7 @@ public class ImportantClassesImpl implements ImportantClasses {
     public ImportantClassesImpl(TypeContext typeContext) {
         iterable = typeContext.getFullyQualified(Iterable.class).asParameterizedType(typeContext);
         TypeInfo list = typeContext.getFullyQualified(List.class);
-        arrayFieldAccess = list.findUniqueMethod("get", typeContext.getPrimitives().integerTypeInfo());
+        arrayFieldAccess = list.findUniqueMethod("get", typeContext.getPrimitives().intTypeInfo());
     }
 
     public ParameterizedType iterable() {

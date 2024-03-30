@@ -46,13 +46,13 @@ public class Test_Linking0 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             switch (d.methodInfo().name) {
                 case "m1" -> {
-                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
+                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:4";
                     assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
                     ChangeData cd = d.findValueChangeByToString("m1");
                     assertEquals(expectedLv, cd.linkedVariables().toString());
                 }
                 case "m7" -> {
-                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:2";
+                    String expectedLv = "list:4";// d.iteration() < 2 ? "list:-1" : "list:2"; downgrade removed
                     assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
                     ChangeData cd = d.findValueChangeByToString("m7");
                     assertEquals(expectedLv, cd.linkedVariables().toString());
@@ -70,7 +70,7 @@ public class Test_Linking0 extends CommonTestRunner {
                     }
                     case "m1" -> {
                         assertCurrentValue(d, 2, "list.get(0)");
-                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                     }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "list.get(0)");
@@ -90,7 +90,7 @@ public class Test_Linking0 extends CommonTestRunner {
                     }
                     case "m7" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
-                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                     }
                     case "m8" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
@@ -106,7 +106,7 @@ public class Test_Linking0 extends CommonTestRunner {
                     }
                     case "m13" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
-                        assertLinked(d, it(0, 1, "map:-1"), it(2, "map:2"));
+                        assertLinked(d, it(0, 1, "map:-1"), it(2, "map:4"));
                     }
                     case "m14" -> {
                         assertCurrentValue(d, 2, "list.subList(0,1).subList(0,1)");

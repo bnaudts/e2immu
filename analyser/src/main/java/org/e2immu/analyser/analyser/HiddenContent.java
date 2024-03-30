@@ -1,5 +1,6 @@
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 
 import java.util.*;
@@ -8,7 +9,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface HiddenContent {
-    HiddenContentSelector selectAll();
+
+
+    default HiddenContentSelector selectAll() {
+        return selectAll(false);
+    }
+
+    HiddenContentSelector selectAll(boolean mutable);
 
     boolean isNone();
 
@@ -19,6 +26,53 @@ public interface HiddenContent {
     }
 
     String niceHiddenContentTypes(ParameterizedType concreteType);
+
+    static HiddenContentSelector selectAllCorrectForMutable(AnalyserContext analyserContext,
+                                                            ParameterizedType parameterizedType) {
+        if (parameterizedType.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
+        ParameterizedType formal = parameterizedType.typeInfo.asParameterizedType(analyserContext);
+        HiddenContent hcFormal = from(formal);
+        if (hcFormal.isNone()) {
+            // no hidden content in formal, so not in concrete neither
+            return HiddenContentSelector.None.INSTANCE;
+        }
+        if (formal.equals(parameterizedType)) {
+            // no correction needed
+            return hcFormal.selectAll();
+        }
+        HiddenContentImpl hci = (HiddenContentImpl) hcFormal;
+        if (hci.sequence != null) {
+            Set<Integer> done = new HashSet<>();
+            Map<Integer, Boolean> res = new HashMap<>();
+            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+            for (IndexedType indexedType : hci.sequence) {
+                Integer tpi = indexedType.isTypeParameter();
+                if (tpi != null && done.add(tpi)) {
+                    ParameterizedType inConcrete = indexedType.find(parameterizedType);
+                    DV immutableDv = analyserContext.typeImmutable(inConcrete);
+                    if (immutableDv.isDelayed()) {
+                        causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
+                    } else {
+                        boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
+                        if (!immutable) {
+                            boolean mutable = MultiLevel.isMutable(immutableDv);
+                            res.put(tpi, mutable);
+                        }
+                    }
+                }
+            }
+            if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
+            if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+            return new HiddenContentSelector.CsSet(res);
+        }
+        // whole type, so parameterizedType is the concrete type
+        DV immutableOfParameterizedType = analyserContext.typeImmutable(parameterizedType);
+        if (immutableOfParameterizedType.isDelayed()) {
+            return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
+        }
+        boolean mutable = MultiLevel.isMutable(immutableOfParameterizedType);
+        return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
+    }
 
     static HiddenContent from(ParameterizedType pt) {
         AtomicInteger counter = new AtomicInteger();
@@ -91,6 +145,12 @@ public interface HiddenContent {
                     .collect(Collectors.joining("-"));
         }
 
+        public Integer isTypeParameter() {
+            if (index.isEmpty()) return null;
+            int i = index.get(index.size() - 1);
+            return i >= 0 ? i : null;
+        }
+
         public Stream<Integer> typeParameterIndexStream() {
             if (index.isEmpty()) return Stream.of();
             int i = index.get(index.size() - 1);
@@ -152,17 +212,18 @@ public interface HiddenContent {
         }
 
         @Override
-        public HiddenContentSelector selectAll() {
+        public HiddenContentSelector selectAll(boolean mutable) {
             if (sequence != null) {
-                Set<Integer> set = sequence.stream().flatMap(IndexedType::typeParameterIndexStream)
-                        .collect(Collectors.toUnmodifiableSet());
-                if (set.isEmpty()) {
+                Map<Integer, Boolean> map = sequence.stream().flatMap(IndexedType::typeParameterIndexStream)
+                        .distinct()
+                        .collect(Collectors.toUnmodifiableMap(i -> i, i -> mutable));
+                if (map.isEmpty()) {
                     return HiddenContentSelector.None.INSTANCE;
                 }
-                return new HiddenContentSelector.CsSet(set);
+                return new HiddenContentSelector.CsSet(map);
             }
             if (wholeTypeIndex != null) {
-                return HiddenContentSelector.All.INSTANCE;
+                return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
             }
             return HiddenContentSelector.None.INSTANCE;
         }

@@ -24,7 +24,7 @@ public class TestVariableExpression extends CommonTest {
     @DisplayName("a.b, a mutable, b mutable")
     public void testF1() {
         testFieldAccess(mutablePtWithOneTypeParameter, mutablePt, "instance 0 type Mutable",
-                "a.b:0,a:2");
+                "a.b:0,a:4");
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TestVariableExpression extends CommonTest {
     @DisplayName("a[i], containing mutable")
     public void testA3() {
         ParameterizedType array = new ParameterizedType(mutable, 1);
-        testAi(array, "Mutable[] a=new Mutable[10]", "a:2,a[i]:0");
+        testAi(array, "Mutable[] a=new Mutable[10]", "a:4,a[i]:0");
     }
 
     private void testAi(ParameterizedType arrayType, String expectedCreation, String expectedLvs) {

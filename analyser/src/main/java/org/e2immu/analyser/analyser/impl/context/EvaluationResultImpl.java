@@ -826,7 +826,9 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
 
             // TODO not too efficient, but for now... we want to get the symmetry right
             for (Map.Entry<Variable, LV> entry : linkedVariables) {
-                link(assignmentTarget, entry.getKey(), entry.getValue());
+                if (!(entry.getKey() instanceof ReturnVariable)) {
+                    link(assignmentTarget, entry.getKey(), entry.getValue());
+                }
             }
             return this;
         }
@@ -930,7 +932,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
             assert !(to instanceof ReturnVariable) : "Cannot link to return variable";
-            if(from.equals(to)) return; // no need for that
+            if (from.equals(to)) return; // no need for that
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(from);

@@ -198,7 +198,7 @@ public class TestComputeLinkedVariables {
             };
             assertEquals(nice, niceMap(map), "variable " + v.fullyQualifiedName());
         });
-        ProgressAndDelay pad = clv.writeClusteredLinkedVariables();
+        ProgressAndDelay pad = clv.writeClusteredLinkedVariables(analyserContext);
         assertTrue(pad.progress());
         assertFalse(pad.isDelayed());
         assertFalse(brokeDelay.get());

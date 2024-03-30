@@ -86,12 +86,12 @@ class MergeLinkingAndGroupProperties {
                 linkedVariablesFromBlocks, evaluationContext.getAnalyserContext().getCache(),
                 evaluationContext.breakDelayLevel());
 
-        boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched,
-                toRemove, linkedVariablesMap.keySet());
+        boolean progress = computeLinkedVariables.writeLinkedVariables(evaluationContext.getAnalyserContext(),
+                computeLinkedVariables, touched, toRemove, linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {
             if ((!linkedVariablesMap.containsKey(variable) || backLink.newlyCreated.contains(variable)) &&
-                    !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
+                !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
                 VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
                 Variable renamed = renames.get(variable);
                 if (renamed != null) {
@@ -105,7 +105,7 @@ class MergeLinkingAndGroupProperties {
         }
         HashSet<VariableInfoContainer> ignoredNotTouched = new HashSet<>(toIgnore);
         ignoredNotTouched.removeIf(vic -> touched.contains(vic.current().variable())
-                || renames.containsKey(vic.current().variable()));
+                                          || renames.containsKey(vic.current().variable()));
 
         CausesOfDelay externalDelaysOnIgnoredVariables = CausesOfDelay.EMPTY;
         for (VariableInfoContainer vic : ignoredNotTouched) {
@@ -249,9 +249,9 @@ class MergeLinkingAndGroupProperties {
                                         Set<Variable> toRename) {
         Stream<Variable> currentVariableStream = statementAnalysis.variableInfoContainerStream()
                 .filter(vic -> vic.hasEvaluation() ||
-                        // the following condition is necessary to include fields with a scope in
-                        // newlyCreatedScopeVariables, see e.g. InstanceOf_16
-                        vic.current().variable().containsAtLeastOneOf(newlyCreatedScopeVariables))
+                               // the following condition is necessary to include fields with a scope in
+                               // newlyCreatedScopeVariables, see e.g. InstanceOf_16
+                               vic.current().variable().containsAtLeastOneOf(newlyCreatedScopeVariables))
                 .map(e -> e.current().variable());
         Stream<Variable> linkedVariableStream = linkedVariablesMap.values().stream()
                 .flatMap(lv -> lv.variables().keySet().stream());
@@ -259,8 +259,8 @@ class MergeLinkingAndGroupProperties {
                         Stream.concat(linkedVariablesMap.keySet().stream(), linkedVariableStream),
                         currentVariableStream))
                 .filter(v -> !toRemove.contains(v)
-                        && !toRename.contains(v)
-                        && statementAnalysis.variableIsSet(v.fullyQualifiedName()))
+                             && !toRename.contains(v)
+                             && statementAnalysis.variableIsSet(v.fullyQualifiedName()))
                 .collect(Collectors.toUnmodifiableSet());
     }
 

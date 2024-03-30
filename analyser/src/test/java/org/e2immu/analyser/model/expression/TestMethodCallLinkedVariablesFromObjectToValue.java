@@ -368,8 +368,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
          object graph of o, a, b
 
          how to distinguish? using the correction algorithm 'correctIndependent'
+
+         20240330 downgrade removed!
          */
-        assertEquals("a:2,b:2,o:2,this:2", lv.toString());
+        assertEquals("a:4,b:4,o:4,this:4", lv.toString());
         assertTrue(lv.causesOfDelay().isDone());
     }
 

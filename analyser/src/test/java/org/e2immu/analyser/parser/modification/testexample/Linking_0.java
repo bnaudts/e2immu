@@ -25,7 +25,7 @@ public class Linking_0 {
         return list.get(0);
     }
 
-    // rv ->4->list, corrected to allow modifications
+    // rv ->4->list, corrected to allow modifications - not anymore!
     static M m1(List<M> list) {
         return list.get(0);
     }
@@ -60,7 +60,7 @@ public class Linking_0 {
         return new ArrayList<>(list);
     }
 
-    // dependent, because of M
+    // dependent, because of M -> downgrade removed; independent HC
     static List<M> m7(List<M> list) {
         return new ArrayList<>(list);
     }
@@ -90,7 +90,7 @@ public class Linking_0 {
         return new HashMap<>(map);
     }
 
-    // dependent
+    // dependent -> downgrade removed; independent HC
     static <X> Map<X, M> m13(Map<X, M> map) {
         return new HashMap<>(map);
     }

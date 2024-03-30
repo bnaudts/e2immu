@@ -116,7 +116,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
                         immutableOfSource, lv)) {
                     newLinked.put(e.getKey(), LINK_DEPENDENT);
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable) && !targetTypeHC.isNone()) {
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {// downgrade && !targetTypeHC.isNone()) {
                     LV commonHC;
                     if (lv.isCommonHC()) {
                         commonHC = LV.createHC(correctedTransferSelector, lv.mine());
@@ -210,14 +210,16 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             if (hiddenContentSelectorOfTarget.isAll()) {
                 DV immutablePt = typeImmutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
+               /* remove the downgrade
                 if (MultiLevel.isMutable(immutablePt)) {
                     return MultiLevel.DEPENDENT_DV;
-                }
+                }*/
                 if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutablePt)) {
                     return MultiLevel.INDEPENDENT_DV;
                 }
             } else {
                 assert !hiddenContentSelectorOfTarget.isNone();
+              /*  remove the downgrade
                 if (MultiLevel.isMutable(immutableOfSource)
                     && hiddenContentSelectorOfSource != null
                     && hiddenContentSelectorOfSource.isAll()) {
@@ -234,7 +236,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                             }
                         }
                     }
-                }
+                }*/
             }
         }
         return independent;

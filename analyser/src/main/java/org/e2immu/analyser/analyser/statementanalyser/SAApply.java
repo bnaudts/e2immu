@@ -792,7 +792,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 sharedState.evaluationContext().breakDelayLevel());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
+        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables(analyserContext);
 
         // 1
         ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
