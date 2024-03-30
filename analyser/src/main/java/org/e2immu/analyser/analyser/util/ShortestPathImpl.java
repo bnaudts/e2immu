@@ -47,7 +47,7 @@ public class ShortestPathImpl implements ShortestPath {
         this.linkMap = linkMap;
     }
 
-    static final int BITS = 12;
+    static final int BITS = 10;
     static final long STATICALLY_ASSIGNED = 1L;
 
     // *********** DELAY LOWEST (AFTER STATICALLY ASSIGNED) *************
@@ -55,14 +55,19 @@ public class ShortestPathImpl implements ShortestPath {
     static final long DELAYED = 1L << BITS;
     static final long ASSIGNED = 1L << (2 * BITS);
     static final long DEPENDENT = 1L << (3 * BITS);
-    static final long INDEPENDENT_HC = 1L << (4 * BITS);
+    static final long HC_MUTABLE = 1L << (4 * BITS);
+    static final long INDEPENDENT_HC = 1L << (5 * BITS);
 
-    public static long toDistanceComponent(LV dv) {
-        if (LINK_STATICALLY_ASSIGNED.equals(dv)) return STATICALLY_ASSIGNED;
-        if (dv.isDelayed()) return DELAYED;
-        if (LINK_ASSIGNED.equals(dv)) return ASSIGNED;
-        if (LINK_DEPENDENT.equals(dv)) return DEPENDENT;
-        assert dv.isCommonHC();
+    public static long toDistanceComponent(LV lv) {
+        if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
+        if (lv.isDelayed()) return DELAYED;
+        if (LINK_ASSIGNED.equals(lv)) return ASSIGNED;
+        if (LINK_DEPENDENT.equals(lv)) return DEPENDENT;
+        if (lv.isHCMutable()) return HC_MUTABLE; // for internal use
+        assert lv.isCommonHC();
+        if (lv.commonHCContainsMutable()) {
+            return HC_MUTABLE;
+        }
         return INDEPENDENT_HC;
     }
 
@@ -76,7 +81,8 @@ public class ShortestPathImpl implements ShortestPath {
             return LV.delay(someDelay);
         }
         if (l < DEPENDENT) return LINK_ASSIGNED;
-        if (l < INDEPENDENT_HC) return LINK_DEPENDENT;
+        if (l < HC_MUTABLE) return LINK_DEPENDENT;
+        if (l < INDEPENDENT_HC) return LINK_HC_MUTABLE;
         return LINK_COMMON_HC;
     }
 
@@ -88,15 +94,20 @@ public class ShortestPathImpl implements ShortestPath {
 
     static final long ASSIGNED_H = 1L << BITS;
     static final long DEPENDENT_H = 1L << (2 * BITS);
-    static final long INDEPENDENT_HC_H = 1L << (3 * BITS);
-    static final long DELAYED_H = 1L << (4 * BITS);
+    static final long HC_MUTABLE_H = 1L << (3 * BITS);
+    static final long INDEPENDENT_HC_H = 1L << (4 * BITS);
+    static final long DELAYED_H = 1L << (5 * BITS);
 
-    public static long toDistanceComponentHigh(LV dv) {
-        if (LINK_STATICALLY_ASSIGNED.equals(dv)) return STATICALLY_ASSIGNED;
-        if (LINK_ASSIGNED.equals(dv)) return ASSIGNED_H;
-        if (LINK_DEPENDENT.equals(dv)) return DEPENDENT_H;
-        if (dv.isCommonHC()) return INDEPENDENT_HC_H;
-        assert dv.isDelayed();
+    public static long toDistanceComponentHigh(LV lv) {
+        if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
+        if (LINK_ASSIGNED.equals(lv)) return ASSIGNED_H;
+        if (LINK_DEPENDENT.equals(lv)) return DEPENDENT_H;
+        if (lv.isHCMutable()) return HC_MUTABLE_H;
+        if (lv.isCommonHC()) {
+            if (lv.commonHCContainsMutable()) return HC_MUTABLE_H;
+            return INDEPENDENT_HC_H;
+        }
+        assert lv.isDelayed();
         return DELAYED_H;
     }
 
@@ -104,15 +115,17 @@ public class ShortestPathImpl implements ShortestPath {
         if (l == Long.MAX_VALUE) return Long.MAX_VALUE;
         if (l < ASSIGNED_H) return l; // STATICALLY_ASSIGNED stays the same
         if (l < DEPENDENT_H) return (l >> BITS) << (2 * BITS); // shift up
-        if (l < INDEPENDENT_HC_H) return (l >> (2 * BITS)) << (3 * BITS);
-        if (l < DELAYED_H) return (l >> (3 * BITS)) << (4 * BITS);
-        return (l >> (4 * BITS)) << BITS;
+        if (l < HC_MUTABLE_H) return (l >> (2 * BITS)) << (3 * BITS);
+        if (l < INDEPENDENT_HC_H) return (l >> (3 * BITS)) << (4 * BITS);
+        if (l < DELAYED_H) return (l >> (4 * BITS)) << (5 * BITS);
+        return (l >> (5 * BITS)) << BITS;
     }
 
     public static LV fromDistanceSumHigh(long l, CausesOfDelay someDelay) {
         if (l == Long.MAX_VALUE) return null;
         if (l < ASSIGNED_H) return LINK_STATICALLY_ASSIGNED;
         if (l < DEPENDENT_H) return LINK_ASSIGNED;
+        if (l < HC_MUTABLE_H) return LINK_HC_MUTABLE;
         if (l < INDEPENDENT_HC_H) return LINK_DEPENDENT;
         if (l < DELAYED_H) return LINK_COMMON_HC;
         assert someDelay != null && someDelay.isDelayed();

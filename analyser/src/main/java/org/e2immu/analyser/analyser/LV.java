@@ -7,6 +7,7 @@ import java.util.*;
 
 public class LV implements Comparable<LV> {
     private static final int HC = 4;
+    private static final int HC_MUTABLE = 3;
 
     public static final LV LINK_STATICALLY_ASSIGNED = new LV(0, null, null,
             "statically_assigned", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
@@ -14,6 +15,10 @@ public class LV implements Comparable<LV> {
             "assigned", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
     public static final LV LINK_DEPENDENT = new LV(2, null, null,
             "dependent", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
+
+    // use of this value is severely restricted! Use in ShortestPath, ComputeLinkedVariables
+    public static final LV LINK_HC_MUTABLE = new LV(HC_MUTABLE, null, null,
+            "hc_mutable", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
 
     // do not use for equality! Use LV.isCommonHC()
     public static final LV LINK_COMMON_HC = new LV(HC, null, null,
@@ -30,6 +35,10 @@ public class LV implements Comparable<LV> {
 
     public boolean isCommonHC() {
         return HC == value;
+    }
+
+    public boolean isHCMutable() {
+        return HC_MUTABLE == value;
     }
 
     private LV(int value, HiddenContentSelector mine, HiddenContentSelector theirs,
@@ -170,5 +179,10 @@ public class LV implements Comparable<LV> {
     @Override
     public String toString() {
         return label;
+    }
+
+    public boolean commonHCContainsMutable() {
+        if (value != HC) return false;
+        return mine.containsMutable() || theirs.containsMutable();
     }
 }

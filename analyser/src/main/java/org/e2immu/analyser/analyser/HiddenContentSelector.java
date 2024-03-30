@@ -34,6 +34,10 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         return causesOfDelay().isDelayed();
     }
 
+    public boolean containsMutable() {
+        return false;
+    }
+
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
@@ -93,6 +97,11 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         @Override
         public String toString() {
             return mutable ? "*M" : "*";
+        }
+
+        @Override
+        public boolean containsMutable() {
+            return mutable;
         }
     }
 
@@ -190,6 +199,11 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             map.putAll(((CsSet) other).map);
             assert !map.isEmpty();
             return new CsSet(map);
+        }
+
+        @Override
+        public boolean containsMutable() {
+            return map.values().stream().anyMatch(v -> v);
         }
     }
 }
