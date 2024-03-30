@@ -51,11 +51,10 @@ public class TestWeightedGraph_3 extends CommonWG {
         wg = new WeightedGraphImpl();
         wg.addNode(d, Map.of(node, v4, nodeDependsOn, v4, dependsOn, v4, thisVar, delay));
         wg.addNode(n, Map.of());
-        wg.addNode(node, Map.of(d, v4, nodeDependsOn, v2, dependsOn, v4));
-        wg.addNode(nodeDependsOn, Map.of(d, v4, node, v2, dependsOn, v4));
+        wg.addNode(node, Map.of(nodeDependsOn, v2, dependsOn, v4));
+        wg.addNode(nodeDependsOn, Map.of(dependsOn, v4));
         wg.addNode(t, Map.of(thisVar, delay));
-        wg.addNode(dependsOn, Map.of(d, v4, node, v4, nodeDependsOn, v4));
-        wg.addNode(thisVar, Map.of(d, delay, t, delay));
+        wg.addNode(thisVar, Map.of(t, delay));
     }
 
     @Test

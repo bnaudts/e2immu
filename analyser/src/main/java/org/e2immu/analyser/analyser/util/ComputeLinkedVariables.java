@@ -21,10 +21,7 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.support.Either;
@@ -115,7 +112,6 @@ public class ComputeLinkedVariables {
 
         Set<VariableInfoContainer> start = statementAnalysis.variableEntryStream(stage)
                 .map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
-        Map<Variable, LinkedVariables> scopeVariableLinks = computeScopeVariableLinks(start);
         boolean iteration1Plus = false;
         while (!start.isEmpty()) {
             Set<VariableInfoContainer> linked = new HashSet<>();
@@ -126,7 +122,7 @@ public class ComputeLinkedVariables {
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     VariableInfo viE = vic.best(EVALUATION);
                     LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned, externalLinkedVariables,
-                            scopeVariableLinks, weightedGraph, vi1, viE, variable);
+                            weightedGraph, vi1, viE, variable);
                     for (Map.Entry<Variable, LV> e : linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
@@ -154,28 +150,10 @@ public class ComputeLinkedVariables {
                 linkingNotYetSet);
     }
 
-    private static Map<Variable, LinkedVariables> computeScopeVariableLinks(Set<VariableInfoContainer> start) {
-        Map<Variable, LinkedVariables> res = new HashMap<>();
-        for (VariableInfoContainer vic : start) {
-            Variable variable = vic.current().variable();
-            if (variable instanceof FieldReference fr) {
-                LinkedVariables lvs = linkToScope(fr);
-                if (!lvs.isEmpty()) {
-                    res.merge(variable, lvs, LinkedVariables::merge);
-                    lvs.stream().forEach(e -> {
-                        res.merge(e.getKey(), LinkedVariables.of(variable, e.getValue()), LinkedVariables::merge);
-                    });
-                }
-            }
-        }
-        return res;
-    }
-
     private static LinkedVariables add(StatementAnalysis statementAnalysis,
                                        BiPredicate<VariableInfoContainer, Variable> ignore,
                                        Set<Variable> reassigned,
                                        Function<Variable, LinkedVariables> externalLinkedVariables,
-                                       Map<Variable, LinkedVariables> scopeVariables,
                                        WeightedGraph weightedGraph,
                                        VariableInfo vi1,
                                        VariableInfo viE,
@@ -186,31 +164,20 @@ public class ComputeLinkedVariables {
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
         LinkedVariables combined = external.merge(inVi);
-        LinkedVariables scope = scopeVariables.get(variable);
-        LinkedVariables refToScope = scope != null ? combined.merge(scope) : combined;
 
-        LinkedVariables afterRemove = refToScope
+        LinkedVariables afterRemove = combined
                 .remove(v -> ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v));
         LinkedVariables afterChangeToDelay;
         if (viE != vi1
-                   && viE.getValue() instanceof DelayedVariableExpression dve
-                   && dve.msg.startsWith("<vl:")
-                   && !afterRemove.isDelayed()) {
+            && viE.getValue() instanceof DelayedVariableExpression dve
+            && dve.msg.startsWith("<vl:")
+            && !afterRemove.isDelayed()) {
             afterChangeToDelay = afterRemove.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         } else {
             afterChangeToDelay = afterRemove;
         }
         weightedGraph.addNode(variable, afterChangeToDelay.variables());
         return afterChangeToDelay;
-    }
-
-    private static LinkedVariables linkToScope(FieldReference fr) {
-        Set<Variable> variables = fr.scope().variablesWithoutCondition().stream()
-                .collect(Collectors.toUnmodifiableSet());
-        LV link = fr.scope().isDelayed() ? LV.delay(fr.scope().causesOfDelay()) : LINK_DEPENDENT;
-        Map<Variable, LV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> link));
-        if (map.isEmpty()) return EMPTY;
-        return LinkedVariables.of(map);
     }
 
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {

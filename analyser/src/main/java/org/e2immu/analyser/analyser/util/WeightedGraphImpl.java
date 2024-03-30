@@ -136,7 +136,6 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         return node;
     }
 
-
     @SuppressWarnings("unchecked")
     public void addNode(Variable v, Map<Variable, LV> dependsOn) {
         ensureNotFrozen();
@@ -145,22 +144,21 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             if (node.dependsOn == null) {
                 node.dependsOn = new LinkedHashMap<>();
             }
+            Variable target = e.getKey();
             LV linkLevel = e.getValue();
             assert !LINK_INDEPENDENT.equals(linkLevel);
-
+            assert !(target instanceof ReturnVariable);
             /*
             ASSIGNED links are symmetrical, except for links involving the return variable.
             All other links can be asymmetrical.
              */
-            LV min = node.dependsOn.merge(e.getKey(), linkLevel, LV::min);
-            if ((LINK_STATICALLY_ASSIGNED.equals(min) || LINK_ASSIGNED.equals(min))
-                && !(e.getKey() instanceof ReturnVariable)
-                && !(v instanceof ReturnVariable)) {
-                Node n = getOrCreate(e.getKey());
+            LV min = node.dependsOn.merge(target, linkLevel, LV::min);
+            if (!(v instanceof ReturnVariable)) {
+                Node n = getOrCreate(target);
                 if (n.dependsOn == null) {
                     n.dependsOn = new LinkedHashMap<>();
                 }
-                n.dependsOn.merge(v, min, LV::min);
+                n.dependsOn.merge(v, min.reverse(), LV::min);
             }
         }
     }
@@ -182,7 +180,6 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
     static Comparator<Variable> REVERSE_FQN_COMPARATOR = (v1, v2) ->
             REVERSE_STRING_COMPARATOR.compare(v1.fullyQualifiedName(), v2.fullyQualifiedName());
 
-    @SuppressWarnings("unchecked")
     @Override
     public ShortestPath shortestPath() {
         int n = nodeMap.size();

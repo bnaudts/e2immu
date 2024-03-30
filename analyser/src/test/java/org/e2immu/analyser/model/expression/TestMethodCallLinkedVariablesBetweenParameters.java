@@ -29,11 +29,9 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
 
         EvaluationResult er = evaluateMethodCallTwoArguments(method, primitives.intParameterizedType());
         assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(2, er.changeData().size());
+        assertEquals(1, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
         assertEquals("b:2", ca.linkedVariables().toString());
-        ChangeData cb = er.findChangeData("b");
-        assertEquals("a:2", cb.linkedVariables().toString());
     }
 
 
@@ -45,11 +43,9 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
 
         EvaluationResult er = evaluateMethodCallTwoArguments(method, mutablePtWithOneTypeParameter);
         assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(2, er.changeData().size());
+        assertEquals(1, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
         assertEquals("b:4", ca.linkedVariables().toString());
-        ChangeData cb = er.findChangeData("b");
-        assertEquals("a:4", cb.linkedVariables().toString());
     }
 
     @Test
@@ -61,11 +57,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
 
         EvaluationResult er = evaluateMethodCallVarargs(method);
         assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(4, er.changeData().size());
-        ChangeData ca = er.findChangeData("a");
-        assertEquals("c:4", ca.linkedVariables().toString());
-        ChangeData cb = er.findChangeData("b");
-        assertEquals("c:4", cb.linkedVariables().toString());
+        assertEquals(2, er.changeData().size());
         ChangeData cc = er.findChangeData("c");
         assertEquals("a:4,b:4", cc.linkedVariables().toString());
         ChangeData cThis = er.findChangeData("this");

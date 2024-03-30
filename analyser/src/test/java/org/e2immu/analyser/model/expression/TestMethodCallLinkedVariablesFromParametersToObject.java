@@ -43,11 +43,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
         assertEquals("", er.linkedVariablesOfExpression().toString()); // void method
-        assertEquals(4, er.changeData().size());
-        assertEquals("b:-1", er.findChangeData("a").linkedVariables().toString());
-        assertEquals("b:-1", er.findChangeData("c").linkedVariables().toString());
-        assertEquals("b:-1", er.findChangeData("d").linkedVariables().toString());
-
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:-1,c:-1,d:-1", cb.linkedVariables().toString());
         assertEquals("independent@Parameter_p0", cb.linkedVariables().causesOfDelay().toString());
@@ -72,10 +68,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo method = methodWithTwoParameters(MultiLevel.DEPENDENT_DV, MultiLevel.DEPENDENT_DV);
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
 
-        assertEquals(4, er.changeData().size());
-        assertEquals("b:2", er.findChangeData("a").linkedVariables().toString());
-        assertEquals("b:2", er.findChangeData("c").linkedVariables().toString());
-        assertEquals("b:2", er.findChangeData("d").linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         // clearly shows the 'min' action at work while merging the two parameters' linked variables.
         assertEquals("a:2,c:2,d:2", cb.linkedVariables().toString());
@@ -88,10 +81,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo method = methodWithTwoParameters(MultiLevel.DEPENDENT_DV, MultiLevel.INDEPENDENT_DV);
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
 
-        assertEquals(4, er.changeData().size());
-        assertEquals("b:2", er.findChangeData("a").linkedVariables().toString());
-        assertEquals("b:4", er.findChangeData("c").linkedVariables().toString());
-        assertEquals("b:2", er.findChangeData("d").linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:2,c:4,d:2", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
@@ -103,10 +93,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo method = methodWithTwoParameters(MultiLevel.INDEPENDENT_DV, MultiLevel.DEPENDENT_DV);
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
 
-        assertEquals(4, er.changeData().size());
-        assertEquals("b:4", er.findChangeData("a").linkedVariables().toString());
-        assertEquals("b:2", er.findChangeData("c").linkedVariables().toString());
-        assertEquals("b:4", er.findChangeData("d").linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4,c:2,d:4", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
@@ -129,10 +116,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         MethodInfo method2 = methodWithTwoParameters(MultiLevel.INDEPENDENT_HC_DV, MultiLevel.INDEPENDENT_HC_DV);
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method2);
 
-        assertEquals(4, er.changeData().size());
-        assertEquals("b:4", er.findChangeData("a").linkedVariables().toString());
-        assertEquals("b:4", er.findChangeData("c").linkedVariables().toString());
-        assertEquals("b:4", er.findChangeData("d").linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4,c:4,d:4", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
@@ -222,9 +206,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
         EvaluationResult er = evaluateMethodWithLambdaAsConsumerArgument(method, mutablePtWithOneTypeParameter);
         assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(2, er.changeData().size());
-        ChangeData ca = er.findChangeData("a");
-        assertEquals("b:2", ca.linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:2", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
@@ -249,9 +231,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         EvaluationResult er = evaluateMethodWithMethodReferenceArgument(forEach, add, mutablePtWithOneTypeParameter);
 
         assertEquals("", er.linkedVariablesOfExpression().toString());
-        assertEquals(2, er.changeData().size());
-        ChangeData ca = er.findChangeData("a");
-        assertEquals("b:4", ca.linkedVariables().toString());
+        assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4", cb.linkedVariables().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());

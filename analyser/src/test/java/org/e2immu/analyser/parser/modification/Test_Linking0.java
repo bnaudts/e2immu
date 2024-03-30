@@ -156,13 +156,19 @@ public class Test_Linking0 extends CommonTestRunner {
                                     it(2, "list:0,x0:2,x1:2"));
                         }
                     }
+                    case "m24" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 1, "collection$0");
+                            assertLinked(d, it(0, "collection:0"));
+                        }
+                    }
                     default -> {
                     }
                 }
             }
         };
 
-        testClass("Linking_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("Linking_0", 0, 1, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

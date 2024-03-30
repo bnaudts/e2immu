@@ -53,8 +53,8 @@ public class TestWeightedGraph_0 extends CommonWG {
         assertEquals("<0>-4-<0>", this_4_cycle.toString());
 
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle));
-        wg.addNode(cycle, Map.of(cycle, v0, thisVar, this_4_cycle.reverse()));
-        wg.addNode(removed, Map.of(removed, v0, thisVar, delay));
+        wg.addNode(cycle, Map.of(cycle, v0));
+        wg.addNode(removed, Map.of(removed, v0));
         shortestPath = wg.shortestPath();
     }
 

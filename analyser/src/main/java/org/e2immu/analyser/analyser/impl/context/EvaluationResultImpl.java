@@ -929,21 +929,8 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
          */
         public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
-            if (!from.equals(to)) {
-                if (!(to instanceof ReturnVariable)) {
-                    internalLink(from, to, level);
-                }
-                if (!(from instanceof ReturnVariable)) {
-                    internalLink(to, from, level.reverse());
-                }
-            }
-        }
-
-        /*
-      we use a null value for inScope to indicate a delay
-       */
-        public void internalLink(Variable from, Variable to, LV level) {
             assert !(to instanceof ReturnVariable) : "Cannot link to return variable";
+            if(from.equals(to)) return; // no need for that
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(from);

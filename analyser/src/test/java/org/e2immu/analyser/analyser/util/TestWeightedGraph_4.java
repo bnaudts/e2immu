@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
 import static org.e2immu.analyser.analyser.LV.LINK_STATICALLY_ASSIGNED;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -41,12 +42,11 @@ public class TestWeightedGraph_4 extends CommonWG {
     List<WeightedGraph> wgs;
 
     /*
-    NOTE: unidirectional arrows of 4 don't exist anymore, but that's not a problem in this test.
-     x ---4---> a ---3---> i
-                ^          |
-                |2         |4
-                v          v
-     y ---4---> b          j
+     x <---0---> a <---4---> i
+                 ^           |
+                 |2          |4
+                 v           v
+     y <---4---> b           j
      */
     @BeforeEach
     public void beforeEach() {
@@ -58,19 +58,19 @@ public class TestWeightedGraph_4 extends CommonWG {
         j = makeVariable("j"); // type List<List<X>>
 
         wg1 = new WeightedGraphImpl();
-        wg1.addNode(x, Map.of(x, v0, a, v4));
+        wg1.addNode(x, Map.of(x, v0, a, v0));
         wg1.addNode(y, Map.of(y, v0, b, v4));
         wg1.addNode(a, Map.of(a, v0, b, v2, i, v4));
-        wg1.addNode(b, Map.of(b, v0, a, v2));
+        wg1.addNode(b, Map.of(b, v0));
         wg1.addNode(i, Map.of(i, v0, j, v4));
         wg1.addNode(j, Map.of(j, v0));
 
         wg2 = new WeightedGraphImpl();
-        wg2.addNode(x, Map.of(x, v0, a, v4));
+        wg2.addNode(x, Map.of(x, v0, a, v0));
         wg2.addNode(a, Map.of(a, v0, b, v2, i, v4));
         wg2.addNode(i, Map.of(i, v0, j, v4));
         wg2.addNode(y, Map.of(y, v0, b, v4));
-        wg2.addNode(b, Map.of(b, v0, a, v2));
+        wg2.addNode(b, Map.of(b, v0));
         wg2.addNode(j, Map.of(j, v0));
 
         wgs = List.of(wg1, wg2);
@@ -80,9 +80,10 @@ public class TestWeightedGraph_4 extends CommonWG {
     public void test1() {
         for (WeightedGraph wg : wgs) {
             Map<Variable, LV> startAtX = wg.shortestPath().links(x, LINK_STATICALLY_ASSIGNED);
-            assertEquals(1, startAtX.size());
+            assertEquals(2, startAtX.size());
             assertEquals(v0, startAtX.get(x));
-            assertNull(startAtX.get(a));
+            assertEquals(v0, startAtX.get(a));
+            assertNull(startAtX.get(b));
             assertNull(startAtX.get(i));
         }
     }
@@ -90,28 +91,27 @@ public class TestWeightedGraph_4 extends CommonWG {
     @Test
     public void test2() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, LV> startAtX = wg.shortestPath().links(x, null);
-            assertEquals(5, startAtX.size());
-            assertEquals(v0, startAtX.get(x));
-            assertNull(startAtX.get(y));
-            assertTrue(startAtX.get(a).isCommonHC());
-            assertTrue(startAtX.get(b).isCommonHC());
-            assertTrue(startAtX.get(i).isCommonHC());
-            assertTrue(startAtX.get(j).isCommonHC());
+            Map<Variable, LV> startAtA = wg.shortestPath().links(a, LINK_DEPENDENT);
+            assertEquals(3, startAtA.size());
+            assertEquals(v0, startAtA.get(x));
+            assertEquals(v0, startAtA.get(a));
+            assertEquals(v2, startAtA.get(b));
+            assertNull(startAtA.get(y));
+            assertNull(startAtA.get(i));
         }
     }
 
     @Test
     public void test3() {
         for (WeightedGraph wg : wgs) {
-            Map<Variable, LV> startAtToDo = wg.shortestPath().links(a, null);
-            assertEquals(4, startAtToDo.size());
-            assertNull(startAtToDo.get(x));
-            assertNull(startAtToDo.get(y));
-            assertEquals(v0, startAtToDo.get(a));
-            assertEquals(v2, startAtToDo.get(b));
-            assertTrue(startAtToDo.get(i).isCommonHC());
-            assertTrue(startAtToDo.get(j).isCommonHC());
+            Map<Variable, LV> startAtA = wg.shortestPath().links(a, null);
+            assertEquals(6, startAtA.size());
+            assertEquals(v0, startAtA.get(x));
+            assertEquals(v0, startAtA.get(a));
+            assertEquals(v2, startAtA.get(b));
+            assertTrue(startAtA.get(y).isCommonHC());
+            assertTrue(startAtA.get(i).isCommonHC());
+            assertTrue(startAtA.get(j).isCommonHC());
         }
     }
 }

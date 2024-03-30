@@ -17,14 +17,22 @@ public class Linking_0 {
         }
     }
 
+    // Note: List, ArrayList are mutable; subList is dependent, because it
+    // returns a list backed by the original one.
+
     // no linking
     static String m0(List<String> list) {
         return list.get(0);
     }
 
-    // dependent
+    // rv ->4->list, corrected to allow modifications
     static M m1(List<M> list) {
         return list.get(0);
+    }
+
+    // rv ->4->list, corrected to allow modifications
+    static M m1b(List<M> list) {
+        return new ArrayList<>(list).get(0);
     }
 
     // common HC
@@ -137,5 +145,12 @@ public class Linking_0 {
     static List<M> m23(List<M> list) {
         Collections.addAll(list);
         return list;
+    }
+
+    private String string;
+
+    public Collection<String> m24(Collection<String> collection) {
+        collection.add(string);
+        return collection;
     }
 }

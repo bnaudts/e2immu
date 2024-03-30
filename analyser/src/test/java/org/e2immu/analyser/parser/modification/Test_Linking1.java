@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
@@ -119,7 +120,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     case "m16" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "out");
-                            assertLinked(d, it(0, 1, "in:-1,out:0"), it(2, "in:2,out:0"));
+                            assertLinked(d, it(0, "out:0"));
                         }
                     }
                     case "m17" -> {
@@ -180,6 +181,13 @@ public class Test_Linking1 extends CommonTestRunner {
                 case "m15b" -> {
                     if ("0".equals(d.statementId()) && "add".equals(d.variableName())) {
                         assertLinked(d, it(0, "out:4"));
+                    }
+                }
+                case "m16" -> {
+                    if ("1".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
+                            assertLinked(d, it(0, 1, "out:-1"), it(2, "out:2"));
+                        }
                     }
                 }
                 case "m17b" -> {

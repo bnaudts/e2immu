@@ -114,7 +114,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("i=j", assignment.minimalOutput());
         EvaluationResult context = context(evaluationContext(Map.of("i", zero, "j", instance)));
         EvaluationResult result = assignment.evaluate(context, ForwardEvaluationInfo.DEFAULT);
-        assertEquals("i:0,j:0", result.linkedVariables(vi.variable()).toString());
+        assertEquals("j:0", result.linkedVariables(vi.variable()).toString());
     }
 
     @Test
@@ -164,7 +164,6 @@ public class TestAssignment extends CommonTest {
         assertEquals("8", eval.value().toString());
     }
 
-    @Disabled("fix later: not sure what the result should be")
     @Test
     @DisplayName("assign to array: int[] a = new int[10]; int i=03; a[i]=j")
     public void test8() {
@@ -199,7 +198,7 @@ public class TestAssignment extends CommonTest {
         EvaluationResult aiResult = ai.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("a[3]", aiResult.value().toString());
         // any change to a[i] (in particular here, a re-assignment) will change the object graph of a
-        assertEquals("a:2,a[i]:0", aiResult.linkedVariablesOfExpression().toString());
+        assertEquals("a[i]:0", aiResult.linkedVariablesOfExpression().toString());
 
         Assignment assignment = new Assignment(primitives, ai, vj);
         assertEquals("a[i]=j", assignment.minimalOutput());
@@ -207,9 +206,8 @@ public class TestAssignment extends CommonTest {
         assertEquals("instance 0 type int", eval.value().minimalOutput());
         assertTrue(eval.messages().isEmpty());
         // ?? potentially also a[3]:0
-        assertEquals("a:2,a[i]:0,j:0", eval.linkedVariablesOfExpression().toString());
-        // FIXME ??
-        assertEquals("a:2,a[3]:0,a[i]:0", eval.linkedVariables(a.localVariableReference).toString());
+        assertEquals("a[i]:0,j:0", eval.linkedVariablesOfExpression().toString());
+        assertEquals("a[i]:2", eval.linkedVariables(a.localVariableReference).toString());
 
         ChangeData cdAi = eval.changeData().get(aiDv);
         assertNotNull(cdAi);
@@ -285,7 +283,7 @@ public class TestAssignment extends CommonTest {
         assertEquals("1+<test>", cd.value().toString());
 
         assertEquals("constant@NOT_YET_SET", cd.value().causesOfDelay().toString());
-        assertEquals("i:0", er.linkedVariables(vi.variable()).toString());
+        assertEquals("", er.linkedVariables(vi.variable()).toString());
 
         EvaluationResult er2 = hack.evaluate(context, ForwardEvaluationInfo.DEFAULT);
         assertEquals("1+<test>", er2.value().toString());
@@ -361,7 +359,7 @@ public class TestAssignment extends CommonTest {
         LinkedVariables lv = result.linkedVariables(vv.variable());
 
         // we take values from both, minimize; 0->1; static assignment variables
-        assertEquals("a:2,c:1,d:4,this.f:0,v:0", lv.toString());
+        assertEquals("a:2,c:1,d:4,this.f:0", lv.toString());
     }
 
     @Test
