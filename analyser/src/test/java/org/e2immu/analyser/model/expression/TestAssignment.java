@@ -64,7 +64,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("i+=1, ++i, i++")
     public void test2() {
         IntConstant zero = IntConstant.zero(primitives);
-        VariableExpression ve = makeLVAsExpression("i", zero);
+        VariableExpression ve = makeLVAsExpression("i", zero, primitives.intParameterizedType());
         IntConstant one = IntConstant.one(primitives);
         Expression iPlusEquals1 = new Assignment(newId(), primitives, ve,
                 one, primitives.assignPlusOperatorInt(), null,
@@ -92,7 +92,8 @@ public class TestAssignment extends CommonTest {
     @Test
     @DisplayName("i++ ++i")
     public void test3() {
-        VariableExpression ve = makeLVAsExpression("i", IntConstant.zero(primitives));
+        VariableExpression ve = makeLVAsExpression("i", IntConstant.zero(primitives),
+                primitives.intParameterizedType());
 
         Expression iPlusPlus = new UnaryOperator(newId(), primitives.postfixIncrementOperatorInt(),
                 ve, Precedence.PLUSPLUS);
@@ -107,9 +108,9 @@ public class TestAssignment extends CommonTest {
     @DisplayName("direct assignment i=j")
     public void test4() {
         IntConstant zero = IntConstant.zero(primitives);
-        VariableExpression vi = makeLVAsExpression("i", zero);
+        VariableExpression vi = makeLVAsExpression("i", zero, primitives.intParameterizedType());
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
-        VariableExpression vj = makeLVAsExpression("j", instance);
+        VariableExpression vj = makeLVAsExpression("j", instance, primitives.intParameterizedType());
         Assignment assignment = new Assignment(primitives, vi, vj);
         assertEquals("i=j", assignment.minimalOutput());
         EvaluationResult context = context(evaluationContext(Map.of("i", zero, "j", instance)));
@@ -121,7 +122,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("only sort")
     public void test5() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression ve = makeLVAsExpression("i", three, primitives.intParameterizedType());
         IntConstant one = IntConstant.one(primitives);
         Expression iPlusEquals1 = new Assignment(newId(), primitives, ve,
                 one, primitives.assignPlusOperatorInt(), null,
@@ -137,7 +138,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("assignment to self")
     public void test6() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression ve = makeLVAsExpression("i", three, primitives.intParameterizedType());
         Assignment toSelf = new Assignment(newId(), primitives, ve, ve);
         EvaluationResult context = context(evaluationContext(Map.of("i", three)));
         EvaluationResult er = toSelf.evaluate(context, ForwardEvaluationInfo.DEFAULT);
@@ -148,7 +149,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("evaluationOfValue, += ")
     public void test7() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression ve = makeLVAsExpression("i", three, primitives.intParameterizedType());
         IntConstant five = new IntConstant(primitives, 5);
         EvaluationResult context = context(evaluationContext(Map.of("i", three)));
         EvaluationResult evalFour = five.evaluate(context, ForwardEvaluationInfo.DEFAULT);
@@ -168,9 +169,9 @@ public class TestAssignment extends CommonTest {
     @DisplayName("assign to array: int[] a = new int[10]; int i=03; a[i]=j")
     public void test8() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression vi = makeLVAsExpression("i", three);
+        VariableExpression vi = makeLVAsExpression("i", three, primitives.intParameterizedType());
         Instance instance = Instance.forTesting(primitives.intParameterizedType());
-        VariableExpression vj = makeLVAsExpression("j", instance);
+        VariableExpression vj = makeLVAsExpression("j", instance, primitives.intParameterizedType());
         ParameterizedType intArray = new ParameterizedType(primitives.intTypeInfo(), 1);
         MethodInfo constructor = ParseArrayCreationExpr.createArrayCreationConstructor(typeContext, intArray);
         Expression newIntArray = new ConstructorCall(newId(), null, constructor, intArray,
@@ -185,12 +186,12 @@ public class TestAssignment extends CommonTest {
         assertEquals("int[] a=new int[10]", a.minimalOutput());
         VariableExpression va = new VariableExpression(newId(), a.localVariableReference);
         DependentVariable aiDv = new DependentVariable(newId(), va, va.variable(), vi, vi.variable(),
-                intArray, "0");
+                primitives.intParameterizedType(), "0");
         VariableExpression ai = new VariableExpression(newId(), aiDv);
         assertEquals("a[i]", ai.minimalOutput());
 
         DependentVariable a3Dv = new DependentVariable(newId(), va, va.variable(), three, null,
-                intArray, "0");
+                primitives.intParameterizedType(), "0");
         VariableExpression a3 = new VariableExpression(newId(), a3Dv);
 
         EvaluationResult context = context(evaluationContext(Map.of("i", three,
@@ -207,11 +208,12 @@ public class TestAssignment extends CommonTest {
         assertTrue(eval.messages().isEmpty());
         // ?? potentially also a[3]:0
         assertEquals("a[i]:0,j:0", eval.linkedVariablesOfExpression().toString());
-        assertEquals("a[i]:2", eval.linkedVariables(a.localVariableReference).toString());
+        assertEquals("", eval.linkedVariables(a.localVariableReference).toString());
 
+        assertEquals(2, eval.changeData().size());
         ChangeData cdAi = eval.changeData().get(aiDv);
-        assertNotNull(cdAi);
-        assertNull(cdAi.value()); // only a[3] has received a value
+        assertNull(cdAi);
+
         ChangeData cdA3 = eval.changeData().get(a3Dv);
         assertNotNull(cdA3);
         assertSame(eval.value(), cdA3.value());
@@ -222,7 +224,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("assignment to same value")
     public void test9() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression ve = makeLVAsExpression("i", three, primitives.intParameterizedType());
         Assignment toSameValue = new Assignment(newId(), primitives, ve, three);
         assertEquals("i=3", toSameValue.minimalOutput());
         EvaluationResult context = context(evaluationContext(Map.of("i", three)));
@@ -234,7 +236,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("hack for loop")
     public void test10() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression vi = makeLVAsExpression("i", three);
+        VariableExpression vi = makeLVAsExpression("i", three, primitives.intParameterizedType());
         MethodInfo plusEquals = primitives.assignPlusOperatorInt();
         Assignment iPlusEquals1 = new Assignment(newId(), primitives, vi, IntConstant.one(primitives),
                 plusEquals, null, false,
@@ -265,7 +267,7 @@ public class TestAssignment extends CommonTest {
         CausesOfDelay causes = DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET,
                 CauseOfDelay.Cause.CONSTANT));
         Expression delayed = DelayedExpression.forTest(newId(), three, causes);
-        VariableExpression vi = makeLVAsExpression("i", delayed);
+        VariableExpression vi = makeLVAsExpression("i", delayed, primitives.intParameterizedType());
         MethodInfo plusEquals = primitives.assignPlusOperatorInt();
         Assignment iPlusEquals1 = new Assignment(newId(), primitives, vi, IntConstant.one(primitives),
                 plusEquals, null, false,
@@ -296,7 +298,7 @@ public class TestAssignment extends CommonTest {
     @DisplayName("evaluationOfValue, =")
     public void test12() {
         IntConstant three = new IntConstant(primitives, 3);
-        VariableExpression ve = makeLVAsExpression("i", three);
+        VariableExpression ve = makeLVAsExpression("i", three, primitives.intParameterizedType());
         IntConstant five = new IntConstant(primitives, 5);
         EvaluationResult context = context(evaluationContext(Map.of("i", three)));
         EvaluationResult evalFour = five.evaluate(context, ForwardEvaluationInfo.DEFAULT);
@@ -314,12 +316,12 @@ public class TestAssignment extends CommonTest {
     @DisplayName("linked variables")
     public void test13() {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
-        VariableExpression vc = makeLVAsExpression("c", zero);
-        VariableExpression vd = makeLVAsExpression("d", zero);
-        VariableExpression ve = makeLVAsExpression("e", zero);
-        VariableExpression vv = makeLVAsExpression("v", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, primitives.intParameterizedType());
+        VariableExpression vb = makeLVAsExpression("b", zero, primitives.intParameterizedType());
+        VariableExpression vc = makeLVAsExpression("c", zero, primitives.intParameterizedType());
+        VariableExpression vd = makeLVAsExpression("d", zero, primitives.intParameterizedType());
+        VariableExpression ve = makeLVAsExpression("e", zero, primitives.intParameterizedType());
+        VariableExpression vv = makeLVAsExpression("v", zero, primitives.intParameterizedType());
 
         FieldInfo fieldInfo = new FieldInfo(newId(), primitives.intParameterizedType(), "f",
                 primitives.stringTypeInfo());

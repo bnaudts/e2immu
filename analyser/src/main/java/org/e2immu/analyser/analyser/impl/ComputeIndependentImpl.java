@@ -59,26 +59,22 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         assert !(hiddenContentSelectorOfTarget.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
-        DV immutableOfSource;
-        if (sourceType.isTypeParameter()) {
-            // for the purpose of this algorithm...
-            immutableOfSource = MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
-        } else {
-            immutableOfSource = typeImmutable(sourceType);
-            // RULE 2: delays
-            if (immutableOfSource.isDelayed()) {
-                return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
-            }
+        DV immutableOfSource = typeImmutable(sourceType);
+        
+        // RULE 2: delays
+        if (immutableOfSource.isDelayed()) {
+            return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
+        }
 
-            // RULE 3: immutable -> no link
-            if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
+        // RULE 3: immutable -> no link
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
             /*
              if the result type immutable because of a choice in type parameters, methodIndependent will return
              INDEPENDENT_HC, but the concrete type is deeply immutable
              */
-                return LinkedVariables.EMPTY;
-            }
+            return LinkedVariables.EMPTY;
         }
+
         // RULE 4: delays
         if (transferIndependent.isDelayed()) {
             // delay in method independent
@@ -95,6 +91,9 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(correctedIndependent.causesOfDelay()));
         }
+        if (MultiLevel.INDEPENDENT_DV.equals(correctedIndependent)) {
+            return LinkedVariables.EMPTY;
+        }
         HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTarget,
                 typesCorrespondingToHC.keySet());
         Map<Variable, LV> newLinked = new HashMap<>();
@@ -102,7 +101,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
             // for the purpose of this algorithm, unbound type parameters are HC
-            DV immutable = pt.isTypeParameter() ? MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV : typeImmutable(pt);
+            DV immutable = typeImmutable(pt);
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 
@@ -191,9 +190,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                     return MultiLevel.INDEPENDENT_HC_DV;
                 }
-            } else if (hiddenContentSelectorOfTarget.isNone()) {
-                return MultiLevel.INDEPENDENT_DV;
-            } else {
+            } else if (!hiddenContentSelectorOfTarget.isNone()) {
                 Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
                 boolean allIndependentHC = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
@@ -216,8 +213,14 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 if (MultiLevel.isMutable(immutablePt)) {
                     return MultiLevel.DEPENDENT_DV;
                 }
+                if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutablePt)) {
+                    return MultiLevel.INDEPENDENT_DV;
+                }
             } else {
-                if (MultiLevel.isMutable(immutableOfSource) && hiddenContentSelectorOfSource != null &&  hiddenContentSelectorOfSource.isAll()) {
+                assert !hiddenContentSelectorOfTarget.isNone();
+                if (MultiLevel.isMutable(immutableOfSource)
+                    && hiddenContentSelectorOfSource != null
+                    && hiddenContentSelectorOfSource.isAll()) {
                     return MultiLevel.DEPENDENT_DV;
                 }
                 Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();

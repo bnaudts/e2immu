@@ -24,6 +24,7 @@ import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
@@ -297,47 +298,28 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         }
         ForwardEvaluationInfo fwd = forwardEvaluationInfo.copy().notNullNotAssignment().build();
         EvaluationResult scopeResult = evaluateScope(context, fwd);
-        if (scopeResult != null) builder.compose(scopeResult, lv -> null); // will be overwritten anyway lv.maximum(LV.LINK_DEPENDENT));
+        if (scopeResult != null) builder.compose(scopeResult, lv -> null);
         EvaluationResult indexResult = evaluateIndex(context, fwd);
         if (indexResult != null) builder.compose(indexResult, lv -> null);
 
-        LinkedVariables linkedVariables = LinkedVariables.of(variable, LV.LINK_STATICALLY_ASSIGNED);
-        // explicitly overwrite the linked variables of the dependent/scope
+        LinkedVariables linkedVariables1 = LinkedVariables.of(variable, LV.LINK_STATICALLY_ASSIGNED);
+        LinkedVariables linkedVariables;
+        if (scopeResult == null) {
+            linkedVariables = linkedVariables1;
+        } else {
+            // a.b (FieldReference) or a[b] (DependentVariable) are linking-wise equivalent to a.get("b")
+            MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
+            MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo);
+            linkedVariables = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult, List.of(),
+                    variable.parameterizedType()).merge(linkedVariables1);
+        }
         builder.setLinkedVariablesOfExpression(linkedVariables);
 
         Variable source;
-        if (variable instanceof FieldReference fr && fr.scopeVariable() != null) {
-            assert scopeResult != null;
-            Expression computedScope = scopeResult.value();
-            DV link;
-            if (computedScope.isDelayed()) {
-                link = computedScope.causesOfDelay();
-            } else {
-                /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
-                ComputeIndependent computeIndependent = new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType());
-                DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
-                link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
-            }
-            if (!MultiLevel.INDEPENDENT_DV.equals(link)) {
-                builder.link(fr, fr.scopeVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
-            }
-        }
         if (variable instanceof DependentVariable dv) {
             assert scopeResult != null;
             assert indexResult != null;
             Expression computedScope = scopeResult.value();
-            DV link;
-            if (computedScope.isDelayed()) {
-                link = computedScope.causesOfDelay();
-            } else {
-                /* array[3] ->?-> array is wholly dependent on the immutability of array[3] */
-                ComputeIndependent computeIndependent = new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType());
-                DV immutableOfScope = computeIndependent.typeImmutable(scopeValue.returnType());
-                link = MultiLevel.independentCorrespondingToImmutable(immutableOfScope);
-            }
-            if (!MultiLevel.INDEPENDENT_DV.equals(link) && dv.arrayVariable() != null) {
-                builder.link(dv, dv.arrayVariable(), LinkedVariables.fromIndependentToLinkedVariableLevel(link));
-            }
 
             if (computedScope instanceof ArrayInitializer initializer && indexResult.value() instanceof Numeric in) {
                 // known array, known index (a[] = {1,2,3}, a[2] == 3)
@@ -355,20 +337,17 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
                 // methodCall()[index] as a value rather than the target of an assignment
                 Properties properties = context.evaluationContext().defaultValueProperties(dv.parameterizedType);
                 CausesOfDelay delays = properties.delays();
-                LinkedVariables lv = scopeResult.linkedVariables(lvr);
-                assert lv != null : "We have recently evaluated the arrayVariable";
                 Expression replacement;
-                if (delays.isDelayed() || lv.isDelayed()) {
+                if (delays.isDelayed() || linkedVariables.isDelayed()) {
                     replacement = DelayedExpression.forArrayAccessValue(dv.getIdentifier(), dv.parameterizedType,
-                            new VariableExpression(dv.getIdentifier(), dv), delays.merge(lv.causesOfDelay()));
+                            new VariableExpression(dv.getIdentifier(), dv), delays.merge(linkedVariables.causesOfDelay()));
                 } else {
                     Expression instance = Instance.forArrayAccess(dv.getIdentifier(),
                             context.evaluationContext().statementIndex(), dv.parameterizedType, properties);
-                    if (lv.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(link)) {
+                    if (linkedVariables.isEmpty()) {
                         replacement = instance;
                     } else {
-                        LV lvOfLink = LinkedVariables.fromIndependentToLinkedVariableLevel(link);
-                        replacement = PropertyWrapper.propertyWrapper(instance, lv.maximum(lvOfLink));
+                        replacement = PropertyWrapper.propertyWrapper(instance, linkedVariables);
                     }
                 }
                 return builder.setExpression(replacement).build();

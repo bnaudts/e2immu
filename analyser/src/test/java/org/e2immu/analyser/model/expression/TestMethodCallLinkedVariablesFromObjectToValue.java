@@ -80,8 +80,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                                                   ParameterizedType objectType, LV lvo, LV lva, LV lvb) {
         Expression zero = IntConstant.zero(primitives);
         List<ParameterInfo> params = methodInfo.methodInspection.get().getParameters();
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePt);
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePt);
         VariableExpression vo = makeLVAsExpression("o", zero, objectType);
 
         ParameterizedType pt0 = params.get(0).parameterizedType;
@@ -130,8 +130,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 null, mutablePt);
 
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, primitives.intParameterizedType());
+        VariableExpression vb = makeLVAsExpression("b", zero, primitives.intParameterizedType());
 
         Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LINK_COMMON_HC_ALL));
         Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_DEPENDENT));
@@ -153,8 +153,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 null, mutablePt);
 
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, primitives.intParameterizedType());
+        VariableExpression vb = makeLVAsExpression("b", zero, primitives.intParameterizedType());
 
         for (LV dv : List.of(LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT, LINK_COMMON_HC_ALL)) {
             Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), dv));

@@ -17,8 +17,8 @@ public class TestCast extends CommonTest {
     @Test
     public void test() throws ExpressionComparator.InternalError {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePt);
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePt);
 
         ExpressionMock vx = simpleMock(primitives.stringParameterizedType(), LinkedVariables.of(
                 va.variable(), LV.LINK_DEPENDENT,

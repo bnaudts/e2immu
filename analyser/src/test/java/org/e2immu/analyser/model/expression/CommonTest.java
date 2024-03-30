@@ -20,13 +20,17 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.impl.TypeParameterImpl;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
@@ -38,6 +42,9 @@ import org.junit.jupiter.api.BeforeEach;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class CommonTest {
 
@@ -80,6 +87,33 @@ public abstract class CommonTest {
     protected static final LV LINK_COMMON_HC_ALL = LV.createHC(HiddenContentSelector.All.INSTANCE,
             HiddenContentSelector.All.INSTANCE);
 
+    protected final ImportantClasses importantClasses = new ImportantClasses() {
+        @Override
+        public ParameterizedType iterable() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public MethodInfo arrayFieldAccess() {
+            // T get()
+            MethodInfo mi = new MethodInspectionImpl.Builder(mutableWithOneTypeParameter, "get",
+                    MethodInfo.MethodType.METHOD)
+                    .setAccess(Inspection.Access.PUBLIC)
+                    .setReturnType(tpHc0Pt)
+                    .build(inspectionProvider).getMethodInfo();
+            MethodAnalysisImpl.Builder mab = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                    analysisProvider, inspectionProvider, mi, mutableWithOneTypeParameter.typeAnalysis.get(), List.of());
+            mab.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_HC_DV);
+            mab.setProperty(Property.IDENTITY, DV.FALSE_DV);
+            mab.setProperty(Property.FLUENT, DV.FALSE_DV);
+            mab.setHiddenContentSelector(HiddenContentSelector.All.INSTANCE);
+            mi.methodAnalysis.set(mab.build());
+            mi.methodResolution.set(new MethodResolution(Set.of(), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
+                    false, Set.of(), false));
+            return mi;
+        }
+    };
+
     protected final AnalyserContext analyserContext = new AnalyserContext() {
         @Override
         public Primitives getPrimitives() {
@@ -88,12 +122,18 @@ public abstract class CommonTest {
 
         @Override
         public DV typeImmutable(ParameterizedType parameterizedType) {
-            if (parameterizedType.isTypeParameter()) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
+            if (parameterizedType.isTypeParameter()) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             if (recursivelyImmutablePt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             if (immutableHCPt == parameterizedType) return MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV;
             if (finalFieldsPt == parameterizedType) return MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
             if (immutableDelayedPt == parameterizedType) return immutableDelay;
+            if (parameterizedType.isPrimitiveStringClass()) return MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
             return MultiLevel.MUTABLE_DV;
+        }
+
+        @Override
+        public ImportantClasses importantClasses() {
+            return importantClasses;
         }
     };
 
@@ -251,10 +291,6 @@ public abstract class CommonTest {
                 .setParameterizedType(pt)
                 .setOwningType(primitives.stringTypeInfo())
                 .build();
-    }
-
-    protected VariableExpression makeLVAsExpression(String name, Expression initializer) {
-        return makeLVAsExpression(name, initializer, primitives.intParameterizedType());
     }
 
     protected VariableExpression makeLVAsExpression(String name, Expression initializer, ParameterizedType pt) {

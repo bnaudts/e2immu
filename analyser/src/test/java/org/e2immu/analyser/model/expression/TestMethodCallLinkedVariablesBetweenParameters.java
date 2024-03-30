@@ -27,7 +27,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
     public void test1() {
         MethodInfo method = methodCallTwoArguments(mutablePt, mutablePt, true, false);
 
-        EvaluationResult er = evaluateMethodCallTwoArguments(method, primitives.intParameterizedType());
+        EvaluationResult er = evaluateMethodCallTwoArguments(method, mutablePt);
         assertEquals("", er.linkedVariablesOfExpression().toString());
         assertEquals(1, er.changeData().size());
         ChangeData ca = er.findChangeData("a");
@@ -69,7 +69,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, typeOfAB);
         VariableExpression vb = makeLVAsExpression("b", zero, typeOfAB);
-        VariableExpression vc = makeLVAsExpression("c", zero);
+        VariableExpression vc = makeLVAsExpression("c", zero, mutablePt);
 
         ExpressionMock argument0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));
         ExpressionMock argument1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LV.LINK_ASSIGNED));
@@ -84,9 +84,9 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
 
     private EvaluationResult evaluateMethodCallVarargs(MethodInfo method) {
         Expression zero = IntConstant.zero(primitives);
-        VariableExpression va = makeLVAsExpression("a", zero);
-        VariableExpression vb = makeLVAsExpression("b", zero);
-        VariableExpression vc = makeLVAsExpression("c", zero);
+        VariableExpression va = makeLVAsExpression("a", zero, mutablePt);
+        VariableExpression vb = makeLVAsExpression("b", zero, mutablePt);
+        VariableExpression vc = makeLVAsExpression("c", zero, mutablePt);
 
         ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(vc.variable(), LV.LINK_DEPENDENT));
         ExpressionMock argument1 = simpleMock(tp0Pt, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));

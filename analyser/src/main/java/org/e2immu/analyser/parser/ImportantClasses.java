@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 
 /*
@@ -26,4 +27,6 @@ This interface provides limited access to the type context in AnalyserContext.
 public interface ImportantClasses {
 
     ParameterizedType iterable();
+
+    MethodInfo arrayFieldAccess();
 }

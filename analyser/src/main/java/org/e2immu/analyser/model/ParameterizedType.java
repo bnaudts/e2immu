@@ -25,6 +25,7 @@ import org.e2immu.graph.analyser.PackedInt;
 import org.e2immu.analyser.util2.PackedIntMap;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.support.Either;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -278,10 +279,10 @@ public class ParameterizedType {
         if (o == null || getClass() != o.getClass()) return false;
         ParameterizedType that = (ParameterizedType) o;
         return arrays == that.arrays &&
-                Objects.equals(typeInfo, that.typeInfo) &&
-                parameters.equals(that.parameters) &&
-                Objects.equals(typeParameter, that.typeParameter) &&
-                wildCard == that.wildCard;
+               Objects.equals(typeInfo, that.typeInfo) &&
+               parameters.equals(that.parameters) &&
+               Objects.equals(typeParameter, that.typeParameter) &&
+               wildCard == that.wildCard;
     }
 
     @Override
@@ -310,8 +311,8 @@ public class ParameterizedType {
         if (isVoidOrJavaLangVoid()) return false;
         if (typeInfo == null) return false;
         return typeInfo.isPrimitiveExcludingVoid()
-                || typeInfo.isBoxedExcludingVoid()
-                || typeInfo.isJavaLangString();
+               || typeInfo.isBoxedExcludingVoid()
+               || typeInfo.isJavaLangString();
     }
 
     // ******************************************************************************************************
@@ -462,9 +463,9 @@ public class ParameterizedType {
 
         if (methodParams.size() != concreteTypeAbstractParams.size()) {
             throw new UnsupportedOperationException("Have different param sizes for functional interface " +
-                    detailedString() + " method " +
-                    methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
-                    concreteTypeMap.methodInspection.getFullyQualifiedName());
+                                                    detailedString() + " method " +
+                                                    methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
+                                                    concreteTypeMap.methodInspection.getFullyQualifiedName());
         }
         Primitives primitives = inspectionProvider.getPrimitives();
         for (int i = 0; i < methodParams.size(); i++) {
@@ -534,7 +535,7 @@ public class ParameterizedType {
 
     public boolean isNotAssignableFromTo(InspectionProvider inspectionProvider, ParameterizedType type) {
         return !new IsAssignableFrom(inspectionProvider, this, type).execute()
-                && !new IsAssignableFrom(inspectionProvider, type, this).execute();
+               && !new IsAssignableFrom(inspectionProvider, type, this).execute();
     }
 
     public boolean isAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
@@ -628,7 +629,7 @@ public class ParameterizedType {
 
     public boolean isUnboundTypeParameter() {
         return arrays == 0 && typeParameter != null && (typeParameter.getTypeBounds().isEmpty()
-                || typeParameter.getTypeBounds().size() == 1 && typeParameter.getTypeBounds().get(0).isJavaLangObject());
+                                                        || typeParameter.getTypeBounds().size() == 1 && typeParameter.getTypeBounds().get(0).isJavaLangObject());
     }
 
     public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {
@@ -765,7 +766,7 @@ public class ParameterizedType {
                 ParameterizedType otherUnboxedPt = otherUnboxed.asSimpleParameterizedType();
                 if (equals(otherUnboxedPt)) return primitives.boxed(bestType).asParameterizedType(inspectionProvider);
                 if (primitives.isAssignableFromTo(this, otherUnboxedPt, true) >= 0 ||
-                        primitives.isAssignableFromTo(otherUnboxedPt, this, true) >= 0) {
+                    primitives.isAssignableFromTo(otherUnboxedPt, this, true) >= 0) {
                     return primitives.boxed(primitives.widestType(this, otherUnboxedPt).typeInfo).asSimpleParameterizedType();
                 }
             }
@@ -774,7 +775,7 @@ public class ParameterizedType {
                 ParameterizedType unboxedPt = unboxed.asSimpleParameterizedType();
                 if (unboxedPt.equals(other)) return this;
                 if (primitives.isAssignableFromTo(other, unboxedPt, true) >= 0 ||
-                        primitives.isAssignableFromTo(unboxedPt, other, true) >= 0) {
+                    primitives.isAssignableFromTo(unboxedPt, other, true) >= 0) {
                     return primitives.boxed(primitives.widestType(other, unboxedPt).typeInfo).asSimpleParameterizedType();
                 }
             }
@@ -891,8 +892,8 @@ public class ParameterizedType {
 
     public boolean equalsIgnoreArrays(ParameterizedType other) {
         return Objects.equals(typeInfo, other.typeInfo)
-                && Objects.equals(typeParameter, other.typeParameter)
-                && Objects.equals(parameters, other.parameters) && wildCard == other.wildCard;
+               && Objects.equals(typeParameter, other.typeParameter)
+               && Objects.equals(parameters, other.parameters) && wildCard == other.wildCard;
     }
 
     // for delay debugging
@@ -911,8 +912,8 @@ public class ParameterizedType {
     public boolean isAbstractInJavaUtilFunction(InspectionProvider inspectionProvider) {
         TypeInfo bestType = bestTypeInfo(inspectionProvider);
         return bestType != null && bestType.isPrimaryType()
-                && "java.util.function".equals(bestType.packageName())
-                && bestType.isAbstract(inspectionProvider);
+               && "java.util.function".equals(bestType.packageName())
+               && bestType.isAbstract(inspectionProvider);
     }
 
     public Set<TypeParameter> extractTypeParameters() {
@@ -1025,13 +1026,13 @@ public class ParameterizedType {
     public boolean isDiscrete() {
         if (arrays != 0 || typeInfo == null) return false;
         return typeInfo.isInt()
-                || typeInfo.isInteger()
-                || typeInfo.isLong()
-                || typeInfo.isBoxedLong()
-                || typeInfo.isShort()
-                || typeInfo.isBoxedShort()
-                || typeInfo.isByte()
-                || typeInfo.isBoxedByte();
+               || typeInfo.isInteger()
+               || typeInfo.isLong()
+               || typeInfo.isBoxedLong()
+               || typeInfo.isShort()
+               || typeInfo.isBoxedShort()
+               || typeInfo.isByte()
+               || typeInfo.isBoxedByte();
     }
 
     public boolean isNumeric() {
@@ -1049,10 +1050,10 @@ public class ParameterizedType {
     public boolean isMathematicallyInteger() {
         return arrays == 0 && typeInfo != null && (
                 typeInfo.isByte() || typeInfo.isBoxedByte() ||
-                        typeInfo.isShort() || typeInfo.isBoxedShort() ||
-                        typeInfo.isInt() || typeInfo.isInteger() ||
-                        typeInfo.isLong() || typeInfo.isBoxedLong() ||
-                        typeInfo.isChar() || typeInfo.isCharacter());
+                typeInfo.isShort() || typeInfo.isBoxedShort() ||
+                typeInfo.isInt() || typeInfo.isInteger() ||
+                typeInfo.isLong() || typeInfo.isBoxedLong() ||
+                typeInfo.isChar() || typeInfo.isCharacter());
     }
 
     /*
@@ -1115,4 +1116,14 @@ public class ParameterizedType {
         if (typeParameter == null && other.typeParameter != null) return other;
         return this;// doesn't matter anymore
     }
+
+    public TypeInfo owner() {
+        if (typeInfo != null) return typeInfo;
+        if (typeParameter != null) {
+            Either<TypeInfo, MethodInfo> owner = typeParameter.getOwner();
+            return owner.isLeft() ? owner.getLeft() : owner.getRight().typeInfo;
+        }
+        throw new UnsupportedOperationException("No typeInfo, no typeParameter -> no owner");
+    }
+
 }
