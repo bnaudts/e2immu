@@ -63,11 +63,8 @@ public class ShortestPathImpl implements ShortestPath {
         if (lv.isDelayed()) return DELAYED;
         if (LINK_ASSIGNED.equals(lv)) return ASSIGNED;
         if (LINK_DEPENDENT.equals(lv)) return DEPENDENT;
-        if (lv.isHCMutable()) return HC_MUTABLE; // for internal use
-        assert lv.isCommonHC();
-        if (lv.commonHCContainsMutable()) {
-            return HC_MUTABLE;
-        }
+        if (lv.isHCMutable()) return HC_MUTABLE;
+        assert lv.isCommonHC() && !lv.commonHCContainsMutable();
         return INDEPENDENT_HC;
     }
 
@@ -82,7 +79,7 @@ public class ShortestPathImpl implements ShortestPath {
         }
         if (l < DEPENDENT) return LINK_ASSIGNED;
         if (l < HC_MUTABLE) return LINK_DEPENDENT;
-        if (l < INDEPENDENT_HC) return LINK_HC_MUTABLE;
+        //if (l < INDEPENDENT_HC) return LINK_HC_MUTABLE;
         return LINK_COMMON_HC;
     }
 
@@ -104,7 +101,7 @@ public class ShortestPathImpl implements ShortestPath {
         if (LINK_DEPENDENT.equals(lv)) return DEPENDENT_H;
         if (lv.isHCMutable()) return HC_MUTABLE_H;
         if (lv.isCommonHC()) {
-            if (lv.commonHCContainsMutable()) return HC_MUTABLE_H;
+            assert !lv.commonHCContainsMutable();
             return INDEPENDENT_HC_H;
         }
         assert lv.isDelayed();
@@ -141,15 +138,15 @@ public class ShortestPathImpl implements ShortestPath {
                 .collect(Collectors.joining(", ")));
     }
 
-    public static char code(LV dv) {
-        if (dv.isDelayed()) return 'D';
-        return (char) ((int) '0' + dv.value());
+    public static String code(LV dv) {
+        if (dv.isDelayed()) return "D";
+        return Integer.toString(dv.value());
     }
 
     record Key(int start, long maxWeight) {
     }
 
-    record LinkMap(Map<Key, long[]> map, AtomicInteger savingsCount) implements Cache.CacheElement {
+    record LinkMap(Map<Key, long[]> map, AtomicInteger savingsCount, String cacheKey) implements Cache.CacheElement {
         @Override
         public int savings() {
             return savingsCount.get();
@@ -225,5 +222,9 @@ public class ShortestPathImpl implements ShortestPath {
 
     Variable variablesGet(int i) {
         return variables[i];
+    }
+
+    public String getCacheKey() {
+        return linkMap.cacheKey;
     }
 }

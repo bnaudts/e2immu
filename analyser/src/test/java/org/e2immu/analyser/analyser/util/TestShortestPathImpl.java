@@ -41,10 +41,9 @@ public class TestShortestPathImpl extends CommonWG {
 
     @Test
     public void testHCMutable() {
-        LV hcMutable = LV.createHC(HiddenContentSelector.All.MUTABLE_INSTANCE, HiddenContentSelector.All.MUTABLE_INSTANCE);
-        long m = ShortestPathImpl.toDistanceComponent(hcMutable);
+        long m = ShortestPathImpl.toDistanceComponent(LV.LINK_HC_MUTABLE);
         assertEquals(ShortestPathImpl.HC_MUTABLE, m);
-        long mh = ShortestPathImpl.toDistanceComponentHigh(hcMutable);
+        long mh = ShortestPathImpl.toDistanceComponentHigh(LV.LINK_HC_MUTABLE);
         assertEquals(ShortestPathImpl.HC_MUTABLE_H, mh);
         long mhl = ShortestPathImpl.fromHighToLow(mh);
         assertEquals(m, mhl);
