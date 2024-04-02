@@ -404,7 +404,7 @@ public class ComputeLinkedVariables {
      * only used on the CM version (not statically assigned) with the statically assigned variables forming
      * the core.
      */
-    public ProgressAndDelay writeClusteredLinkedVariables(AnalyserContext analyserContext) {
+    public ProgressAndDelay writeClusteredLinkedVariables(EvaluationContext evaluationContext) {
         Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedVariables();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
@@ -413,7 +413,7 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
             Map<Variable, LV> map = shortestPath.links(variable, null);
-            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(analyserContext,
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
                     staticallyAssigned, variable, map);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
@@ -425,7 +425,7 @@ public class ComputeLinkedVariables {
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
             Map<Variable, LV> map = shortestPath.links(returnVariable, null);
-            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(analyserContext,
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
                     staticallyAssigned, returnVariable, map);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
@@ -456,7 +456,7 @@ public class ComputeLinkedVariables {
     }
 
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference
-            (AnalyserContext analyserContext,
+            (EvaluationContext evaluationContext,
              Map<Variable, Set<Variable>> staticallyAssignedVariables,
              Variable variable,
              Map<Variable, LV> map) {
@@ -487,9 +487,9 @@ public class ComputeLinkedVariables {
         for (Map.Entry<Variable, LV> entry : map.entrySet()) {
             LV newLv;
             if (entry.getValue().isCommonHC()) {
-                HiddenContentSelector mine = HiddenContent.selectAllCorrectForMutable(analyserContext,
+                HiddenContentSelector mine = HiddenContent.selectAllCorrectForMutable(evaluationContext,
                         variable.parameterizedType());
-                HiddenContentSelector theirs = HiddenContent.selectAllCorrectForMutable(analyserContext,
+                HiddenContentSelector theirs = HiddenContent.selectAllCorrectForMutable(evaluationContext,
                         entry.getKey().parameterizedType());
                 if (mine.isDelayed() || theirs.isDelayed()) {
                     newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
@@ -510,7 +510,7 @@ public class ComputeLinkedVariables {
      * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
      * It touches all variables rather than those in clusters only.
      */
-    public boolean writeLinkedVariables(AnalyserContext analyserContext,
+    public boolean writeLinkedVariables(EvaluationContext evaluationContext,
                                         ComputeLinkedVariables staticallyAssignedCLV,
                                         Set<Variable> touched,
                                         Set<Variable> toRemove,
@@ -528,7 +528,7 @@ public class ComputeLinkedVariables {
                         if (haveLinkedVariables.contains(variable)) {
                             Map<Variable, LV> map = shortestPath.links(variable, null);
                             map.keySet().removeIf(toRemove::contains);
-                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(analyserContext,
+                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
                                     staticallyAssignedVariables, variable, map);
                         } else {
                             VariableInfo eval = vic.best(EVALUATION);

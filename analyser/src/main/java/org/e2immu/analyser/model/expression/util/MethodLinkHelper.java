@@ -47,12 +47,11 @@ public class MethodLinkHelper {
 
     public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo) {
         this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo),
-                new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType()));
+                new ComputeIndependentImpl(context.evaluationContext()));
     }
 
     public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        this(context, methodInfo, methodAnalysis,
-                new ComputeIndependentImpl(context.getAnalyserContext(), context.getCurrentType()));
+        this(context, methodInfo, methodAnalysis, new ComputeIndependentImpl(context.evaluationContext()));
     }
 
 

@@ -32,10 +32,7 @@ public interface EvaluationResultVisitor {
     record Data(int iteration,
                 MethodInfo methodInfo,
                 String statementId,
-                StatementAnalysis statementAnalysis,
-                EvaluationResult evaluationResult,
-                ProgressAndDelay status,
-                ProgressAndDelay externalStatus) implements CommonVisitorData {
+                EvaluationResult evaluationResult) implements CommonVisitorData {
 
         public boolean haveSetProperty(String variableName, Property property) {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)

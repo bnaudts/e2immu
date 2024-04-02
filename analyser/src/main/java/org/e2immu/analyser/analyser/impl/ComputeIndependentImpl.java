@@ -28,18 +28,10 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LV.*;
 
-public record ComputeIndependentImpl(AnalyserContext analyserContext,
-                                     SetOfTypes hiddenContentOfCurrentType,
-                                     TypeInfo currentType,
-                                     boolean myselfIsMutable) implements ComputeIndependent {
+public record ComputeIndependentImpl(EvaluationContext evaluationContext) implements ComputeIndependent {
 
     public ComputeIndependentImpl {
-        assert analyserContext != null;
-        assert currentType != null;
-    }
-
-    public ComputeIndependentImpl(AnalyserContext analyserContext, TypeInfo currentPrimaryType) {
-        this(analyserContext, null, currentPrimaryType, true);
+        assert evaluationContext != null;
     }
 
 
@@ -59,8 +51,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         assert !(hiddenContentSelectorOfTarget.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
                 : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
 
-        DV immutableOfSource = typeImmutable(sourceType);
-        
+        DV immutableOfSource = evaluationContext.immutable(sourceType);
+
         // RULE 2: delays
         if (immutableOfSource.isDelayed()) {
             return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
@@ -82,7 +74,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         }
 
         ParameterizedType formalTargetType = targetType.typeInfo != null
-                ? targetType.typeInfo.asParameterizedType(analyserContext) : targetType;
+                ? targetType.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext()) : targetType;
         HiddenContent targetTypeHC = HiddenContent.from(formalTargetType);
         Map<Integer, ParameterizedType> typesCorrespondingToHC = targetTypeHC.hiddenContentTypes(targetType);
         DV correctedIndependent = correctIndependent(immutableOfSource, hiddenContentSelectorOfSource,
@@ -101,7 +93,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
             // for the purpose of this algorithm, unbound type parameters are HC
-            DV immutable = typeImmutable(pt);
+            DV immutable = evaluationContext.immutable(pt);
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 
@@ -185,7 +177,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             }
             if (hiddenContentSelectorOfTarget.isAll()) {
                 // look at the whole object
-                DV immutablePt = typeImmutable(targetType);
+                DV immutablePt = evaluationContext.immutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                     return MultiLevel.INDEPENDENT_HC_DV;
@@ -195,7 +187,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
                 boolean allIndependentHC = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
-                        DV immutablePt = typeImmutable(entry.getValue());
+                        DV immutablePt = evaluationContext.immutable(entry.getValue());
                         if (immutablePt.isDelayed()) return immutablePt;
                         if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                             allIndependentHC = false;
@@ -208,7 +200,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
             if (hiddenContentSelectorOfTarget.isAll()) {
-                DV immutablePt = typeImmutable(targetType);
+                DV immutablePt = evaluationContext.immutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                /* remove the downgrade
                 if (MultiLevel.isMutable(immutablePt)) {
@@ -242,16 +234,6 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
         return independent;
     }
 
-    /*
-        the value chosen here in case of "isMyself" has an impact, obviously; see e.g. Container_7, E2Immutable_15
-         */
-    public DV typeImmutable(ParameterizedType pt) {
-        if (myselfIsMutable && currentType.isMyself(pt, analyserContext).toFalse(Property.IMMUTABLE)) {
-            return MultiLevel.MUTABLE_DV;
-        }
-        return analyserContext.typeImmutable(pt);
-    }
-
     /**
      * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
      * <p>
@@ -283,8 +265,8 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
             return linkLevel.toIndependent();
         }
         if (LINK_INDEPENDENT.equals(linkLevel)) return MultiLevel.INDEPENDENT_DV;
-        DV immutableA = immutableAInput == null ? typeImmutable(a) : immutableAInput;
-        DV immutableB = typeImmutable(b);
+        DV immutableA = immutableAInput == null ? evaluationContext.immutable(a) : immutableAInput;
+        DV immutableB = evaluationContext.immutable(b);
         DV immutable = max(immutableA, immutableB);
         if (immutable.isDelayed()) {
             return immutable;
@@ -330,6 +312,7 @@ public record ComputeIndependentImpl(AnalyserContext analyserContext,
     }
 
     private HCAnalysis hiddenContentTypes(ParameterizedType pt) {
+        AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
         TypeInfo best = pt.bestTypeInfo();
         if (best == null) {
             if (pt.typeParameter == null) {

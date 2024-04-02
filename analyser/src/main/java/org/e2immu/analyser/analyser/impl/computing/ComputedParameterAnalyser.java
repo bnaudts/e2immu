@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
 import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.ParameterAnalyserImpl;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.AnalyserComponents;
 import org.e2immu.analyser.analyser.util.AnalyserResult;
 import org.e2immu.analyser.analyser.ComputeIndependent;
@@ -61,6 +62,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
     public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
     public static final String ANALYSE_INDEPENDENT_OF_RETURN_VALUE = "PA:independentOfReturnValue";
+
+    record SharedState(EvaluationContext evaluationContext) {
+        int iteration() {
+            return evaluationContext.getIteration();
+        }
+    }
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
@@ -262,7 +269,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                          The parameter is linked to some fields, or to "this", because of expanded variables,
                          see e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize)
                          */
-                        DV dv = independentFromFields(immutable, fields);
+                        DV dv = independentFromFields(sharedState.evaluationContext, immutable, fields);
                         if (dv.isDelayed()) {
                             delay = dv.causesOfDelay();
                         } else {
@@ -299,8 +306,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                             return typeAnalysis.hiddenContentDelays().causesOfDelay();
                         }
                         SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
-                        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
-                                parameterInfo.getTypeInfo(), true);
+                        ComputeIndependent computeIndependent = new ComputeIndependentImpl(sharedState.evaluationContext());
 
                         DV independentOfParameter = computeIndependent.typesAtLinkLevel(linkToParameter,
                                 parameterInfo.parameterizedType, immutable, vi.variable().parameterizedType());
@@ -319,15 +325,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
         return AnalysisStatus.of(independent);
     }
 
-    private DV independentFromFields(DV immutable, Map<Variable, LV> fields) {
+    private DV independentFromFields(EvaluationContext evaluationContext, DV immutable, Map<Variable, LV> fields) {
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
         if (typeAnalysis.hiddenContentDelays().isDelayed()) {
             return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
-        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
-
-        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
-                parameterInfo.getTypeInfo(), true);
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(evaluationContext);
         DV independent = fields.entrySet().stream()
                 .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), parameterInfo.parameterizedType, immutable,
                         e.getKey().parameterizedType()))
@@ -373,7 +376,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     }
                 }
                 if (min != LINK_INDEPENDENT) {
-                    DV dv = independentFromFields(immutable, Map.of(rv.variable(), min));
+                    DV dv = independentFromFields(sharedState.evaluationContext(), immutable, Map.of(rv.variable(), min));
                     if (dv.isDelayed()) {
                         delay = dv.causesOfDelay();
                     } else {
@@ -397,10 +400,26 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
      * Does not apply to variable fields.
      */
     @Override
-    public AnalyserResult analyse(SharedState sharedState) {
+    public AnalyserResult analyse(Analyser.SharedState sharedState) {
         assert !isUnreachable();
         try {
-            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
+            EvaluationContext evaluationContext = new AbstractEvaluationContextImpl() {
+                @Override
+                public TypeInfo getCurrentType() {
+                    return parameterInfo.getTypeInfo();
+                }
+
+                @Override
+                public AnalyserContext getAnalyserContext() {
+                    return analyserContext;
+                }
+
+                @Override
+                public int getIteration() {
+                    return sharedState.iteration();
+                }
+            };
+            AnalysisStatus analysisStatus = analyserComponents.run(new SharedState(evaluationContext));
             if (analysisStatus.isDone()) parameterAnalysis.internalAllDoneCheck();
             analyserResultBuilder.setAnalysisStatus(analysisStatus);
             return analyserResultBuilder.build();
@@ -507,7 +526,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
             DV immutable = analyserContext.typeImmutable(parameterInfo.parameterizedType);
             Map<Variable, LV> map2 = map.entrySet().stream().collect(Collectors
                     .toUnmodifiableMap(e -> new FieldReferenceImpl(analyserContext, e.getKey()), Map.Entry::getValue));
-            DV independent = independentFromFields(immutable, map2);
+            DV independent = independentFromFields(sharedState.evaluationContext, immutable, map2);
             parameterAnalysis.setProperty(INDEPENDENT, independent);
             if (independent.isDelayed()) {
                 LOGGER.debug("Delaying @Independent on parameter {}", parameterInfo);

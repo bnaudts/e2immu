@@ -86,7 +86,7 @@ class MergeLinkingAndGroupProperties {
                 linkedVariablesFromBlocks, evaluationContext.getAnalyserContext().getCache(),
                 evaluationContext.breakDelayLevel());
 
-        boolean progress = computeLinkedVariables.writeLinkedVariables(evaluationContext.getAnalyserContext(),
+        boolean progress = computeLinkedVariables.writeLinkedVariables(evaluationContext,
                 computeLinkedVariables, touched, toRemove, linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {

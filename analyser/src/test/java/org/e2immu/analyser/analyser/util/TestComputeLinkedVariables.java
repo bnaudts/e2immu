@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -197,7 +198,18 @@ public class TestComputeLinkedVariables {
             };
             assertEquals(nice, niceMap(map), "variable " + v.fullyQualifiedName());
         });
-        ProgressAndDelay pad = clv.writeClusteredLinkedVariables(analyserContext);
+        EvaluationContext evaluationContext = new AbstractEvaluationContextImpl() {
+            @Override
+            public AnalyserContext getAnalyserContext() {
+                return analyserContext;
+            }
+
+            @Override
+            public TypeInfo getCurrentType() {
+                return currentType;
+            }
+        };
+        ProgressAndDelay pad = clv.writeClusteredLinkedVariables(evaluationContext);
         assertTrue(pad.progress());
         assertFalse(pad.isDelayed());
         assertFalse(brokeDelay.get());

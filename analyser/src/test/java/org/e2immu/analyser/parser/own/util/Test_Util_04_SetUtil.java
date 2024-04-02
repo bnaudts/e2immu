@@ -34,21 +34,13 @@ public class Test_Util_04_SetUtil extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("immutableUnion".equals(d.methodInfo().name)) {
-                if ("4".equals(d.statementId())) {
-                    assertFalse(d.status().isDelayed());
-                    assertEquals(d.iteration() == 0, d.externalStatus().isDelayed());
-                }
-            }
-        };
+
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetUtil".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
         };
         testSupportAndUtilClasses(List.of(SetUtil.class), 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }

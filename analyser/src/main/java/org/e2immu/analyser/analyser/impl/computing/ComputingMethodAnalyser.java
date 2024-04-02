@@ -1198,8 +1198,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             }
             SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-            ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
-                    methodInfo.typeInfo, false);
+            // FIXME check! there used to be a myselfIsMutable==false is!
+            ComputeIndependent computeIndependent = new ComputeIndependentImpl(sharedState.evaluationContext);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {
                 methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);

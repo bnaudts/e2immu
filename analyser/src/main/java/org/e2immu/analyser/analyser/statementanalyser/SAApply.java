@@ -70,9 +70,18 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
      */
     ApplyStatusAndEnnStatus apply(StatementAnalyserSharedState sharedState,
                                   EvaluationResult evaluationResultIn) {
-        EvaluationResult evaluationResult = potentiallyModifyEvaluationResult(sharedState, evaluationResultIn);
+        // debugging... (code is here because it is called from 2 separate places in SAEvaluationOfMainExpression)
+        AnalyserContext analyserContext = sharedState.evaluationContext().getAnalyserContext();
 
-        AnalyserContext analyserContext = evaluationResult.evaluationContext().getAnalyserContext();
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
+                .debugConfiguration().evaluationResultVisitors()) {
+            int iteration = sharedState.evaluationContext().getIteration();
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(iteration,
+                    methodInfo(), statementAnalysis.index(), evaluationResultIn));
+        }
+        // end debugging
+
+        EvaluationResult evaluationResult = potentiallyModifyEvaluationResult(sharedState, evaluationResultIn);
         GroupPropertyValues groupPropertyValues = new GroupPropertyValues();
 
         // the first part is per variable
@@ -182,20 +191,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         boolean noAssignments = evaluationResult.changeData().values().stream().noneMatch(ChangeData::markAssignment);
         ProgressAndDelay delayStatus = new ProgressAndDelay(progress, cumulativeDelay);
-        ApplyStatusAndEnnStatus applyStatusAndEnnStatus = contextProperties(sharedState, evaluationResult,
+
+        return contextProperties(sharedState, evaluationResult,
                 delayStatus, analyserContext, groupPropertyValues, noAssignments, extraLv);
-
-        // debugging...
-
-        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
-                .debugConfiguration().evaluationResultVisitors()) {
-            int iteration = evaluationResult.evaluationContext().getIteration();
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(iteration,
-                    methodInfo(), statementAnalysis.index(), statementAnalysis, evaluationResult,
-                    applyStatusAndEnnStatus.status(), applyStatusAndEnnStatus.ennStatus()));
-        }
-
-        return applyStatusAndEnnStatus;
     }
 
     /*
@@ -783,16 +781,17 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         // in EVALUATION anyway
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
+        EvaluationContext evaluationContext = sharedState.evaluationContext();
         ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
                 false,
                 (vic, v) -> variableUnknown(v),
                 reassigned,
                 linkedVariablesFromChangeData,
-                sharedState.evaluationContext().getAnalyserContext().getCache(),
-                sharedState.evaluationContext().breakDelayLevel());
+                evaluationContext.getAnalyserContext().getCache(),
+                evaluationContext.breakDelayLevel());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables(analyserContext);
+        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables(evaluationContext);
 
         // 1
         ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,
@@ -802,16 +801,16 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         ProgressAndDelay ennStatus = computeLinkedVariables.write(EXTERNAL_NOT_NULL,
                 groupPropertyValues.getMap(EXTERNAL_NOT_NULL));
         boolean travelProgress;
-        if (sharedState.evaluationContext().getIteration() == 0) {
+        if (evaluationContext.getIteration() == 0) {
             boolean cnnTravelsToFields = analyserContext.getConfiguration().analyserConfiguration()
                     .computeContextPropertiesOverAllMethods();
             travelProgress = computeLinkedVariables.writeCnnTravelsToFields(
-                    sharedState.evaluationContext().getAnalyserContext(),
+                    evaluationContext.getAnalyserContext(),
                     cnnTravelsToFields);
         } else {
             travelProgress = false;
         }
-        statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(sharedState.evaluationContext().getAnalyserContext(),
+        statementAnalysis.potentiallyRaiseErrorsOnNotNullInContext(evaluationContext.getAnalyserContext(),
                 evaluationResult.changeData());
 
         // the following statement is necessary to keep this statement from disappearing if it still has to process
@@ -900,7 +899,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
 
         // not checking on DONE anymore because any delay will also have crept into the precondition itself??
         Precondition precondition = evaluationResult.precondition();
-        boolean preconditionProgress = statementAnalysis.applyPrecondition(precondition, sharedState.evaluationContext(),
+        boolean preconditionProgress = statementAnalysis.applyPrecondition(precondition, evaluationContext,
                 sharedState.localConditionManager());
 
 

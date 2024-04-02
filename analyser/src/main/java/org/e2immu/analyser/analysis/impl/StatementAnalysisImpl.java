@@ -1553,9 +1553,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
                                        ParameterizedType concreteType,
                                        ParameterizedType iterableType) {
         AnalyserContext ac = evaluationContext.getAnalyserContext();
-        ComputeIndependent computeIndependent = new ComputeIndependentImpl(ac,
-                evaluationContext.getCurrentType());
-        DV immutable = computeIndependent.typeImmutable(concreteType);
+        ComputeIndependent computeIndependent = new ComputeIndependentImpl(evaluationContext);
+        DV immutable = evaluationContext.immutable(concreteType);
         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return null; // no linking!
         LV linkLevel;
         if (MultiLevel.isAtLeastImmutableHC(immutable)) {

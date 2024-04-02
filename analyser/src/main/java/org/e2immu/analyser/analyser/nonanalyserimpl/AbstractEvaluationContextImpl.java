@@ -27,6 +27,10 @@ import static org.e2immu.analyser.analyser.Property.NOT_NULL_EXPRESSION;
 
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
+    @Override
+    public int getDepth() {
+        return 0;
+    }
 
     @Override
     public int limitOnComplexity() {
@@ -149,6 +153,11 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
      assumes that currentValue has been queried before!
      */
     public DV getProperty(Variable variable, Property property) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DV getProperty(Expression value, Property property, boolean duringEvaluation, boolean ignoreStateInConditionManager) {
         throw new UnsupportedOperationException();
     }
 

@@ -77,7 +77,7 @@ public abstract class VisitorTestSupport {
         DV value = d.getProperty(property);
         if (d.iteration() < delayedBeforeIteration) {
             assertNotNull(value, "Expect delay rather than null in iteration " + d.iteration()
-                    + "<" + delayedBeforeIteration + " for property " + property);
+                                 + "<" + delayedBeforeIteration + " for property " + property);
             assertEquals(delayed, value.toString(),
                     "Expected delay in iteration " + d.iteration() + "<" + delayedBeforeIteration + ", but got " + value + " for property " + property);
         } else {
@@ -263,5 +263,14 @@ public abstract class VisitorTestSupport {
             }
         }
         fail("Did not see iteration info for iteration " + d.iteration());
+    }
+
+
+    protected void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, int index, String expected) {
+        String value = d.variableInfo().getLinkedVariables().stream()
+                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
+        if (d.iteration() >= iteration) {
+            assertEquals(expected, value);
+        }
     }
 }

@@ -29,6 +29,7 @@ import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
+import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.*;
@@ -781,11 +782,9 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
             return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
-        SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
+        ComputeIndependent computeIndependent = getComputeIndependent(typeAnalysis);
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
-        ComputeIndependent computeIndependent = new ComputeIndependentImpl(analyserContext, hiddenContentCurrentType,
-                fieldInfo.owner, true);
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
                              || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
@@ -794,6 +793,21 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
         return AnalysisStatus.of(independent);
+    }
+
+    private ComputeIndependent getComputeIndependent(TypeAnalysis typeAnalysis) {
+        EvaluationContext evaluationContext = new AbstractEvaluationContextImpl() {
+            @Override
+            public TypeInfo getCurrentType() {
+                return typeAnalysis.getTypeInfo();
+            }
+
+            @Override
+            public AnalyserContext getAnalyserContext() {
+                return analyserContext;
+            }
+        };
+        return new ComputeIndependentImpl(evaluationContext);
     }
 
     /*

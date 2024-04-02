@@ -16,6 +16,8 @@ package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
+import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +25,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Test_Linking0M extends CommonTestRunner {
 
@@ -33,26 +37,39 @@ public class Test_Linking0M extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
 
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("m1".equals(d.methodInfo().name)) {
-                if ("m".equals(d.variableName())) {
-                    if ("0".equals(d.statementId())) {
-                        assertLinked(d, it(0, 1,"this.listM:-1,this:-1"),
-                                it(2, "this.listM:4,this:-1"));
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:get>" : "listM.get(index)";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(),
+                            it(0, 1, "m:0,this.listM:-1,this:-1"),
+                            it(2, "m:0,this.listM:4,this:4"));
+                    if (d.iteration() >= 2) {
+                        assertTrue(d.evaluationResult().changeData().values().stream()
+                                .noneMatch(cd -> cd.linkedVariables().isDelayed()));
                     }
                 }
             }
         };
 
-        testClass("Linking_0M", 0, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("m1".equals(d.methodInfo().name)) {
+                if ("m".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
+                                it(2, "this.listM:4,this:4"));
+                    }
+                }
+            }
+        };
+
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
+        testClass("Linking_0M", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }
-
-    private static String singleLv(StatementAnalyserVariableVisitor.Data d) {
-        return d.variableInfo().getLinkedVariables().stream()
-                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
-    }
-
-
 }

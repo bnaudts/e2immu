@@ -19,6 +19,7 @@ import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ public class Test_Linking0N extends CommonTestRunner {
                 if ("m".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
-                        assertSingleLv(d, 2, "*M-4-<0M>");
+                        assertSingleLv(d, 2, 0, "*M-4-<0M>");
                     }
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
@@ -51,23 +52,18 @@ public class Test_Linking0N extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "list".equals(pi.name)) {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1"), it(2, "m:4"));
-                        assertSingleLv(d, 2, "<0M>-4-*M");
+                        assertSingleLv(d, 2, 0, "<0M>-4-*M");
                         assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
         };
 
+        BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());
+
         testClass("Linking_0N", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
-    }
-
-    private static void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, String expected) {
-        String value = d.variableInfo().getLinkedVariables().stream()
-                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
-        if (d.iteration() >= 2) {
-            assertEquals(expected, value);
-        }
     }
 }

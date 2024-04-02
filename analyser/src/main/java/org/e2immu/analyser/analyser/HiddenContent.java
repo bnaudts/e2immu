@@ -27,15 +27,15 @@ public interface HiddenContent {
 
     String niceHiddenContentTypes(ParameterizedType concreteType);
 
-    static HiddenContentSelector selectAllCorrectForMutable(AnalyserContext analyserContext,
+    static HiddenContentSelector selectAllCorrectForMutable(EvaluationContext evaluationContext,
                                                             ParameterizedType parameterizedType) {
         if (parameterizedType.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
-        ParameterizedType formal = parameterizedType.typeInfo.asParameterizedType(analyserContext);
+        ParameterizedType formal = parameterizedType.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
         HiddenContent hcFormal = from(formal);
         if (hcFormal.isNone()) {
             // the formal type has no type parameters. Given that we're in the context of a ->4-> link,
             // we must be dealing with the "All" side, and a type without type parameters
-            DV immutableOfParameterizedType = analyserContext.typeImmutable(parameterizedType);
+            DV immutableOfParameterizedType = evaluationContext.immutable(parameterizedType);
             if (immutableOfParameterizedType.isDelayed()) {
                 return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
             }
@@ -53,7 +53,7 @@ public interface HiddenContent {
             Integer tpi = indexedType.isTypeParameter();
             if (tpi != null && done.add(tpi)) {
                 ParameterizedType inConcrete = indexedType.find(parameterizedType);
-                DV immutableDv = analyserContext.typeImmutable(inConcrete);
+                DV immutableDv = evaluationContext.immutable(inConcrete);
                 if (immutableDv.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
                 } else {

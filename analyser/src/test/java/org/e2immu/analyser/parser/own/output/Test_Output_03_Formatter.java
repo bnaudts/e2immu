@@ -63,15 +63,11 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
                     String expected = d.iteration() < 7 ? "<m:pop>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 8, d.status().isDone());
-                    assertEquals(d.iteration() >= 8, d.externalStatus().isDone());
                 }
                 if ("7.0.0".equals(d.statementId())) {
                     String expected = d.iteration() < 7 ? "<m:write>" : "<no return value>";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 8, d.status().isDone());
-                    assertEquals(d.iteration() >= 8, d.externalStatus().isDone());
                 }
                 if ("7".equals(d.statementId())) {
                     String expected = d.iteration() < 7 ? "!<vl:writeNewLine>"
@@ -79,8 +75,6 @@ public class Test_Output_03_Formatter extends CommonTestRunner {
 
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertEquals(d.iteration() >= 7, d.evaluationResult().causesOfDelay().isDone());
-                    assertEquals(d.iteration() >= 8, d.status().isDone());
-                    assertEquals(d.iteration() >= 9, d.externalStatus().isDone());
                 }
             }
         };

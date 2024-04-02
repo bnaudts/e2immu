@@ -189,6 +189,17 @@ public interface EvaluationContext {
 
     IsMyself isMyself(ParameterizedType type);
 
+    /*
+    This method should be used during evaluation of expressions, to avoid cycles computing the immutability
+    of "self"-types.
+     */
+    default DV immutable(ParameterizedType type) {
+        if (getCurrentType().isMyself(type, getAnalyserContext()).toFalse(Property.IMMUTABLE)) {
+            return MultiLevel.MUTABLE_DV;
+        }
+        return getAnalyserContext().typeImmutable(type);
+    }
+
     Properties ensureMyselfValueProperties(Properties existing);
 
     boolean inConstruction();

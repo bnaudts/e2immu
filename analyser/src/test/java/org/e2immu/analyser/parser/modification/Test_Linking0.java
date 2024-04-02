@@ -72,14 +72,12 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m1" -> {
                         assertCurrentValue(d, 2, "list.get(0)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
-                        if (d.iteration() >= 2) {
-                            assertEquals("*M-4-<0M>", singleLv(d));
-                        }
+                            assertSingleLv(d, 2, 0, "*M-4-<0M>");
                     }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "list.get(0)");
                         assertLinked(d, it(0, "list:4"));
-                        assertEquals("*-4-<0>", singleLv(d));
+                        assertSingleLv(d, 0, 0, "*-4-<0>");
                     }
                     case "m3", "m5" -> {
                         assertCurrentValue(d, 0, "list.subList(0,1)");
@@ -96,29 +94,27 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m7" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
-                        if (d.iteration() >= 2) {
-                            assertEquals("<0M>-4-<0M>", singleLv(d));
-                        }
+                        assertSingleLv(d, 2, 0, "<0M>-4-<0M>");
                     }
                     case "m8" -> {
                         assertCurrentValue(d, 0, "new ArrayList<>(list)");
                         assertLinked(d, it(0, "list:4"));
-                        assertEquals("<0>-4-<0>", singleLv(d));
+                        assertSingleLv(d, 0, 0, "<0>-4-<0>");
                     }
                     case "m9" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, "map:4"));
-                        assertEquals("<1>-4-<1>", singleLv(d));
+                        assertSingleLv(d, 0, 0, "<1>-4-<1>");
                     }
                     case "m10" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, "map:4"));
-                        assertEquals("<0>-4-<0>", singleLv(d));
+                        assertSingleLv(d, 0, 0, "<0>-4-<0>");
                     }
                     case "m11" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, "map:4"));
-                        assertEquals("<0,1>-4-<0,1>", singleLv(d));
+                        assertSingleLv(d, 0, 0, "<0,1>-4-<0,1>");
                     }
                     case "m12" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
@@ -127,9 +123,7 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m13" -> {
                         assertCurrentValue(d, 0, "new HashMap<>(map)/*this.size()==map.size()*/");
                         assertLinked(d, it(0, 1, "map:-1"), it(2, "map:4"));
-                        if (d.iteration() >= 2) {
-                            assertEquals("<0,1M>-4-<0,1M>", singleLv(d));
-                        }
+                        assertSingleLv(d, 2, 0, "<0,1M>-4-<0,1M>");
                     }
                     case "m14" -> {
                         assertCurrentValue(d, 2, "list.subList(0,1).subList(0,1)");
@@ -195,11 +189,6 @@ public class Test_Linking0 extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
-    }
-
-    private static String singleLv(StatementAnalyserVariableVisitor.Data d) {
-        return d.variableInfo().getLinkedVariables().stream()
-                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
     }
 
 

@@ -47,8 +47,6 @@ public interface ComputeIndependent {
                                     HiddenContentSelector hiddenContentSelectorOfTarget,
                                     ParameterizedType targetType);
 
-    DV typeImmutable(ParameterizedType pt);
-
     /**
      * Variables of two types are linked to each other, at a given <code>linkLevel</code>.
      * <p>

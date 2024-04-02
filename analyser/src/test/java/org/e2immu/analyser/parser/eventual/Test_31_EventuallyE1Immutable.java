@@ -44,20 +44,6 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
     public void test_0() throws IOException {
         final String TYPE = "org.e2immu.analyser.parser.eventual.testexample.EventuallyE1Immutable_0";
         final String STRING = TYPE + ".string";
-        EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("setString".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                if (d.iteration() == 0) {
-                    assertTrue(d.haveMarkRead(STRING));
-                    VariableInfoContainer stringVic = d.statementAnalysis().getVariable(STRING);
-                    assertEquals(DV.FALSE_DV, stringVic.getPreviousOrInitial().getProperty(Property.CONTEXT_MODIFIED));
-                    assertTrue(stringVic.hasEvaluation());
-                    assertFalse(stringVic.hasMerge());
-                    assertEquals("", stringVic.getPreviousOrInitial().getLinkedVariables().toString());
-                    assertEquals("", stringVic.current().getLinkedVariables().toString());
-                    assertEquals(DV.FALSE_DV, stringVic.current().getProperty(Property.CONTEXT_MODIFIED));
-                }
-            }
-        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setString".equals(d.methodInfo().name) || "setString2".equals(d.methodInfo().name)) {
@@ -211,7 +197,6 @@ public class Test_31_EventuallyE1Immutable extends CommonTestRunner {
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());
 
         testClass("EventuallyE1Immutable_0", 0, 0, new DebugConfiguration.Builder()
-                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
