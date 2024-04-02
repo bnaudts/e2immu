@@ -134,6 +134,15 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
                 .collect(Collectors.joining(","));
     }
 
+    public LV select(int index) {
+        if (this == NOT_YET_SET || this == EMPTY || variables.isEmpty()) throw new UnsupportedOperationException();
+        return variables.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().minimalOutput()))
+                .skip(index)
+                .map(Map.Entry::getValue)
+                .findFirst().orElseThrow();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -164,9 +164,9 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
 
         @Override
         public String toString() {
-            return map.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getKey))
+            return map.entrySet().stream().sorted(Map.Entry.comparingByKey())
                     .map(e -> e.getKey() + (e.getValue() ? "M" : ""))
-                    .collect(Collectors.joining(",", "<", ">"));
+                    .collect(Collectors.joining(","));
         }
 
         public Set<Integer> set() {

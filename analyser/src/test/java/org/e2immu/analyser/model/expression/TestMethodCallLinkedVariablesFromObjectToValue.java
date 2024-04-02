@@ -258,7 +258,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
                 mutablePtWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_1);
-        assertEquals("<0>-4-<1>", commonHC.toString());
+        assertEquals("0-4-1", commonHC.toString());
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
@@ -287,7 +287,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         assertTrue(lv.causesOfDelay().isDone());
         Variable b = lv.variables().keySet().stream().filter(v -> "b".equals(v.simpleName())).findFirst().orElseThrow();
         LV lvb = lv.value(b);
-        assertEquals("<0>-4-<0>", lvb.toString());
+        assertEquals("0-4-0", lvb.toString());
     }
 
     @Test

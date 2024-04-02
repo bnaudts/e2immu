@@ -9,22 +9,22 @@ public class LV implements Comparable<LV> {
     private static final int HC = 4;
     private static final int HC_MUTABLE = 3;
 
-    public static final LV LINK_STATICALLY_ASSIGNED = new LV(0, null, null,
-            "statically_assigned", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
-    public static final LV LINK_ASSIGNED = new LV(1, null, null,
-            "assigned", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
-    public static final LV LINK_DEPENDENT = new LV(2, null, null,
-            "dependent", CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
+    public static final LV LINK_STATICALLY_ASSIGNED = new LV(0, null, null, "-0-",
+            CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
+    public static final LV LINK_ASSIGNED = new LV(1, null, null, "-1-", CausesOfDelay.EMPTY,
+            MultiLevel.DEPENDENT_DV);
+    public static final LV LINK_DEPENDENT = new LV(2, null, null, "-2-", CausesOfDelay.EMPTY,
+            MultiLevel.DEPENDENT_DV);
 
     // use of this value is severely restricted! Use in ShortestPath, ComputeLinkedVariables
-    public static final LV LINK_HC_MUTABLE = new LV(HC_MUTABLE, null, null,
-            "hc_mutable", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
+    public static final LV LINK_HC_MUTABLE = new LV(HC_MUTABLE, null, null, "-3-",
+            CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
 
     // do not use for equality! Use LV.isCommonHC()
-    public static final LV LINK_COMMON_HC = new LV(HC, null, null,
-            "common_hc", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
-    public static final LV LINK_INDEPENDENT = new LV(5, null, null,
-            "independent", CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_DV);
+    public static final LV LINK_COMMON_HC = new LV(HC, null, null, "-4-", CausesOfDelay.EMPTY,
+            MultiLevel.INDEPENDENT_HC_DV);
+    public static final LV LINK_INDEPENDENT = new LV(5, null, null, "-5-", CausesOfDelay.EMPTY,
+            MultiLevel.INDEPENDENT_DV);
 
     private final int value;
     private final HiddenContentSelector mine;

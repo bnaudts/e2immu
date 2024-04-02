@@ -18,10 +18,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.range.Range;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.visitor.CommonVisitorData;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
-import org.e2immu.analyser.visitor.TypeAnalyserVisitor;
+import org.e2immu.analyser.visitor.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -267,10 +264,17 @@ public abstract class VisitorTestSupport {
 
 
     protected void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, int index, String expected) {
-        String value = d.variableInfo().getLinkedVariables().stream()
-                .map(Map.Entry::getValue).findFirst().orElseThrow().toString();
         if (d.iteration() >= iteration) {
-            assertEquals(expected, value);
+            LV value = d.variableInfo().getLinkedVariables().select(index);
+            assertEquals(expected, value.toString());
+        }
+    }
+
+
+    protected void assertSingleLv(EvaluationResultVisitor.Data d, int iteration, int index, String expected) {
+        if (d.iteration() >= iteration) {
+            LV value = d.evaluationResult().linkedVariablesOfExpression().select(index);
+            assertEquals(expected, value.toString());
         }
     }
 }

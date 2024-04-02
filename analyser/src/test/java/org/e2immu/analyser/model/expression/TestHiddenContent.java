@@ -36,7 +36,7 @@ public class TestHiddenContent extends CommonTest {
         assertEquals("Type param T[]", tpArray.toString());
         HiddenContent hc1 = HiddenContent.from(tpArray);
         assertEquals("<0>", hc1.toString());
-        assertEquals("<0>", hc1.selectAll().toString());
+        assertEquals("0", hc1.selectAll().toString());
         // note: same hidden content types as in previous test, without arrays!
         assertEquals("[0:Type param T]", hc1.niceHiddenContentTypes());
 
@@ -44,7 +44,7 @@ public class TestHiddenContent extends CommonTest {
         assertEquals("Type param T[][]", tpArray2.toString());
         HiddenContent hc2 = HiddenContent.from(tpArray2);
         assertEquals("<*0-0>", hc2.toString());
-        assertEquals("<0>", hc2.selectAll().toString());
+        assertEquals("0", hc2.selectAll().toString());
         assertEquals("[0:Type param T]", hc2.niceHiddenContentTypes());
         assertEquals("[0:Type com.foo.Mutable]", hc2.niceHiddenContentTypes(mutablePt.copyWithArrays(2)));
     }
@@ -82,7 +82,7 @@ public class TestHiddenContent extends CommonTest {
         assertEquals("Type com.foo.MutableTP<com.foo.MutableTP<T>>", mmtp.toString());
         HiddenContent hc1 = HiddenContent.from(mmtp);
         assertEquals("<*0-0>", hc1.toString());
-        assertEquals("<0>", hc1.selectAll().toString());
+        assertEquals("0", hc1.selectAll().toString());
 
         ParameterizedType mm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mutablePt));
         ParameterizedType mmm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mm));

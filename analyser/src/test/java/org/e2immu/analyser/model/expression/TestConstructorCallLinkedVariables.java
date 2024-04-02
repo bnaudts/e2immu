@@ -91,7 +91,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
 
         ParameterInfo p0 = constructor.methodInspection.get().getParameters().get(0);
         assertEquals("Type com.foo.MutableTP<T>", p0.parameterizedType.toString());
-        assertEquals("<0>", p0.parameterAnalysis.get().getHiddenContentSelector().toString());
+        assertEquals("0", p0.parameterAnalysis.get().getHiddenContentSelector().toString());
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePtWithOneTypeParameter);
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
