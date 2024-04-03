@@ -1532,50 +1532,17 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
-        LinkedVariables linkedOfIterable = evaluatedIterableResult.linkedVariablesOfExpression()
-                .maximum(LV.LINK_ASSIGNED);
-        DV linkOfLoopVarInIterable = linkOfLoopVarInIterable(evaluationContext, parameterizedType,
-                evaluatedIterable.returnType());
-        LinkedVariables linked;
-        if (linkOfLoopVarInIterable == null) {
-            linked = linkedOfIterable;
-        } else {
-            LV lv = LinkedVariables.fromIndependentToLinkedVariableLevel(linkOfLoopVarInIterable);
-            linked = linkedOfIterable.maximum(lv);
-        }
+        ComputeIndependentImpl computeIndependent = new ComputeIndependentImpl(evaluationContext);
+        // equivalent to a List.get() call, with the iterable being the source, and the loop var the target
+        ParameterizedType iterableType = evaluatedIterable.returnType();
+        HiddenContentSelector hcsSource = computeIndependent.hcsIterable(iterableType);
+        LinkedVariables linksOfLoopVar = computeIndependent.linkedVariables(iterableType,
+                evaluatedIterableResult.linkedVariablesOfExpression(), hcsSource, INDEPENDENT_HC_DV,
+                HiddenContentSelector.All.INSTANCE, loopVar.parameterizedType());
         return new EvaluationResultImpl.Builder(evaluationResult)
-                .setLinkedVariablesOfExpression(linked)
+                .setLinkedVariablesOfExpression(linksOfLoopVar)
                 .assignment(loopVar, value)
                 .compose(evaluationResult).build();
-    }
-
-    private DV linkOfLoopVarInIterable(EvaluationContext evaluationContext,
-                                       ParameterizedType concreteType,
-                                       ParameterizedType iterableType) {
-        AnalyserContext ac = evaluationContext.getAnalyserContext();
-        ComputeIndependent computeIndependent = new ComputeIndependentImpl(evaluationContext);
-        DV immutable = evaluationContext.immutable(concreteType);
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) return null; // no linking!
-        LV linkLevel;
-        if (MultiLevel.isAtLeastImmutableHC(immutable)) {
-            // interface Iterable<E> { Iterator<E> iterator(); } -> E
-            // the iterableType must implement Iterable, so it should have an iterator() method
-            TypeInfo iterable = ac.importantClasses().iterable().typeInfo;
-            MethodInfo iterator = iterable.findUniqueMethod(ac, "iterator", 0);
-            TypeInfo bestType = iterableType.bestTypeInfo(ac);
-            assert bestType != null : "How come? this type should implement Iterable";
-            MethodInfo methodInfo = bestType.findMethodImplementing(iterator);
-            assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
-            MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
-            ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
-            HiddenContent hc = HiddenContent.from(typeReturnedByIterableMethod);
-            HiddenContentSelector theirs = hc.selectAll(); // typically, {0}, one type parameter
-            HiddenContentSelector mine = HiddenContentSelector.All.INSTANCE;
-            linkLevel = LV.createHC(mine, theirs);
-        } else {
-            linkLevel = LV.LINK_DEPENDENT;
-        }
-        return computeIndependent.typesAtLinkLevel(linkLevel, concreteType, immutable, iterableType);
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

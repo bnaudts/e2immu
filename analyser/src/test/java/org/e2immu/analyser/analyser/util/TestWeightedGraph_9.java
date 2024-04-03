@@ -34,8 +34,8 @@ public class TestWeightedGraph_9 extends CommonWG {
         LV map_4_keys = LV.createHC(m0, m0);
         LV map_4_values = LV.createHC(hc1, hc0);
 
-        assertEquals("<1>-4-<0>", map_4_values.toString());
-        assertEquals("<0M>-4-<0M>", map_4_keys.reverse().toString());
+        assertEquals("1-4-0", map_4_values.toString());
+        assertEquals("0M-4-0M", map_4_keys.reverse().toString());
 
         wg.addNode(map, Map.of(keys, map_4_keys, values, map_4_values));
 

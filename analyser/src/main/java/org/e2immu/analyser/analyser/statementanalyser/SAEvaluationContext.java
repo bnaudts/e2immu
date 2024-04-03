@@ -785,18 +785,6 @@ class SAEvaluationContext extends CommonEvaluationContext {
     }
 
     @Override
-    public MethodInfo concreteMethod(Variable variable, MethodInfo abstractMethodInfo) {
-        assert abstractMethodInfo.isAbstract();
-        VariableInfo variableInfo = findForReading(variable, true);
-        ParameterizedType type = variableInfo.getValue().returnType();
-        if (type.typeInfo != null && !type.typeInfo.isAbstract()) {
-            return type.typeInfo.findMethodImplementing(abstractMethodInfo);
-        }
-        return null;
-    }
-
-
-    @Override
     public boolean hasBeenAssigned(Variable variable) {
         VariableInfoContainer vic = statementAnalysis.getVariableOrDefaultNull(variable.fullyQualifiedName());
         if (vic == null) return false;

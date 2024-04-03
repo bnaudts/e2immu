@@ -172,8 +172,6 @@ public interface EvaluationContext {
 
     DV cannotBeModified(Expression value);
 
-    MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo);
-
     String statementIndex();
 
     boolean firstAssignmentOfFieldInConstructor(Variable variable);

@@ -88,7 +88,7 @@ public class AggregatingMethodAnalyser extends MethodAnalyserImpl {
 
     @Override
     public void initialize() {
-        Stream<MethodInfo> implementations = obtainImplementingTypes().map(ti -> ti.findMethodImplementing(methodInfo));
+        Stream<MethodInfo> implementations = obtainImplementingTypes().map(ti -> ti.findNearestOverride(methodInfo));
         List<MethodAnalysis> analysers = implementations.map(analyserContext::getMethodAnalysis).toList();
         implementingAnalyses.set(analysers);
     }

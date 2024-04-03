@@ -110,7 +110,7 @@ public interface HiddenContent {
                 }
                 sequence.add(new IndexedType(tp, List.of(index)));
             } else if (!tp.parameters.isEmpty()) {
-                HiddenContentImpl recursively = (HiddenContentImpl) from(tp, typeParameterIndex, counter);
+                HiddenContentImpl recursively = from(tp, typeParameterIndex, counter);
                 if (recursively.sequence != null) {
                     for (IndexedType it : recursively.sequence) {
                         List<Integer> indices = Stream.concat(Stream.of(-countParameter), it.index.stream()).toList();

@@ -75,5 +75,5 @@ public interface ComputeIndependent {
      */
     DV typesAtLinkLevel(LV linkLevel, ParameterizedType a, DV immutableAInput, ParameterizedType b);
 
-    DV hasHiddenContentIntersection(ParameterizedType a1, ParameterizedType a2);
+    HiddenContentSelector hcsIterable(ParameterizedType iterableType);
 }

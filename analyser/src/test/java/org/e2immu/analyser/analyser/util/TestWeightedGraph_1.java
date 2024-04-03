@@ -59,7 +59,7 @@ public class TestWeightedGraph_1 extends CommonWG {
 
         LV this_4_cycle = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0),
                 HiddenContentSelector.CsSet.selectTypeParameter(0));
-        assertEquals("<0>-4-<0>", this_4_cycle.toString());
+        assertEquals("0-4-0", this_4_cycle.toString());
 
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle, smallerCycle, this_4_cycle));
         wg.addNode(removed, Map.of(removed, v0));

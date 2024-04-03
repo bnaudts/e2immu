@@ -300,10 +300,6 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return DV.FALSE_DV;
     }
 
-    public MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
-        return null;
-    }
-
     public String statementIndex() {
         return "-";
     }

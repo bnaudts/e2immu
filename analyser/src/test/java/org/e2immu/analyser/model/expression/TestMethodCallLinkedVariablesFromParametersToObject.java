@@ -131,7 +131,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         LV hc = LV.createHC(select0, select0);
-        assertEquals("<0>-4-<0>", hc.toString());
+        assertEquals("0-4-0", hc.toString());
         ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(va.variable(),
                 LV.LINK_ASSIGNED, vd.variable(), LV.LINK_DEPENDENT, vc.variable(), hc)));
         ExpressionMock argument1 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(vc.variable(),
@@ -161,7 +161,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 primitives.stringTypeInfo(), analyserContext).build();
 
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-        assertEquals("<0>", select0.toString());
+        assertEquals("0", select0.toString());
 
         ParameterAnalysis p0Analysis = parameterAnalysis(0, independentP0, method, select0);
         ParameterAnalysis p1Analysis = parameterAnalysis(1, independentP1, method, select0);

@@ -454,23 +454,23 @@ public final class TypeInfo implements NamedType,
     where the method has been annotated in CharSequence; the implementation in AbstractStringBuilder is
     unknown, inaccessible and not annotated.
      */
-    public MethodInfo findMethodImplementing(MethodInfo abstractMethodInfo) {
+    public MethodInfo findNearestOverride(MethodInfo abstractMethodInfo) {
         if (abstractMethodInfo.typeInfo == this) return null;
         MethodInfo foundHere = typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
-        if (foundHere != null && !foundHere.isAbstract()
+        if (foundHere != null
                 && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPubliclyAccessible())) {
             return foundHere;
         }
         TypeInspection inspection = typeInspection.get();
         ParameterizedType parentClass = inspection.parentClass();
         if (parentClass != null && !parentClass.isJavaLangObject()) {
-            MethodInfo foundInParent = parentClass.typeInfo.findMethodImplementing(abstractMethodInfo);
+            MethodInfo foundInParent = parentClass.typeInfo.findNearestOverride(abstractMethodInfo);
             if (foundInParent != null) return foundInParent;
         }
         for (ParameterizedType interfaceType : inspection.interfacesImplemented()) {
-            MethodInfo foundInInterface = interfaceType.typeInfo.findMethodImplementing(abstractMethodInfo);
+            MethodInfo foundInInterface = interfaceType.typeInfo.findNearestOverride(abstractMethodInfo);
             if (foundInInterface != null) return foundInInterface;
         }
         return null;

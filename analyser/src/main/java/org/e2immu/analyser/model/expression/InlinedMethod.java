@@ -720,11 +720,6 @@ public class InlinedMethod extends BaseExpression implements Expression {
         }
 
         @Override
-        public MethodInfo concreteMethod(Variable variable, MethodInfo methodInfo) {
-            return evaluationContext.concreteMethod(variable, methodInfo);
-        }
-
-        @Override
         public String statementIndex() {
             return evaluationContext.statementIndex();
         }

@@ -17,9 +17,7 @@ package org.e2immu.analyser.analyser.impl;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analysis.TypeAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 
@@ -232,6 +230,24 @@ public record ComputeIndependentImpl(EvaluationContext evaluationContext) implem
             }
         }
         return independent;
+    }
+
+    /*
+    given a type that extends Iterable<T>, find the correct hidden content selector
+     */
+    @Override
+    public HiddenContentSelector hcsIterable(ParameterizedType iterableType) {
+        AnalyserContext ac = evaluationContext.getAnalyserContext();
+        TypeInfo iterable = ac.importantClasses().iterable().typeInfo;
+        MethodInfo iterator = iterable.findUniqueMethod(ac, "iterator", 0);
+        TypeInfo bestType = iterableType.bestTypeInfo(ac);
+        assert bestType != null : "How come? this type should implement Iterable";
+        MethodInfo methodInfo = bestType.findNearestOverride(iterator);
+        assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
+        MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
+        ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
+        HiddenContent hc = HiddenContent.from(typeReturnedByIterableMethod);
+        return hc.selectAll();
     }
 
     /**
