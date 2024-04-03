@@ -130,6 +130,8 @@ public interface HiddenContent {
         return new HiddenContentImpl(List.copyOf(sequence));
     }
 
+    HiddenContentSelector select(ParameterizedType targetType);
+
     record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
         private static int realIndex(int i) {
             return i >= 0 ? i : -i - 1;
@@ -255,6 +257,19 @@ public interface HiddenContent {
                 return Map.copyOf(map);
             }
             return Map.of();
+        }
+
+        @Override
+        public HiddenContentSelector select(ParameterizedType targetType) {
+            if (sequence != null) {
+                for (IndexedType it : sequence) {
+                    if (targetType.equals(it.parameterizedType)) {
+                        int last = it.index.get(it.index.size() - 1);
+                        if (last >= 0) return new HiddenContentSelector.CsSet(Set.of(last));
+                    }
+                }
+            }
+            return HiddenContentSelector.All.INSTANCE;
         }
 
         // for testing

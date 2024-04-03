@@ -306,11 +306,11 @@ public class LinkHelper {
         return false;
     }
 
-    public LinkedVariables linkedVariables(ParameterizedType sourceType,
-                                           LinkedVariables sourceLvs,
-                                           DV transferIndependent,
-                                           HiddenContentSelector hiddenContentSelectorOfTarget,
-                                           ParameterizedType targetType) {
+    private LinkedVariables linkedVariables(ParameterizedType sourceType,
+                                            LinkedVariables sourceLvs,
+                                            DV transferIndependent,
+                                            HiddenContentSelector hiddenContentSelectorOfTarget,
+                                            ParameterizedType targetType) {
         assert targetType != null;
 
         // RULE 1: no linking when the source is not linked or there is no transfer
@@ -366,26 +366,21 @@ public class LinkHelper {
             LV lv = e.getValue();
             assert lv.lt(LINK_INDEPENDENT);
 
-             /*
-               TODO check this!
-               without the 2nd condition, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
-                     -> we never delay on this for IMMUTABLE
-              */
-            if ((immutable.isDelayed() && !(e.getKey() instanceof This)) || lv.isDelayed()) {
+            if (immutable.isDelayed() || lv.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay()).merge(lv.causesOfDelay());
             } else {
                 if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
                         immutableOfSource, lv)) {
                     newLinked.put(e.getKey(), LINK_DEPENDENT);
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {// downgrade && !targetTypeHC.isNone()) {
-                    LV commonHC;
-                    if (lv.isCommonHC()) {
-                        commonHC = LV.createHC(correctedTransferSelector, lv.mine());
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                    HiddenContentSelector hcsOther;
+                    if (lv.commonHCContainsMutable()) {
+                        hcsOther = lv.mine();
                     } else {
-                        // assigned, dependent... take the most complete hidden content selector, if possible
-                        HiddenContentSelector theirs = targetTypeHC.selectAll();
-                        commonHC = LV.createHC(correctedTransferSelector, theirs);
+                        HiddenContent hcSource = HiddenContent.from(sourceType);
+                        hcsOther = hcSource.select(targetType);
                     }
+                    LV commonHC = LV.createHC(correctedTransferSelector, hcsOther);
                     newLinked.put(e.getKey(), commonHC);
                 }
             }

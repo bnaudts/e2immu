@@ -55,12 +55,22 @@ public class Test_Linking2 extends CommonTestRunner {
                         assertSingleLv(d, 2, 1, "*-4-0"); // FIXME ??
                         assertSingleLv(d, 2, 2, "*-4-0");
                     }
+                    if ("2".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
+                        assertLinked(d, it(0, 1, "selection:0,selector:-1,xs:-1"),
+                                it(2, "selection:0,selector:4,xs:4"));
+                    }
                 }
                 case "m3" -> {
                     if ("1.0.0".equals(d.statementId()) && "m".equals(d.variableName())) {
-                        // FIXME ms:4M expected
-                        assertLinked(d, it(0, 1, "ms:0,selection:-1,selector:-1"),
-                                it(2, "selection:4,selector:4,xs:4"));
+                        assertLinked(d, it(0, 1, "ms:-1,selection:-1,selector:-1"),
+                                it(2, "ms:4,selection:4,selector:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    }
+                    if ("2".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
+                        assertCurrentValue(d, 2,
+                                "ms.isEmpty()?new ArrayList<>()/*0==this.size()*/:selector.test(nullable instance 1 type M)?instance 1.0.0.0.0 type List<M>:instance 1 type List<M>");
+                        assertLinked(d, it(0, 1, "ms:-1,selection:0,selector:-1"),
+                                it(2, "ms:4,selection:0,selector:4"));
                     }
                 }
             }

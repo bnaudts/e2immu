@@ -56,12 +56,6 @@ class MergeLinkingAndGroupProperties {
                                                TranslationMap translationMap,
                                                CausesOfDelay conditionCauses) {
 
-        BackLinkForEachResult backLink;
-        if (statementAnalysis.statement() instanceof ForEachStatement) {
-            backLink = backLinkIterable(evaluationContext, linkedVariablesMap);
-        } else {
-            backLink = new BackLinkForEachResult(Set.of(), CausesOfDelay.EMPTY);
-        }
         for (VariableInfoContainer vic : toIgnore) {
             Variable variable = vic.current().variable();
             Variable renamed = renames.get(variable);
@@ -90,7 +84,7 @@ class MergeLinkingAndGroupProperties {
                 computeLinkedVariables, touched, toRemove, linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {
-            if ((!linkedVariablesMap.containsKey(variable) || backLink.newlyCreated.contains(variable)) &&
+            if (!linkedVariablesMap.containsKey(variable) &&
                 !(variable instanceof LocalVariableReference lvr && newlyCreatedScopeVariables.contains(lvr))) {
                 VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
                 Variable renamed = renames.get(variable);
@@ -151,85 +145,13 @@ class MergeLinkingAndGroupProperties {
         CausesOfDelay delaysOfValuesOfIgnored = toIgnore.stream()
                 .map(vic -> vic.best(MERGE).getValue().causesOfDelay()).reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
 
-        return new ProgressAndDelay(false, backLink.delays)
+        return new ProgressAndDelay(false, CausesOfDelay.EMPTY)
                 .combine(ennStatus).combine(cnnStatus).combine(cmStatus).combine(extImmStatus)
                 .combine(extContStatus).combine(cImmStatus).combine(cContStatus).combine(extIgnModStatus)
                 .merge(externalDelaysOnIgnoredVariables)
                 .merge(delaysOfValuesOfIgnored)
                 .addProgress(progress);
     }
-
-    /*
-    Example code: 'for(T t: ts) { consumer.accept(t); }'
-    t links to consumer:3, ts:3, we want to connect consumer and ts with :4
-
-    See Independent1_4.
-    The reason we need this code is that links are unidirectional, and the links from t will disappear as the loop var
-    goes out of scope.
-    The reason we need this code HERE is that we must have the delay to consumer:-1 from the very first iteration.
-    We cannot add it during evaluationOfForEachVariable() in the first iteration, as we don't know which variable to link to.
-     */
-    private BackLinkForEachResult backLinkIterable(EvaluationContext evaluationContext,
-                                                   Map<Variable, LinkedVariables> linkedVariablesMap) {
-
-        Set<Variable> newToLinkedVariablesMap = new HashSet<>();
-        CausesOfDelay causes = CausesOfDelay.EMPTY;
-
-        StatementAnalysis first = statementAnalysis.navigationData().blocks.get().get(0).orElse(null);
-        StatementAnalysis last = first == null ? null : first.lastStatement();
-        if (last != null) {
-            Expression initialiser = statementAnalysis.statement().getStructure().initialisers().get(0);
-            if (initialiser instanceof LocalVariableCreation lvc) {
-                assert lvc.hasSingleDeclaration();
-                Variable loopVar = lvc.localVariableReference;
-                VariableInfo latestVariableInfo = last.getLatestVariableInfo(loopVar.fullyQualifiedName());
-                if (latestVariableInfo != null) {
-                    LinkedVariables linkedOfLoopVar = latestVariableInfo.getLinkedVariables();
-                    // any --3--> link to a variable not local to the loop, we also point to the iterable as <--4-->
-
-                    EvaluationResult context = EvaluationResultImpl.from(evaluationContext);
-                    LinkedVariables linkedVariables = statementAnalysis.stateData().linkedVariablesOfExpressionGet();
-
-                    for (Map.Entry<Variable, LV> lve : linkedVariables) {
-                        Variable iterableVar = lve.getKey();
-
-                        for (Map.Entry<Variable, LV> e : linkedOfLoopVar) {
-                            Variable targetOfLoopVar = e.getKey();
-                            if (!targetOfLoopVar.equals(iterableVar)) {
-                                if (!linkedVariablesMap.containsKey(targetOfLoopVar)) {
-                                    newToLinkedVariablesMap.add(targetOfLoopVar);
-                                }
-                                if (!linkedVariablesMap.containsKey(iterableVar)) {
-                                    newToLinkedVariablesMap.add(iterableVar);
-                                }
-                                // if (e.getValue().isDelayed()) {
-                                link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
-                                link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
-                                causes = causes.merge(e.getValue().causesOfDelay());
-                                // } else  { // TODO:IS_HC
-                                //     link(linkedVariablesMap, iterableVar, targetOfLoopVar, e.getValue());
-                                //     link(linkedVariablesMap, targetOfLoopVar, iterableVar, e.getValue());
-                                // }
-                            }
-                        }
-                    }
-                } else {
-                    LOGGER.debug("possible in iteration 0 of a loop, see e.g. Loops_3");
-                }
-            } else throw new UnsupportedOperationException("?? expect lvc, got " + initialiser);
-        }
-        return new BackLinkForEachResult(Set.copyOf(newToLinkedVariablesMap), causes);
-    }
-
-    private void link(Map<Variable, LinkedVariables> linkedVariablesMap, Variable from, Variable to, LV linkLevel) {
-        LinkedVariables lv = linkedVariablesMap.get(from);
-        if (lv == null) {
-            linkedVariablesMap.put(from, LinkedVariables.of(to, linkLevel));
-        } else {
-            linkedVariablesMap.put(from, lv.merge(LinkedVariables.of(to, linkLevel)));
-        }
-    }
-
 
     /*
     actually: at least one branch, this is possible in switch statements. Generally, it'll be the one of the two arms

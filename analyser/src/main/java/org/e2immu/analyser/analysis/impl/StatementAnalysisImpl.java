@@ -1531,12 +1531,11 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
-        ParameterizedType iterableType = evaluatedIterable.returnType();
-        // equivalent to a List.get() call, with the iterable being the source, and the loop var the target
-        LinkHelper linkHelper = new LinkHelper(evaluationResult, null, null);
-        LinkedVariables linksOfLoopVar = linkHelper.linkedVariables(iterableType,
-                evaluatedIterableResult.linkedVariablesOfExpression(), INDEPENDENT_HC_DV,
-                HiddenContentSelector.All.INSTANCE, loopVar.parameterizedType());
+        // equivalent to a List.get() or Array.get(i) call, with the iterable being the source, and the loop var the target
+        MethodInfo arrayFieldAccess = evaluationContext.getAnalyserContext().importantClasses().arrayFieldAccess();
+        LinkHelper linkHelper = new LinkHelper(evaluationResult, arrayFieldAccess);
+        LinkedVariables linksOfLoopVar = linkHelper.linkedVariablesMethodCallObjectToReturnType(evaluatedIterableResult,
+                List.of(), loopVar.parameterizedType());
         return new EvaluationResultImpl.Builder(evaluationResult)
                 .setLinkedVariablesOfExpression(linksOfLoopVar)
                 .assignment(loopVar, value)
