@@ -460,12 +460,10 @@ public class ComputeLinkedVariables {
              Map<Variable, Set<Variable>> staticallyAssignedVariables,
              Variable variable,
              Map<Variable, LV> map) {
-        if (linkingNotYetSet.contains(variable)) {
-            return NOT_YET_SET;
-        }
         CausesOfDelay allDelays = map.values().stream()
                 .map(LV::causesOfDelay)
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
+                .merge(linkingNotYetSet.isEmpty() ? CausesOfDelay.EMPTY: NOT_YET_SET_DELAY);
 
         if (allDelays.isDelayed()) {
             LV allDelaysLv = LV.delay(allDelays);

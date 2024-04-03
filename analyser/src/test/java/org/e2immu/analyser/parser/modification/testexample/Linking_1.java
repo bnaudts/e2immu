@@ -55,17 +55,21 @@ public class Linking_1 {
     static Integer m8(Stream<Integer> stream) {
         return stream.filter(i -> i == 3).findFirst().orElseThrow();
     }
-/*
-FIXME overwrite
+
+    // prep test for the m9-m11
+    static <X> boolean mPredicate(X x, Predicate<X> predicate) {
+        return predicate.test(x);
+    }
 
     static <X> Stream<X> m9(Stream<X> stream, Predicate<X> predicate) {
         //noinspection ALL
         return stream.filter(i -> predicate.test(i));
     }
 
+    // lambda is type $8
     static <X> Optional<X> m10(Stream<X> stream, Predicate<X> predicate) {
         //noinspection ALL
-        return stream.filter(i -> predicate.test(i)).findFirst();
+        return stream.filter(x -> predicate.test(x)).findFirst();
     }
 
     static <X> X m11(Stream<X> stream, Predicate<X> predicate) {
@@ -83,7 +87,7 @@ FIXME overwrite
         Function<X, Y> f = x -> function.apply(x);
         return stream.map(f);
     }
-*/
+
     static <X, Y> Stream<Y> m13(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         return stream.map(function::apply);
@@ -168,7 +172,7 @@ FIXME overwrite
         };
         return IntStream.of(3).mapToObj(f);
     }
-/*
+
     static Stream<M> m24(List<M> list) {
         return IntStream.of(3).mapToObj(new IntFunction<M>() {
             @Override
@@ -177,6 +181,4 @@ FIXME overwrite
             }
         });
     }
-    FIXME
- */
 }

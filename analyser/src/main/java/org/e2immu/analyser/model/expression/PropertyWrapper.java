@@ -403,14 +403,20 @@ public final class PropertyWrapper extends BaseExpression implements Expression,
 
     @Override
     public CausesOfDelay causesOfDelay() {
-        return expression.causesOfDelay().merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay());
+        return expression.causesOfDelay()
+                .merge(linkedVariables == null ? CausesOfDelay.EMPTY : linkedVariables.causesOfDelay())
+                .merge(state == null ? CausesOfDelay.EMPTY : state.causesOfDelay());
     }
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        Expression e = expression.causesOfDelay().isDelayed() ? expression.mergeDelays(causesOfDelay) : expression;
-        Expression s = state == null ? null : state.causesOfDelay().isDelayed() ? state.mergeDelays(causesOfDelay) : state;
-        return new PropertyWrapper(e, s, properties, linkedVariables, castType);
+        Expression e = expression.causesOfDelay().isDelayed() ? expression.mergeDelays(causesOfDelay)
+                : expression;
+        Expression s = state == null ? null : state.causesOfDelay().isDelayed() ? state.mergeDelays(causesOfDelay)
+                : state;
+        LinkedVariables lv = linkedVariables == null ? null
+                : linkedVariables.changeNonStaticallyAssignedToDelay(causesOfDelay);
+        return new PropertyWrapper(e, s, properties, lv, castType);
     }
 
     @Override
