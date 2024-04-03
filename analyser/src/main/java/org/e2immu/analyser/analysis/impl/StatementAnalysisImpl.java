@@ -1533,28 +1533,14 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         }
         ParameterizedType iterableType = evaluatedIterable.returnType();
         // equivalent to a List.get() call, with the iterable being the source, and the loop var the target
-        HiddenContentSelector hcsSource = findIterable(evaluationContext.getAnalyserContext(), iterableType);
         LinkHelper linkHelper = new LinkHelper(evaluationResult, null, null);
         LinkedVariables linksOfLoopVar = linkHelper.linkedVariables(iterableType,
-                evaluatedIterableResult.linkedVariablesOfExpression(), hcsSource, INDEPENDENT_HC_DV,
+                evaluatedIterableResult.linkedVariablesOfExpression(), INDEPENDENT_HC_DV,
                 HiddenContentSelector.All.INSTANCE, loopVar.parameterizedType());
         return new EvaluationResultImpl.Builder(evaluationResult)
                 .setLinkedVariablesOfExpression(linksOfLoopVar)
                 .assignment(loopVar, value)
                 .compose(evaluationResult).build();
-    }
-
-    private HiddenContentSelector findIterable(AnalyserContext ac, ParameterizedType iterableType) {
-        TypeInfo iterable = ac.importantClasses().iterable().typeInfo;
-        MethodInfo iterator = iterable.findUniqueMethod(ac, "iterator", 0);
-        TypeInfo bestType = iterableType.bestTypeInfo(ac);
-        assert bestType != null : "How come? this type should implement Iterable";
-        MethodInfo methodInfo = bestType.findNearestOverride(iterator);
-        assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
-        MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
-        ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
-        HiddenContent hc = HiddenContent.from(typeReturnedByIterableMethod);
-        return hc.selectAll();
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

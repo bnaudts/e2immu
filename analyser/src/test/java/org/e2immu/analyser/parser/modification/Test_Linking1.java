@@ -110,7 +110,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m12" -> {
                         assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
-                        assertLinked(d, it(0, "function:4,stream:2"));
+                        assertLinked(d, it0("function:-1,stream:-1"), it(1, "function:4,stream:2"));
                     }
                     case "m12b" -> {
                         if ("1".equals(d.statementId())) {
@@ -148,7 +148,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m17" -> {
                         assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
-                        assertLinked(d, it(0, "supplier:4"));
+                        assertLinked(d, it0("supplier:-1"), it(1, "supplier:4"));
                     }
                     case "m18" -> {
                         assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
@@ -157,7 +157,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m19" -> {
                         assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
-                        assertLinked(d, it(0, "list:4"));
+                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
                     }
                     case "m20" -> {
                         assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
@@ -180,18 +180,19 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m23" -> {
-                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})");
-                        assertLinked(d, it(0, "list:4"));
+                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})");
+                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
                     }
                     case "m23b" -> {
-                        if ("1".equals(d.statementId())) {
+                        if ("2".equals(d.statementId())) {
                             assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new IntFunction<>(){public X apply(int value){return list.get(value);}})");
-                            assertLinked(d, it0("f:-1,list:-1"), it(1, "f:4,list:4"));
+                            assertLinked(d, it0("f:-1,intStream:-1,list:-1"), it(1, "f:4,intStream:2,list:4"));
                         }
                     }
                     case "m24" -> {
-                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
-                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-0M");
                     }
                     default -> {
                     }
@@ -249,7 +250,8 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
                 case "m23b" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
-                        assertLinked(d,  it0("list:-1"), it(1, "list:4"));
+                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
+                        assertSingleLv(d, 1, 0, "0-4-0");
                     }
                 }
             }
@@ -275,10 +277,34 @@ public class Test_Linking1 extends CommonTestRunner {
                 // exactly the same as in 'mPredicate'
                 testPredicateTestCall(d, "test");
             }
+            if ("m23".equals(d.methodInfo().name)) {
+                String expected = d.iteration() == 0 ? "<m:mapToObj>"
+                        : "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})";
+                assertEquals(expected, d.evaluationResult().value().toString());
+                assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("list:-1"),
+                        it(1, "list:4"));
+                assertSingleLv(d, 1, 0, "0-4-*");
+            }
+            if ("m23b".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertEquals("new IntFunction<>(){public X apply(int value){return list.get(value);}}",
+                            d.evaluationResult().value().toString());
+                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("f:0,list:-1"),
+                            it(1, "f:0,list:4"));
+                    assertSingleLv(d, 1, 1, "*-4-0");
+                }
+                if ("2".equals(d.statementId())) {
+                    String expected = d.iteration() == 0 ? "<m:mapToObj>"
+                            : "IntStream.of(3).mapToObj(new IntFunction<>(){public X apply(int value){return list.get(value);}})";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:4,intStream:2"));
+                    assertSingleLv(d, 0, 0, "0-4-0");
+                }
+            }
         };
 
         // finalizer on a parameter
-        testClass("Linking_1", 4, 0, new DebugConfiguration.Builder()
+        testClass("Linking_1", 6, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

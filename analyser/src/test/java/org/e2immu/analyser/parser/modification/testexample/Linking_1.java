@@ -170,6 +170,17 @@ public class Linking_1 {
                 return list.get(value);
             }
         };
+        IntStream intStream = IntStream.of(3);
+        return intStream.mapToObj(f);
+    }
+
+    static <X> Stream<X> m23c(List<X> list) {
+        IntFunction<X> f = new IntFunction<>() {
+            @Override
+            public X apply(int value) {
+                return list.get(value);
+            }
+        };
         return IntStream.of(3).mapToObj(f);
     }
 

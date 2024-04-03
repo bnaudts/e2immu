@@ -145,7 +145,7 @@ public class LinkHelper {
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
                     if (pt != null) {
-                        LinkedVariables lv = linkedVariables(parameterType, parameterLvs, null,
+                        LinkedVariables lv = linkedVariables(parameterType, parameterLvs,
                                 formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
                         EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
                         builder.mergeLinkedVariablesOfExpression(lv);
@@ -202,19 +202,18 @@ public class LinkHelper {
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
         LinkedVariables mergedLvs;
-        HiddenContentSelector hcsSource = level.isCommonHC() ? level.theirs() : HiddenContentSelector.None.INSTANCE;
         HiddenContentSelector hcsTarget = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         if (targetIsVarArgs) {
             mergedLvs = LinkedVariables.EMPTY;
             for (int i = targetIndex; i < parameterLvs.size(); i++) {
                 LinkedVariables lvs = parameterLvs.get(i);
-                LinkedVariables lv = linkedVariables(targetType, lvs, hcsSource, independentDv, hcsTarget, sourceType);
+                LinkedVariables lv = linkedVariables(targetType, lvs, independentDv, hcsTarget, sourceType);
                 mergedLvs = mergedLvs.merge(lv);
             }
         } else {
             LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
-            mergedLvs = linkedVariables(targetType, targetLinkedVariables, hcsSource, independentDv, hcsTarget,
+            mergedLvs = linkedVariables(targetType, targetLinkedVariables, independentDv, hcsTarget,
                     sourceType);
         }
         LinkedVariables finalMergedLvs = mergedLvs;
@@ -285,7 +284,7 @@ public class LinkHelper {
 
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
         return linkedVariables(objectResult.getExpression().returnType(), linkedVariablesOfObject,
-                null, independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
+                independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
     }
 
        /* we have to probe the object first, to see if there is a value
@@ -309,7 +308,6 @@ public class LinkHelper {
 
     public LinkedVariables linkedVariables(ParameterizedType sourceType,
                                            LinkedVariables sourceLvs,
-                                           HiddenContentSelector hiddenContentSelectorOfSource,
                                            DV transferIndependent,
                                            HiddenContentSelector hiddenContentSelectorOfTarget,
                                            ParameterizedType targetType) {
@@ -373,8 +371,8 @@ public class LinkHelper {
                without the 2nd condition, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
                      -> we never delay on this for IMMUTABLE
               */
-            if (immutable.isDelayed() && !(e.getKey() instanceof This)) {
-                causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
+            if ((immutable.isDelayed() && !(e.getKey() instanceof This)) || lv.isDelayed()) {
+                causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay()).merge(lv.causesOfDelay());
             } else {
                 if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
                         immutableOfSource, lv)) {
