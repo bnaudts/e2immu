@@ -24,12 +24,10 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.Inconclusive;
 import org.e2immu.analyser.analyser.delay.SimpleCause;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.FieldAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.primary.PrimaryTypeAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
-import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.CommonEvaluationContext;
 import org.e2immu.analyser.analyser.nonanalyserimpl.LocalAnalyserContext;
 import org.e2immu.analyser.analyser.util.*;
@@ -783,31 +781,14 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             return typeAnalysis.hiddenContentDelays().causesOfDelay();
         }
 
-        ComputeIndependent computeIndependent = getComputeIndependent(typeAnalysis);
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
         DV independent = fieldAnalysis.linkedVariables.get().stream()
                 .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner.isAccessibleOutsidePrimaryType()
                              || e.getKey() instanceof ReturnVariable rv && rv.getMethodInfo().isAccessibleOutsidePrimaryType())
-                .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(), fieldInfo.type, immutable,
-                        e.getKey().parameterizedType()))
+                .map(e -> e.getValue().toIndependent())
                 .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
         fieldAnalysis.setProperty(Property.INDEPENDENT, independent);
         return AnalysisStatus.of(independent);
-    }
-
-    private ComputeIndependent getComputeIndependent(TypeAnalysis typeAnalysis) {
-        EvaluationContext evaluationContext = new AbstractEvaluationContextImpl() {
-            @Override
-            public TypeInfo getCurrentType() {
-                return typeAnalysis.getTypeInfo();
-            }
-
-            @Override
-            public AnalyserContext getAnalyserContext() {
-                return analyserContext;
-            }
-        };
-        return new ComputeIndependentImpl(evaluationContext);
     }
 
     /*
@@ -1542,7 +1523,6 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 }
             }
         }
-        return;
     }
 
     private Stream<MethodAnalyser> methodsForModification() {

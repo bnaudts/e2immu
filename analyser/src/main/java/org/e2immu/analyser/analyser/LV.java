@@ -18,7 +18,7 @@ public class LV implements Comparable<LV> {
 
     // use of this value is severely restricted! Use in ShortestPath, ComputeLinkedVariables
     public static final LV LINK_HC_MUTABLE = new LV(HC_MUTABLE, null, null, "-3-",
-            CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
+            CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
 
     // do not use for equality! Use LV.isCommonHC()
     public static final LV LINK_COMMON_HC = new LV(HC, null, null, "-4-", CausesOfDelay.EMPTY,
@@ -152,6 +152,9 @@ public class LV implements Comparable<LV> {
     }
 
     public DV toIndependent() {
+        if (value == HC && (mine.containsMutable() || theirs.containsMutable())) {
+            return MultiLevel.DEPENDENT_DV;
+        }
         return correspondingIndependent;
     }
 

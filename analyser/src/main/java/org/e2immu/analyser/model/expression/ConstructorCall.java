@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -477,7 +476,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 // links to the parameters of the SAM; if non-modifying, the result links to the result of the SAM.
                 MethodAnalysis sama = context.getAnalyserContext().getMethodAnalysis(sami.getMethodInfo());
                 DV modified = sama.getProperty(Property.MODIFIED_METHOD);
-                MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(),
+                LinkHelper.LambdaResult lr = LinkHelper.lambdaLinking(context.evaluationContext(),
                         sami.getMethodInfo());
                 if (modified.isDelayed()) {
                     expression = DelayedExpression.forModification(this, modified.causesOfDelay());
@@ -515,8 +514,8 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
         // linking
         if (constructor != null) {
-            MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, constructor);
-            MethodLinkHelper.FromParameters from = methodLinkHelper.linksInvolvingParameters(parameterizedType,
+            LinkHelper linkHelper = new LinkHelper(context, constructor);
+            LinkHelper.FromParameters from = linkHelper.linksInvolvingParameters(parameterizedType,
                     null, res.evaluationResults());
             builder.compose(from.intoObject());
         }

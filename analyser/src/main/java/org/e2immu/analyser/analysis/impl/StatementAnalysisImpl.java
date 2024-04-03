@@ -18,14 +18,13 @@ import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.FlowDataConstants;
-import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
-import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analyser.util.VariableAccessReport;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.impl.LocationImpl;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
@@ -1532,17 +1531,30 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }
-        ComputeIndependentImpl computeIndependent = new ComputeIndependentImpl(evaluationContext);
-        // equivalent to a List.get() call, with the iterable being the source, and the loop var the target
         ParameterizedType iterableType = evaluatedIterable.returnType();
-        HiddenContentSelector hcsSource = computeIndependent.hcsIterable(iterableType);
-        LinkedVariables linksOfLoopVar = computeIndependent.linkedVariables(iterableType,
+        // equivalent to a List.get() call, with the iterable being the source, and the loop var the target
+        HiddenContentSelector hcsSource = findIterable(evaluationContext.getAnalyserContext(), iterableType);
+        LinkHelper linkHelper = new LinkHelper(evaluationResult, null, null);
+        LinkedVariables linksOfLoopVar = linkHelper.linkedVariables(iterableType,
                 evaluatedIterableResult.linkedVariablesOfExpression(), hcsSource, INDEPENDENT_HC_DV,
                 HiddenContentSelector.All.INSTANCE, loopVar.parameterizedType());
         return new EvaluationResultImpl.Builder(evaluationResult)
                 .setLinkedVariablesOfExpression(linksOfLoopVar)
                 .assignment(loopVar, value)
                 .compose(evaluationResult).build();
+    }
+
+    private HiddenContentSelector findIterable(AnalyserContext ac, ParameterizedType iterableType) {
+        TypeInfo iterable = ac.importantClasses().iterable().typeInfo;
+        MethodInfo iterator = iterable.findUniqueMethod(ac, "iterator", 0);
+        TypeInfo bestType = iterableType.bestTypeInfo(ac);
+        assert bestType != null : "How come? this type should implement Iterable";
+        MethodInfo methodInfo = bestType.findNearestOverride(iterator);
+        assert methodInfo != null : "How come? this type should have an overloaded iterable() method";
+        MethodInspection methodInspection = ac.getMethodInspection(methodInfo);
+        ParameterizedType typeReturnedByIterableMethod = methodInspection.getReturnType();
+        HiddenContent hc = HiddenContent.from(typeReturnedByIterableMethod);
+        return hc.selectAll();
     }
 
     private static DV notNullOfLoopVariable(EvaluationContext evaluationContext, Expression value, CausesOfDelay delays) {

@@ -21,13 +21,12 @@ import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
+import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.expression.util.TranslationCollectors;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -313,7 +312,7 @@ public class Lambda extends BaseExpression implements Expression {
         } else {
             MethodAnalysis methodAnalysis = context.evaluationContext().findMethodAnalysisOfLambda(methodInfo);
             boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-            boolean recursiveCall = MethodLinkHelper.recursiveCall(methodInfo, context.evaluationContext());
+            boolean recursiveCall = LinkHelper.recursiveCall(methodInfo, context.evaluationContext());
             boolean firstInCycle = breakCallCycleDelay || recursiveCall;
             String statementIndex = context.evaluationContext().statementIndex();
             if (firstInCycle) {
@@ -386,7 +385,7 @@ public class Lambda extends BaseExpression implements Expression {
     non-modifying inlined method (identical to non-modified part of makeInstance)
      */
     private Expression addLinkingInformation(EvaluationResult context, InlinedMethod inlinedMethod) {
-        MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        LinkHelper.LambdaResult lr = LinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
         LinkedVariables lvs = lr.linkedToReturnValue().remove(this::removeFromLinkedVariables);
         if (lvs.isEmpty()) {
             return inlinedMethod;
@@ -408,7 +407,7 @@ public class Lambda extends BaseExpression implements Expression {
         Expression result = Instance.forGetInstance(identifier, statementIndex, parameterizedType, valueProperties);
 
         // similar to MethodResult, ConstructorCall.anonymous
-        MethodLinkHelper.LambdaResult lr = MethodLinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
+        LinkHelper.LambdaResult lr = LinkHelper.lambdaLinking(context.evaluationContext(), methodInfo);
         LinkedVariables lvs;
         if (modified.isDelayed()) {
             lvs = lr.delay(modified.causesOfDelay());

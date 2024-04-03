@@ -16,51 +16,38 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.HiddenContentSelector;
-import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.model.MultiLevel.*;
 
-public class MethodLinkHelper {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodLinkHelper.class);
+public class LinkHelper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LinkHelper.class);
 
     private final EvaluationResult context;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
-    private final ComputeIndependent computeIndependent;
 
-    public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo) {
-        this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo),
-                new ComputeIndependentImpl(context.evaluationContext()));
+    public LinkHelper(EvaluationResult context, MethodInfo methodInfo) {
+        this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo));
     }
 
-    public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        this(context, methodInfo, methodAnalysis, new ComputeIndependentImpl(context.evaluationContext()));
-    }
-
-
-    public MethodLinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis,
-                            ComputeIndependent computeIndependent) {
+    public LinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         this.context = context;
         this.methodInfo = methodInfo;
         this.methodAnalysis = methodAnalysis;
-        this.computeIndependent = computeIndependent;
     }
 
     /*
@@ -158,7 +145,7 @@ public class MethodLinkHelper {
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
                     if (pt != null) {
-                        LinkedVariables lv = computeIndependent.linkedVariables(parameterType, parameterLvs, null,
+                        LinkedVariables lv = linkedVariables(parameterType, parameterLvs, null,
                                 formalParameterIndependent, parameterAnalysis.getHiddenContentSelector(), pt);
                         EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
                         builder.mergeLinkedVariablesOfExpression(lv);
@@ -222,12 +209,13 @@ public class MethodLinkHelper {
             mergedLvs = LinkedVariables.EMPTY;
             for (int i = targetIndex; i < parameterLvs.size(); i++) {
                 LinkedVariables lvs = parameterLvs.get(i);
-                LinkedVariables lv = computeIndependent.linkedVariables(targetType, lvs, hcsSource, independentDv, hcsTarget, sourceType);
+                LinkedVariables lv = linkedVariables(targetType, lvs, hcsSource, independentDv, hcsTarget, sourceType);
                 mergedLvs = mergedLvs.merge(lv);
             }
         } else {
             LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
-            mergedLvs = computeIndependent.linkedVariables(targetType, targetLinkedVariables, hcsSource, independentDv, hcsTarget, sourceType);
+            mergedLvs = linkedVariables(targetType, targetLinkedVariables, hcsSource, independentDv, hcsTarget,
+                    sourceType);
         }
         LinkedVariables finalMergedLvs = mergedLvs;
         sourceLinkedVariables.stream().forEach(e ->
@@ -296,7 +284,7 @@ public class MethodLinkHelper {
         }
 
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
-        return computeIndependent.linkedVariables(objectResult.getExpression().returnType(), linkedVariablesOfObject,
+        return linkedVariables(objectResult.getExpression().returnType(), linkedVariablesOfObject,
                 null, independent, methodAnalysis.getHiddenContentSelector(), concreteReturnType);
     }
 
@@ -317,5 +305,202 @@ public class MethodLinkHelper {
             return recursiveCall(methodInfo, evaluationContext.getClosure());
         }
         return false;
+    }
+
+    public LinkedVariables linkedVariables(ParameterizedType sourceType,
+                                           LinkedVariables sourceLvs,
+                                           HiddenContentSelector hiddenContentSelectorOfSource,
+                                           DV transferIndependent,
+                                           HiddenContentSelector hiddenContentSelectorOfTarget,
+                                           ParameterizedType targetType) {
+        assert targetType != null;
+
+        // RULE 1: no linking when the source is not linked or there is no transfer
+        if (sourceLvs.isEmpty() || MultiLevel.INDEPENDENT_DV.equals(transferIndependent)) {
+            return LinkedVariables.EMPTY;
+        }
+        assert !(hiddenContentSelectorOfTarget.isNone() && transferIndependent.equals(MultiLevel.INDEPENDENT_HC_DV))
+                : "Impossible to have no knowledge of hidden content, and INDEPENDENT_HC";
+
+        DV immutableOfSource = context.evaluationContext().immutable(sourceType);
+
+        // RULE 2: delays
+        if (immutableOfSource.isDelayed()) {
+            return sourceLvs.changeToDelay(LV.delay(immutableOfSource.causesOfDelay()));
+        }
+
+        // RULE 3: immutable -> no link
+        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfSource)) {
+            /*
+             if the result type immutable because of a choice in type parameters, methodIndependent will return
+             INDEPENDENT_HC, but the concrete type is deeply immutable
+             */
+            return LinkedVariables.EMPTY;
+        }
+
+        // RULE 4: delays
+        if (transferIndependent.isDelayed()) {
+            // delay in method independent
+            return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
+        }
+
+        ParameterizedType formalTargetType = targetType.typeInfo != null
+                ? targetType.typeInfo.asParameterizedType(context.getAnalyserContext()) : targetType;
+        HiddenContent targetTypeHC = HiddenContent.from(formalTargetType);
+        Map<Integer, ParameterizedType> typesCorrespondingToHC = targetTypeHC.hiddenContentTypes(targetType);
+        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
+                typesCorrespondingToHC, hiddenContentSelectorOfTarget);
+        if (correctedIndependent.isDelayed()) {
+            // delay in method independent
+            return sourceLvs.changeToDelay(LV.delay(correctedIndependent.causesOfDelay()));
+        }
+        if (MultiLevel.INDEPENDENT_DV.equals(correctedIndependent)) {
+            return LinkedVariables.EMPTY;
+        }
+        HiddenContentSelector correctedTransferSelector = correctSelector(hiddenContentSelectorOfTarget,
+                typesCorrespondingToHC.keySet());
+        Map<Variable, LV> newLinked = new HashMap<>();
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        for (Map.Entry<Variable, LV> e : sourceLvs) {
+            ParameterizedType pt = e.getKey().parameterizedType();
+            // for the purpose of this algorithm, unbound type parameters are HC
+            DV immutable = context.evaluationContext().immutable(pt);
+            LV lv = e.getValue();
+            assert lv.lt(LINK_INDEPENDENT);
+
+             /*
+               TODO check this!
+               without the 2nd condition, we get loops of CONTEXT_IMMUTABLE delays, see e.g., Test_Util_07_Trie
+                     -> we never delay on this for IMMUTABLE
+              */
+            if (immutable.isDelayed() && !(e.getKey() instanceof This)) {
+                causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay());
+            } else {
+                if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
+                        immutableOfSource, lv)) {
+                    newLinked.put(e.getKey(), LINK_DEPENDENT);
+                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {// downgrade && !targetTypeHC.isNone()) {
+                    LV commonHC;
+                    if (lv.isCommonHC()) {
+                        commonHC = LV.createHC(correctedTransferSelector, lv.mine());
+                    } else {
+                        // assigned, dependent... take the most complete hidden content selector, if possible
+                        HiddenContentSelector theirs = targetTypeHC.selectAll();
+                        commonHC = LV.createHC(correctedTransferSelector, theirs);
+                    }
+                    newLinked.put(e.getKey(), commonHC);
+                }
+            }
+        }
+        if (causesOfDelay.isDelayed()) {
+            return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
+        }
+        return LinkedVariables.of(newLinked);
+    }
+
+    private boolean isDependent(DV transferIndependent, DV correctedIndependent,
+                                DV immutableOfSource,
+                                LV lv) {
+        return
+                // situation immutable(mutable), we'll have to override
+                MultiLevel.INDEPENDENT_HC_DV.equals(transferIndependent)
+                && MultiLevel.DEPENDENT_DV.equals(correctedIndependent)
+                ||
+                // situation mutable(immutable), dependent method,
+                MultiLevel.DEPENDENT_DV.equals(transferIndependent)
+                && !lv.isCommonHC()
+                && !MultiLevel.isAtLeastImmutableHC(immutableOfSource);
+    }
+
+    /*
+    Example: Map<K,V>.entrySet() has HCS <0,1>: we keep both type parameters. But Map<Long,V> must have
+    only <1>, because type parameter 0 cannot be hidden content in this particular instantiation.
+    Map<StringBuilder, V> is not relevant here, because then the type would be mutable, the corrected independent
+    would be "dependent", and we'll not return a commonHC object.
+    So we'll only remove those type parameters that have a recursively immutable instantiation in the concrete type.
+     */
+    private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTarget,
+                                                  Set<Integer> typesCorrespondingToHCKeySet) {
+        if (hiddenContentSelectorOfTarget.isNone() || hiddenContentSelectorOfTarget.isAll()) {
+            return hiddenContentSelectorOfTarget;
+        }
+        // find the types corresponding to the hidden content indices
+        Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
+        Set<Integer> remaining = typesCorrespondingToHCKeySet.stream()
+                .filter(selectorSet::contains)
+                .collect(Collectors.toUnmodifiableSet());
+        if (remaining.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+        return new HiddenContentSelector.CsSet(remaining);
+    }
+
+    private DV correctIndependent(DV immutableOfSource,
+                                  DV independent,
+                                  ParameterizedType targetType,
+                                  Map<Integer, ParameterizedType> typesCorrespondingToHCInTarget,
+                                  HiddenContentSelector hiddenContentSelectorOfTarget) {
+        // immutableOfSource is not recursively immutable, independent is not fully independent
+        // remaining values immutable: mutable, immutable HC
+        // remaining values independent: dependent, independent hc
+        if (MultiLevel.DEPENDENT_DV.equals(independent)) {
+            if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
+                return MultiLevel.INDEPENDENT_HC_DV;
+            }
+            if (hiddenContentSelectorOfTarget.isAll()) {
+                // look at the whole object
+                DV immutablePt = context.evaluationContext().immutable(targetType);
+                if (immutablePt.isDelayed()) return immutablePt;
+                if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                    return MultiLevel.INDEPENDENT_HC_DV;
+                }
+            } else if (!hiddenContentSelectorOfTarget.isNone()) {
+                Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
+                boolean allIndependentHC = true;
+                for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
+                    if (selectorSet.contains(entry.getKey())) {
+                        DV immutablePt = context.evaluationContext().immutable(entry.getValue());
+                        if (immutablePt.isDelayed()) return immutablePt;
+                        if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                            allIndependentHC = false;
+                            break;
+                        }
+                    }
+                }
+                if (allIndependentHC) return MultiLevel.INDEPENDENT_HC_DV;
+            }
+        }
+        if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
+            if (hiddenContentSelectorOfTarget.isAll()) {
+                DV immutablePt = context.evaluationContext().immutable(targetType);
+                if (immutablePt.isDelayed()) return immutablePt;
+               /* remove the downgrade
+                if (MultiLevel.isMutable(immutablePt)) {
+                    return MultiLevel.DEPENDENT_DV;
+                }*/
+                if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutablePt)) {
+                    return MultiLevel.INDEPENDENT_DV;
+                }
+            } else {
+                assert !hiddenContentSelectorOfTarget.isNone();
+              /*  remove the downgrade
+                if (MultiLevel.isMutable(immutableOfSource)
+                    && hiddenContentSelectorOfSource != null
+                    && hiddenContentSelectorOfSource.isAll()) {
+                    return MultiLevel.DEPENDENT_DV;
+                }
+                Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
+                for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
+                    if (selectorSet.contains(entry.getKey())) {
+                        if (!entry.getValue().isTypeParameter()) {
+                            DV immutablePt = typeImmutable(entry.getValue());
+                            if (immutablePt.isDelayed()) return immutablePt;
+                            if (MultiLevel.isMutable(immutablePt)) {
+                                return MultiLevel.DEPENDENT_DV;
+                            }
+                        }
+                    }
+                }*/
+            }
+        }
+        return independent;
     }
 }

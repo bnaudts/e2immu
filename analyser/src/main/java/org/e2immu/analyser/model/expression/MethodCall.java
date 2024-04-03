@@ -289,7 +289,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         MethodInfo concreteMethod = concreteMethod(context, forwardEvaluationInfo);
 
         boolean breakCallCycleDelay = concreteMethod.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        boolean recursiveCall = MethodLinkHelper.recursiveCall(concreteMethod, context.evaluationContext());
+        boolean recursiveCall = LinkHelper.recursiveCall(concreteMethod, context.evaluationContext());
         boolean firstInCallCycle = recursiveCall || breakCallCycleDelay;
 
         // is the method modifying, do we need to wait?
@@ -368,8 +368,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // links, 1st: param -> object and param <-> param
         ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
-        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
-        MethodLinkHelper.FromParameters fp = methodLinkHelper.linksInvolvingParameters(objectType, concreteReturnType,
+        LinkHelper linkHelper = new LinkHelper(context, methodInfo, methodAnalysis);
+        LinkHelper.FromParameters fp = linkHelper.linksInvolvingParameters(objectType, concreteReturnType,
                 res.evaluationResults());
         LinkedVariables linkedVariablesOfObjectFromParams = fp.intoObject().linkedVariablesOfExpression();
         builder.compose(fp.intoObject());
@@ -383,7 +383,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links, 2nd: object -> result; this will be the result of the expression
         // copy the link result from the parameters into the lvs of the object. There can be a result when
         // a parameter is a functional interface returning a value
-        LinkedVariables lvsResult1 = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
+        LinkedVariables lvsResult1 = linkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
                 res.evaluationResults(), concreteReturnType);
         LinkedVariables lvsResult2 = fp.intoResult() == null ? lvsResult1
                 : lvsResult1.merge(fp.intoResult().linkedVariablesOfExpression());
@@ -731,7 +731,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public DV getProperty(EvaluationResult context, Property property, boolean duringEvaluation) {
         boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        boolean cycle = breakCallCycleDelay || MethodLinkHelper.recursiveCall(methodInfo, context.evaluationContext());
+        boolean cycle = breakCallCycleDelay || LinkHelper.recursiveCall(methodInfo, context.evaluationContext());
         if (cycle) {
             if (Property.NOT_NULL_EXPRESSION == property) {
                 return returnType().isPrimitiveExcludingVoid()

@@ -17,7 +17,6 @@ package org.e2immu.analyser.analyser.impl.computing;
 import org.e2immu.analyser.analyser.Properties;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.MethodAnalyserImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.impl.shallow.CompanionAnalyser;
@@ -109,8 +108,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         } else {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             boolean inSyncBlock = methodInspection.isSynchronized()
-                    || methodInfo.inConstruction()
-                    || methodInfo.isStaticBlock();
+                                  || methodInfo.inConstruction()
+                                  || methodInfo.isStaticBlock();
             firstStatementAnalyser = StatementAnalyserImpl.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements(), "", true, inSyncBlock);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
@@ -296,14 +295,14 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private void detectMissingStaticModifier() {
         if (!methodInfo.isStatic()
-                && !methodInfo.typeInfo.isInterface()
-                && methodInfo.isNotATestMethod()) {
+            && !methodInfo.typeInfo.isInterface()
+            && methodInfo.isNotATestMethod()) {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableInfo::isRead)
-                    && absentUnlessStatic(VariableInfo::isAssigned)
-                    && !getThisAsVariable().isRead()
-                    && methodInfo.isNotOverridingAnyOtherMethod()
-                    && !methodInfo.isDefault()) {
+                && absentUnlessStatic(VariableInfo::isAssigned)
+                && !getThisAsVariable().isRead()
+                && methodInfo.isNotOverridingAnyOtherMethod()
+                && !methodInfo.isDefault()) {
                 analyserResultBuilder.add(Message.newMessage(methodInfo.newLocation(),
                         Message.Label.METHOD_SHOULD_BE_MARKED_STATIC));
                 LOGGER.info("Method should be marked 'static': {}", methodInfo);
@@ -400,12 +399,12 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                     .map(fa -> {
                         ParameterizedType concreteType = fa.concreteTypeNullWhenDelayed();
                         boolean acceptDelay = concreteType == null || concreteType.typeInfo != null &&
-                                concreteType.typeInfo.topOfInterdependentClassHierarchy() !=
-                                        fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
+                                                                      concreteType.typeInfo.topOfInterdependentClassHierarchy() !=
+                                                                      fa.getFieldInfo().owner.topOfInterdependentClassHierarchy();
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
                         return acceptDelay && immutable.isDelayed() ? immutable :
                                 DV.fromBoolDv(MultiLevel.isEventuallyFinalFields(immutable)
-                                        || MultiLevel.isEventuallyImmutableHC(immutable));
+                                              || MultiLevel.isEventuallyImmutableHC(immutable));
                     })
                     .reduce(DV.TRUE_DV, DV::min);
             if (haveEventuallyImmutableFields.isDelayed()) {
@@ -425,7 +424,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                         DV immutable = fa.getProperty(Property.EXTERNAL_IMMUTABLE);
 
                         boolean contentChangeable = !MultiLevel.isAtLeastEventuallyImmutableHC(immutable)
-                                && !fa.getFieldInfo().type.isPrimitiveExcludingVoid();
+                                                    && !fa.getFieldInfo().type.isPrimitiveExcludingVoid();
                         return DV.fromBoolDv(contentChangeable);
                     })
                     .reduce(DV.FALSE_DV, DV::max);
@@ -583,8 +582,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return null;
     }
 
-    // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
-    // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
+    // singleReturnValue is associated with @Constant; to be able to grab the actual Value object.
+    // We cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus computeReturnValue(SharedState sharedState) {
         assert methodAnalysis.singleReturnValueIsVariable();
 
@@ -600,8 +599,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         down-or-upcast allowed
          */
         if (methodInspection.getParameters().isEmpty() ||
-                methodInspection.getReturnType().isNotAssignableFromTo(analyserContext,
-                        methodInspection.getParameters().get(0).parameterizedType)) {
+            methodInspection.getReturnType().isNotAssignableFromTo(analyserContext,
+                    methodInspection.getParameters().get(0).parameterizedType)) {
             methodAnalysis.setProperty(Property.IDENTITY, DV.FALSE_DV);
         }
 
@@ -629,7 +628,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
          */
         DV externalNotNull;
         if ((analyserContext.getConfiguration().analyserConfiguration().computeContextPropertiesOverAllMethods() ||
-                methodInfo.inConstruction()) && value.isInstanceOf(VariableExpression.class)) {
+             methodInfo.inConstruction()) && value.isInstanceOf(VariableExpression.class)) {
             externalNotNull = variableInfo.getProperty(EXTERNAL_NOT_NULL);
             if (externalNotNull.isDelayed()) {
                 LOGGER.debug("Delaying return value of {}, waiting for NOT_NULL", methodInfo);
@@ -646,8 +645,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         boolean valueIsConstantField;
         VariableExpression ve;
         if (value instanceof InlinedMethod inlined
-                && (ve = inlined.expression().asInstanceOf(VariableExpression.class)) != null
-                && ve.variable() instanceof FieldReference fieldReference) {
+            && (ve = inlined.expression().asInstanceOf(VariableExpression.class)) != null
+            && ve.variable() instanceof FieldReference fieldReference) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo());
             DV constantField = fieldAnalysis.getProperty(Property.CONSTANT);
             if (constantField.isDelayed()) {
@@ -790,10 +789,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private FieldReference isGetter() {
         Block block = methodInspection.getMethodBody();
         if (block != null
-                && block.structure.statements().size() == 1
-                && block.structure.statements().get(0) instanceof ReturnStatement rs
-                && rs.expression instanceof VariableExpression ve
-                && ve.variable() instanceof FieldReference fr && fr.scopeIsThis()) {
+            && block.structure.statements().size() == 1
+            && block.structure.statements().get(0) instanceof ReturnStatement rs
+            && rs.expression instanceof VariableExpression ve
+            && ve.variable() instanceof FieldReference fr && fr.scopeIsThis()) {
             return fr;
         }
         return null;
@@ -805,11 +804,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             int n = statements.size();
             if (n == 1 || isFluent && n == 2) {
                 if (statements.get(0) instanceof ExpressionAsStatement eas
-                        && eas.expression instanceof Assignment assignment) {
+                    && eas.expression instanceof Assignment assignment) {
                     ParameterInfo pi = methodInspection.getParameters().get(0);
                     if (assignment.variableTarget instanceof FieldReference fr && fr.scopeIsThis()
-                            && assignment.value instanceof VariableExpression ve
-                            && pi.equals(ve.variable())) {
+                        && assignment.value instanceof VariableExpression ve
+                        && pi.equals(ve.variable())) {
                         methodAnalysis.setGetSetField(fr.fieldInfo());
                     }
                 }
@@ -821,8 +820,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private boolean setFluent(Expression valueBeforeInlining) {
         VariableExpression vv;
         boolean isFluent = (vv = valueBeforeInlining.asInstanceOf(VariableExpression.class)) != null &&
-                vv.variable() instanceof This thisVar &&
-                thisVar.typeInfo == methodInfo.typeInfo;
+                           vv.variable() instanceof This thisVar &&
+                           thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(Property.FLUENT, DV.fromBoolDv(isFluent));
         LOGGER.debug("Mark method {} as @Fluent? {}", methodInfo, isFluent);
         return isFluent;
@@ -1032,7 +1031,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         DV scopeDelays = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference fr
-                        && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo))
+                              && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo))
                 .map(vi -> connectedToMyTypeHierarchy((FieldReference) vi.variable()))
                 .reduce(CausesOfDelay.EMPTY, DV::max);
         if (scopeDelays.isDelayed()) {
@@ -1045,13 +1044,13 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return scopeDelays.causesOfDelay();
         }
 
-        List<VariableInfo> relevantVariableInfos = methodAnalysis.getLastStatement().variableStream()
+        List<VariableInfo> relevantVIs = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference fr
-                        && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo)
-                        && connectedToMyTypeHierarchy(fr).valueIsTrue())
+                              && fieldInMyTypeHierarchy(fr.fieldInfo(), methodInfo.typeInfo)
+                              && connectedToMyTypeHierarchy(fr).valueIsTrue())
                 .toList();
         // first step, check (my) field assignments
-        boolean fieldAssignments = relevantVariableInfos.stream().anyMatch(VariableInfo::isAssigned);
+        boolean fieldAssignments = relevantVIs.stream().anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             LOGGER.debug("Method {} is @Modified: fields are being assigned", methodInfo);
             methodAnalysis.setProperty(property, DV.TRUE_DV);
@@ -1061,7 +1060,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         // if there are no field assignments, there may be modifying method calls
 
         // second step, check that CM is present (this generally implies that links have been established)
-        DV contextModified = relevantVariableInfos.stream().map(vi -> vi.getProperty(CONTEXT_MODIFIED))
+        DV contextModified = relevantVIs.stream().map(vi -> vi.getProperty(CONTEXT_MODIFIED))
                 .reduce(DV.FALSE_DV, DV::max);
         if (contextModified.isDelayed()) {
             if (sharedState.breakDelayLevel.acceptMethodOverride()) {
@@ -1196,10 +1195,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(INDEPENDENT, delay);
                 return AnalysisStatus.of(delay);
             }
-            SetOfTypes hiddenContentCurrentType = typeAnalysis.getHiddenContentTypes();
 
-            // FIXME check! there used to be a myselfIsMutable==false is!
-            ComputeIndependent computeIndependent = new ComputeIndependentImpl(sharedState.evaluationContext);
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {
                 methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);
@@ -1210,19 +1206,17 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (factoryMethod) {
                 computed = linkedVariables.stream()
                         .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner == methodInfo)
-                        .map(e -> computeIndependent.typesAtLinkLevel(e.getValue(),
-                                concreteReturnType, immutable, e.getKey().parameterizedType()))
+                        .map(e -> e.getValue().toIndependent())
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             } else {
                 computed = linkedVariables.stream()
-                        // TODO:IS_HC removed links to 'this', see Basics_14
                         .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis())
                         .map(e -> {
                             if (e.getKey() instanceof This && e.getValue().le(LV.LINK_ASSIGNED)) {
                                 // return this
                                 return MultiLevel.INDEPENDENT_DV;
                             }
-                            return computeIndependent.typesAtLinkLevel(e.getValue(), concreteReturnType, immutable, e.getKey().parameterizedType());
+                            return e.getValue().toIndependent();
                         })
                         .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             }
@@ -1343,7 +1337,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         CausesOfDelay typeDelays = typeAnalysis.guardedForInheritedContainerPropertyDelays();
         if (typeDelays.isDelayed()) {
             LOGGER.debug("Delaying detection of illegal modification in @Container," +
-                    " delays in computing the fields to be guarded, on this method's type: {}", typeDelays);
+                         " delays in computing the fields to be guarded, on this method's type: {}", typeDelays);
             return typeDelays;
         }
         Set<FieldInfo> fieldsToBeGuarded = typeAnalysis.guardedForInheritedContainerProperty();
@@ -1355,10 +1349,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
          */
         List<VariableInfo> variables = statementAnalysis.variableStream()
                 .filter(vi -> !(vi.variable() instanceof This) && !(vi.variable() instanceof ReturnVariable)
-                        // we exclude the parameters of the method, because they'll get a different error (See Modification_16)
-                        && !(vi.variable() instanceof ParameterInfo pi && pi.getMethodInfo() == methodInfo)
-                        // this is about content, not about modifications to the fields themselves
-                        && !(vi.variable() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo())))
+                              // we exclude the parameters of the method, because they'll get a different error (See Modification_16)
+                              && !(vi.variable() instanceof ParameterInfo pi && pi.getMethodInfo() == methodInfo)
+                              // this is about content, not about modifications to the fields themselves
+                              && !(vi.variable() instanceof FieldReference fr && fieldsToBeGuarded.contains(fr.fieldInfo())))
                 .toList();
 
         CausesOfDelay delays = variables.stream().map(vi ->

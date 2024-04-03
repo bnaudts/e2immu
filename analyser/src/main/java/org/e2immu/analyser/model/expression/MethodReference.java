@@ -19,9 +19,8 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
+import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -32,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
@@ -154,7 +152,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
 
 
         // very similar to MethodCall.evaluation(), because in reality, they do exactly the same
-        MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo, methodAnalysis);
+        LinkHelper linkHelper = new LinkHelper(context, methodInfo, methodAnalysis);
         List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
                 .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
                 .toList();
@@ -170,7 +168,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 /*
                 link the result to the scope's linked variables, with values of the parameters
                  */
-                MethodLinkHelper.FromParameters from = methodLinkHelper.linksInvolvingParameters(scope.returnType(),
+                LinkHelper.FromParameters from = linkHelper.linksInvolvingParameters(scope.returnType(),
                         null, parameterResults);
                 LV maxOfParameters = from.intoObject().linkedVariablesOfExpression().stream().filter(e -> e.getKey() instanceof ParameterInfo)
                         .map(Map.Entry::getValue).max(LV::compareTo).orElse(null);
@@ -180,7 +178,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     lvsResult =scopeResult.linkedVariablesOfExpression().maximum(maxOfParameters);
                 }
             } else {
-                lvsResult = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
+                lvsResult = linkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
                         parameterResults, concreteReturnType);
             }
             builder.setExpression(this);

@@ -17,14 +17,12 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.delay.VariableCause;
-import org.e2immu.analyser.analyser.impl.ComputeIndependentImpl;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
-import org.e2immu.analyser.analyser.ComputeIndependent;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.expression.util.MethodLinkHelper;
+import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
@@ -309,8 +307,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         } else {
             // a.b (FieldReference) or a[b] (DependentVariable) are linking-wise equivalent to a.get("b")
             MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
-            MethodLinkHelper methodLinkHelper = new MethodLinkHelper(context, methodInfo);
-            linkedVariables = methodLinkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult, List.of(),
+            LinkHelper linkHelper = new LinkHelper(context, methodInfo);
+            linkedVariables = linkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult, List.of(),
                     variable.parameterizedType()).merge(linkedVariables1);
         }
         builder.setLinkedVariablesOfExpression(linkedVariables);
