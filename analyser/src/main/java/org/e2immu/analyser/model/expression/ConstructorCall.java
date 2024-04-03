@@ -699,4 +699,10 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     public boolean hasConstructor() {
         return constructor != null;
     }
+
+    @Override
+    public TypeInfo typeInfoOfReturnType() {
+        if (anonymousClass != null) return anonymousClass;
+        return super.typeInfoOfReturnType();
+    }
 }

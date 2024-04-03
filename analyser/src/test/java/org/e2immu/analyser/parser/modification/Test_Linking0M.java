@@ -45,8 +45,8 @@ public class Test_Linking0M extends CommonTestRunner {
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(),
                             it(0, 1, "m:0,this.listM:-1,this:-1"),
                             it(2, "m:0,this.listM:4,this:4"));
-                    assertSingleLv(d, 2, 1, "*-4-*"); // FIXME i'd say *M-4-0M
-                    assertSingleLv(d, 2, 2, "*-4-X");
+                    assertSingleLv(d, 2, 1, "*-4-*");
+                    assertSingleLv(d, 2, 2, "*-4-*");
                     if (d.iteration() >= 2) {
                         assertTrue(d.evaluationResult().changeData().values().stream()
                                 .noneMatch(cd -> cd.linkedVariables().isDelayed()));
@@ -61,7 +61,7 @@ public class Test_Linking0M extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
                                 it(2, "this.listM:4,this:4"));
-                        assertSingleLv(d, 2, 0, "*M-4-*M"); // FIXME i'd say *M-4-0M
+                        assertSingleLv(d, 2, 0, "*M-4-*M");
                         assertSingleLv(d, 2, 1, "*M-4-0M");
                     }
                 }

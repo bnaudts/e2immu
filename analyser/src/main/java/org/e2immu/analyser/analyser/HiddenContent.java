@@ -269,6 +269,10 @@ public interface HiddenContent {
                     }
                 }
             }
+            if(targetType.equals(wholeType)) {
+                return HiddenContentSelector.All.INSTANCE;
+            }
+            // FIXME we should make another value?
             return HiddenContentSelector.All.INSTANCE;
         }
 

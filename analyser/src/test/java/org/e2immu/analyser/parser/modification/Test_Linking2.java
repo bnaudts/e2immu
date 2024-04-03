@@ -18,17 +18,18 @@ import org.e2immu.analyser.analyser.DV;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,16 +48,46 @@ public class Test_Linking2 extends CommonTestRunner {
                         assertLinked(d, it(0, "selection:0"));
                     }
                 }
-                case "m2" -> {
+                case "m2", "m2b" -> {
+                    if ("0".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "selector".equals(pi.name)) {
+                            assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                            assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                        }
+                    }
                     if ("1.0.0".equals(d.statementId()) && "x".equals(d.variableName())) {
                         assertLinked(d, it(0, 1, "selection:-1,selector:-1,xs:-1"),
                                 it(2, "selection:4,selector:4,xs:4"));
                         assertSingleLv(d, 2, 0, "*-4-0");
-                        assertSingleLv(d, 2, 1, "*-4-0"); // FIXME ??
+                        assertSingleLv(d, 2, 1, "*-4-0"); // selector is not @Independent!
                         assertSingleLv(d, 2, 2, "*-4-0");
                     }
                     if ("2".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
                         assertLinked(d, it(0, 1, "selection:0,selector:-1,xs:-1"),
+                                it(2, "selection:0,selector:4,xs:4"));
+                    }
+                }
+                case "m2c" -> {
+                    if ("0".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "selector".equals(pi.name)) {
+                            assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                            assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                        }
+                        if ("independentSelector".equals(d.variableName())) {
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
+                    if ("2.0.0".equals(d.statementId()) && "x".equals(d.variableName())) {
+                        assertLinked(d, it0("independentSelector:-1,selection:-1,selector:-1,xs:-1"),
+                                it1("independentSelector:-1,selection:-1,xs:-1"),
+                                it(2, "selection:4,selector:4,xs:4"));
+                        assertSingleLv(d, 2, 0, "*-4-0");
+                        assertSingleLv(d, 2, 1, "*-4-0"); // selector is not @Independent!
+                        assertSingleLv(d, 2, 2, "*-4-0");
+                    }
+                    if ("3".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
+                        assertLinked(d, it0("independentSelector:-1,selection:0,selector:-1,xs:-1"),
+                                it1("independentSelector:-1,selection:0,xs:-1"),
                                 it(2, "selection:0,selector:4,xs:4"));
                     }
                 }
@@ -76,9 +107,16 @@ public class Test_Linking2 extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "m2c".equals(d.enclosingMethod().name)) {
+                assertEquals("$1", d.methodInfo().typeInfo.name());
+                assertDv(d.p(0), MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
 
         testClass("Linking_2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 }

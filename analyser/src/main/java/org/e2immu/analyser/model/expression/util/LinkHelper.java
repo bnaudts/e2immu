@@ -50,13 +50,8 @@ public class LinkHelper {
         this.methodAnalysis = methodAnalysis;
     }
 
-    /*
-    called by ConstructorCall and MethodCall
-     */
-    private List<LinkedVariables> computeLinkedVariablesOfParameters(List<EvaluationResult> parameterResults) {
-        // temporary assertion, to help debugging
-        assert parameterResults.stream().noneMatch(er -> er.linkedVariablesOfExpression() == null);
-        return parameterResults.stream().map(er -> er.linkedVariablesOfExpression().maximum(LINK_DEPENDENT)).toList();
+    private static LinkedVariables linkedVariablesOfParameter(EvaluationResult parameterResult) {
+        return parameterResult.linkedVariablesOfExpression().maximum(LV.LINK_DEPENDENT);
     }
 
     public record LambdaResult(List<LinkedVariables> linkedToParameters, LinkedVariables linkedToReturnValue) {
@@ -110,24 +105,21 @@ public class LinkHelper {
                 : new EvaluationResultImpl.Builder(context).setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
 
         if (!methodInspection.getParameters().isEmpty()) {
-            List<LinkedVariables> parameterLv = computeLinkedVariablesOfParameters(parameterResults);
-
             // links between object/return value and parameters
             for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
                 DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
                 LinkedVariables lvsToResult = parameterAnalysis.getLinkToReturnValueOfMethod();
-                if (!INDEPENDENT_DV.equals(formalParameterIndependent) || !lvsToResult.isEmpty()) {
+                boolean inResult = intoResultBuilder != null && !lvsToResult.isEmpty();
+                if (!INDEPENDENT_DV.equals(formalParameterIndependent) || inResult) {
                     ParameterInfo pi = parameterAnalysis.getParameterInfo();
                     ParameterizedType parameterType = pi.parameterizedType;
                     LinkedVariables parameterLvs;
-                    boolean inResult;
-                    if (!lvsToResult.isEmpty()) {
+                    if (inResult) {
                         /*
                         change the links of the parameter to the value of the return variable (see also MethodReference,
                         computation of links when modified is true)
                          */
-                        inResult = intoResultBuilder != null;
-                        LinkedVariables returnValueLvs = parameterLv.get(pi.index);
+                        LinkedVariables returnValueLvs = linkedVariablesOfParameter(parameterResults.get(pi.index));
                         LV valueOfReturnValue = lvsToResult.stream().filter(e -> e.getKey() instanceof ReturnVariable)
                                 .map(Map.Entry::getValue).findFirst().orElseThrow();
                         Map<Variable, LV> map = returnValueLvs.stream().collect(Collectors.toMap(Map.Entry::getKey,
@@ -140,8 +132,7 @@ public class LinkHelper {
                         parameterLvs = LinkedVariables.of(map);
                         formalParameterIndependent = valueOfReturnValue.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
                     } else {
-                        inResult = false;
-                        parameterLvs = parameterLv.get(pi.index);
+                        parameterLvs = linkedVariablesOfParameter(parameterResults.get(pi.index));
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
                     if (pt != null) {
@@ -153,7 +144,7 @@ public class LinkHelper {
                 }
             }
 
-            linksBetweenParameters(intoObjectBuilder, methodInfo, parameterResults, parameterLv);
+            linksBetweenParameters(intoObjectBuilder, methodInfo, parameterResults);
         }
         return new FromParameters(intoObjectBuilder.build(), intoResultBuilder == null ? null :
                 intoResultBuilder.build());
@@ -161,11 +152,12 @@ public class LinkHelper {
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
                                        MethodInfo methodInfo,
-                                       List<EvaluationResult> parameterResults,
-                                       List<LinkedVariables> parameterLvs) {
+                                       List<EvaluationResult> parameterResults) {
         Map<ParameterInfo, LinkedVariables> crossLinks = methodInfo.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
         crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
+            List<LinkedVariables> parameterLvs = parameterResults.stream()
+                    .map(LinkHelper::linkedVariablesOfParameter).toList();
             ParameterInfo target = (ParameterInfo) e.getKey();
             boolean sourceIsVarArgs = pi.parameterInspection.get().isVarArgs();
             assert !sourceIsVarArgs : "Varargs must always be a target";
