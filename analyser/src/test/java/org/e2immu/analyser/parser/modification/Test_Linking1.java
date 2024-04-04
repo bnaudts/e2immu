@@ -344,6 +344,12 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                 }
             }
+            if ("m28".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "m".equals(pi.name)) {
+                    assert "0".equals(d.statementId());
+                    assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                }
+            }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {

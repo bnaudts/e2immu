@@ -26,10 +26,12 @@ public class ImportantClassesImpl implements ImportantClasses {
     private final ParameterizedType iterable;
     private final TypeInfo list;
     private final SetOnce<MethodInfo> arrayFieldAccess = new SetOnce<>();
+    private final TypeInfo intTypeInfo;
 
     public ImportantClassesImpl(TypeContext typeContext) {
         iterable = typeContext.getFullyQualified(Iterable.class).asParameterizedType(typeContext);
         list = typeContext.getFullyQualified(List.class);
+        intTypeInfo = typeContext.getPrimitives().intTypeInfo();
     }
 
     public ParameterizedType iterable() {
@@ -39,7 +41,7 @@ public class ImportantClassesImpl implements ImportantClasses {
     public MethodInfo arrayFieldAccess() {
         synchronized (arrayFieldAccess) {
             if (!arrayFieldAccess.isSet()) {
-                arrayFieldAccess.set(list.findUniqueMethod("get", list));
+                arrayFieldAccess.set(list.findUniqueMethod("get", intTypeInfo));
             }
         }
         return arrayFieldAccess.get();
