@@ -1,9 +1,6 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.Immutable;
-import org.e2immu.annotation.ImmutableContainer;
-import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,10 +52,11 @@ public class Linking_2 {
         }
         return selection;
     }
-
-    // explicitly mapping it onto an @Independent method does help
+/*
+    // See Linking_1, but now in the context of a for-loop
     static <X> List<X> m2c(List<X> xs, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
+            @NotModified(contract = true)
             @Override
             public boolean test(@Independent(contract = true) X x) {
                 return selector.test(x);
@@ -71,9 +69,19 @@ public class Linking_2 {
             }
         }
         return selection;
+    }*/
+
+    static List<M> m3(@Modified List<M> ms, Predicate<M> selector) {
+        List<M> selection = new ArrayList<>();
+        for (M m : ms) {
+            if (selector.test(m)) {
+                selection.add(m);
+            }
+        }
+        return selection;
     }
 
-    static List<M> m3(List<M> ms, Predicate<M> selector) {
+    static List<M> m4(@NotModified List<M> ms, @Container(contract = true) Predicate<M> selector) {
         List<M> selection = new ArrayList<>();
         for (M m : ms) {
             if (selector.test(m)) {

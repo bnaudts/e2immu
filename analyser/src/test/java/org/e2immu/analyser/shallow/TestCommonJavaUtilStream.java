@@ -59,7 +59,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals("Type java.util.stream.Stream<R>", methodInfo.returnType().toString());
-        assertEquals("<0>", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("0", methodAnalysis.getHiddenContentSelector().toString());
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
@@ -70,10 +70,10 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals("Type java.util.function.Function<? super T,? extends R>",
                 p0.getParameterInfo().parameterizedType.toString());
-        assertEquals("<0,1>", p0.getHiddenContentSelector().toString());
+        assertEquals("0,1", p0.getHiddenContentSelector().toString());
 
         assertEquals("return map:4", p0.getLinkToReturnValueOfMethod().toString());
-        assertEquals("<0,1>-4-<0>", p0.getLinkToReturnValueOfMethod().stream().findFirst()
+        assertEquals("0,1-4-0", p0.getLinkToReturnValueOfMethod().stream().findFirst()
                 .orElseThrow().getValue().toString());
     }
 
@@ -157,7 +157,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, p0.getProperty(Property.MODIFIED_VARIABLE));
 
         assertEquals("return mapToObj:4", p0.getLinkToReturnValueOfMethod().toString());
-        assertEquals("<0>-4-<0>", p0.getLinkToReturnValueOfMethod().stream().findFirst()
+        assertEquals("0-4-0", p0.getLinkToReturnValueOfMethod().stream().findFirst()
                 .orElseThrow().getValue().toString());
         assertEquals(MultiLevel.INDEPENDENT_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));

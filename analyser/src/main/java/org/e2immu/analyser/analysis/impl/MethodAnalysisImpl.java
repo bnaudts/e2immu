@@ -68,6 +68,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final GetSetEquivalent getSetEquivalent;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
     public final HiddenContentSelector hiddenContentSelector;
+    public final boolean preventInlining;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -88,7 +89,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                FieldInfo getSet,
                                GetSetEquivalent getSetEquivalent,
                                CommutableData commutableData,
-                               HiddenContentSelector hiddenContentSelector) {
+                               HiddenContentSelector hiddenContentSelector,
+                               boolean preventInlining) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -109,6 +111,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.getSetEquivalent = getSetEquivalent;
         assert !(getSetEquivalent != null && getSet != null) : "GetSet and GetSetEquivalent cannot go together";
         this.hiddenContentSelector = hiddenContentSelector;
+        this.preventInlining = preventInlining;
     }
 
     @Override
@@ -258,6 +261,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 .reduce(DelayFactory.initialDelay(), DV::max);
     }
 
+    @Override
+    public boolean preventInlining() {
+        return preventInlining;
+    }
+
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         private final FlipSwitch firstIteration = new FlipSwitch();
         public final ParameterizedType returnType;
@@ -289,6 +297,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         private final SetOnce<GetSetEquivalent> getSetEquivalent = new SetOnce<>();
         private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
+        private final SetOnce<Boolean> contractedNonModified = new SetOnce<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -455,7 +464,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getSetField(),
                     getSetEquivalent(),
                     getCommutableData(),
-                    getHiddenContentSelector());
+                    getHiddenContentSelector(),
+                    preventInlining());
         }
 
         /*
@@ -877,6 +887,19 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public boolean hiddenContentSelectorIsSet() {
             return hiddenContentSelector.isSet();
+        }
+
+        @Override
+        public boolean preventInlining() {
+            return typeAnalysisOfOwner != null
+                   && typeAnalysisOfOwner.isComputed()
+                   && !methodInfo.isAbstract()
+                   && contractedNonModified.getOrDefault(false);
+        }
+
+        @Override
+        protected void contractedNonModified() {
+            contractedNonModified.set(true);
         }
     }
 

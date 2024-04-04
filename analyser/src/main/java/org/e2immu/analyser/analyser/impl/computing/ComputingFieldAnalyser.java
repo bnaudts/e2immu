@@ -294,7 +294,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                     toEvaluate = ConstructorCall.instanceFromSam(sam, fieldInfo.type);
                 } else if (fieldInitialiser.callGetOnSam()) {
                     Expression object = ConstructorCall.withAnonymousClass(fieldInitialiser.identifier(),
-                            null, fieldInfo.type, sam.typeInfo, Diamond.NO);
+                            analyserContext, null, sam.typeInfo, Diamond.NO);
                     toEvaluate = new MethodCall(expression.getIdentifier(), false, object, sam,
                             sam.returnType(), List.of(), MethodCall.NO_MODIFICATION_TIMES);
                 } else {

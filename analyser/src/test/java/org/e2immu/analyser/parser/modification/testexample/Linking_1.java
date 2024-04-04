@@ -1,5 +1,9 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.IntStream;
@@ -191,5 +195,56 @@ public class Linking_1 {
                 return list.get(value);
             }
         });
+    }
+
+    /*
+    We're contracting the anonymous type's method (the SAM) to be @NotModified.
+    As a consequence, we'll prevent creating an inlined method, because that
+    inlined method will link xx to selector (see m27).
+     */
+    static <X> boolean m25(@Independent X xx, Predicate<X> selector) {
+        Predicate<X> independentSelector = new Predicate<X>() {
+            @NotModified(contract = true)
+            @Override
+            public boolean test(@Independent(contract = true) X x) {
+                return selector.test(x);
+            }
+        };
+        return independentSelector.test(xx);
+    }
+
+    // same as 25, but without the explicit @Independent, which is not relevant
+    // because selector is not a field.
+    static <X> boolean m26(@Independent X xx, Predicate<X> selector) {
+        Predicate<X> independentSelector = new Predicate<X>() {
+            @NotModified(contract = true)
+            @Override
+            public boolean test(X x) {
+                return selector.test(x);
+            }
+        };
+        return independentSelector.test(xx);
+    }
+
+    /*
+    Here, xx -4- selector in statement 1.
+    xx is still @Independent, because that is wrt the fields (that are absent).
+    The cross-link from xx to selector is not computed (only contracted as of now, 202404)
+     */
+    static <X> boolean m27(@Independent X xx, Predicate<X> selector) {
+        Predicate<X> independentSelector = new Predicate<X>() {
+            @Override
+            public boolean test(X x) {
+                return selector.test(x);
+            }
+        };
+        return independentSelector.test(xx);
+    }
+
+    /*
+    Corresponds to Linking_2.m4
+     */
+    static boolean m28(@NotModified M m, @Container(contract = true) Predicate<M> selector) {
+        return selector.test(m);
     }
 }

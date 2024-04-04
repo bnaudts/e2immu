@@ -18,7 +18,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.IsVariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.CommutableData;
 import org.e2immu.analyser.util.ParSeq;
 import org.e2immu.analyser.util.StringUtil;
@@ -170,6 +169,12 @@ public interface MethodAnalysis extends Analysis {
     default int pad() {
         return getFirstStatement().index().length();
     }
+
+    /*
+    See Linking_1.m25: prevent inlining this method when it is computed to be modifying, but contracted to be @NM.
+    Why? because the implementation links on the basis of the original.
+     */
+    boolean preventInlining();
 
     record Eventual(CausesOfDelay causesOfDelay,
                     Set<FieldInfo> fields,

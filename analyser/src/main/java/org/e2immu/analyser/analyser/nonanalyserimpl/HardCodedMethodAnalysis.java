@@ -178,4 +178,9 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
     public HiddenContentSelector getHiddenContentSelector() {
         return null; // none of these types have hidden content
     }
+
+    @Override
+    public boolean preventInlining() {
+        return true;
+    }
 }

@@ -719,7 +719,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             LOGGER.debug("Method {} is not suitable for inlining: variables {}", methodInfo, variables);
             return DV.FALSE_DV;
         }
-
+        if (methodAnalysis.preventInlining()) {
+            return DV.FALSE_DV;
+        }
         DV modifiesInstance = methodAnalysis.getProperty(MODIFIED_METHOD_ALT_TEMP);
         DV modifiesParameters = methodAnalysis.parameterAnalyses.stream()
                 .map(pa -> pa.getProperty(MODIFIED_VARIABLE))

@@ -16,22 +16,22 @@ package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it0;
+import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Linking1 extends CommonTestRunner {
@@ -102,6 +102,10 @@ public class Test_Linking1 extends CommonTestRunner {
                             assertEquals("m10", d.enclosingMethod().name);
                             assertCurrentValue(d, 0, "predicate.test(x)");
                             assertLinked(d, it0("NOT_YET_SET"), it(1, "")); // important! should not become predicate:4
+                        }
+                        if ("$21".equals(d.methodInfo().typeInfo.simpleName)) {
+                            assertEquals("m25", d.enclosingMethod().name);
+                            assertCurrentValue(d, 0, "selector.test(x)");
                         }
                     }
                     case "m11" -> {
@@ -180,17 +184,17 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m23" -> {
-                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})");
+                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})");
                         assertLinked(d, it0("list:-1"), it(1, "list:4"));
                     }
                     case "m23b" -> {
                         if ("2".equals(d.statementId())) {
-                            assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new IntFunction<>(){public X apply(int value){return list.get(value);}})");
+                            assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})");
                             assertLinked(d, it0("f:-1,intStream:-1,list:-1"), it(1, "f:4,intStream:2,list:4"));
                         }
                     }
                     case "m24" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new IntFunction<M>(){public M apply(int value){return list.get(value);}})");
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new $20(){public M apply(int value){return list.get(value);}})");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                         assertSingleLv(d, 2, 0, "0M-4-0M");
                     }
@@ -254,6 +258,91 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertSingleLv(d, 1, 0, "0-4-0");
                     }
                 }
+                case "m25" -> {
+                    if ("1".equals(d.statementId())) {
+                        // method return value is a boolean
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+            }
+            if ("m25".equals(d.methodInfo().name)) {
+                if ("independentSelector".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new $21(){public boolean test(@Independent(contract=true) X x){return selector.test(x);}}",
+                                d.currentValue().toString());
+                        // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertDv(d, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // should always remain independent
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("m26".equals(d.methodInfo().name)) {
+                if ("independentSelector".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new $22(){public boolean test(X x){return selector.test(x);}}",
+                                d.currentValue().toString());
+                        // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // here we differ from m25
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it(0, 1, "xx:-1"), it(2, ""));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // should always remain independent
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "independentSelector:-1"), it(2, ""));
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
+            }
+            if ("m27".equals(d.methodInfo().name)) {
+                if ("independentSelector".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("new $23(){public boolean test(X x){return selector.test(x);}}",
+                                d.currentValue().toString());
+                        // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // here we differ from m25
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it0("xx:-1"),
+                                it1("selector:-1,xx:-1"),
+                                it(2, ""));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        // should always remain independent
+                        assertLinked(d, it(0, ""));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d,
+                                it0("independentSelector:-1"),
+                                it1("independentSelector:-1,selector:-1"),
+                                it(2, "selector:4"));
+                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                    }
+                }
             }
         };
 
@@ -279,7 +368,7 @@ public class Test_Linking1 extends CommonTestRunner {
             }
             if ("m23".equals(d.methodInfo().name)) {
                 String expected = d.iteration() == 0 ? "<m:mapToObj>"
-                        : "IntStream.of(3).mapToObj(new IntFunction<X>(){public X apply(int value){return list.get(value);}})";
+                        : "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})";
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("list:-1"),
                         it(1, "list:4"));
@@ -287,7 +376,7 @@ public class Test_Linking1 extends CommonTestRunner {
             }
             if ("m23b".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("new IntFunction<>(){public X apply(int value){return list.get(value);}}",
+                    assertEquals("new $18(){public X apply(int value){return list.get(value);}}",
                             d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("f:0,list:-1"),
                             it(1, "f:0,list:4"));
@@ -295,7 +384,7 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expected = d.iteration() == 0 ? "<m:mapToObj>"
-                            : "IntStream.of(3).mapToObj(new IntFunction<>(){public X apply(int value){return list.get(value);}})";
+                            : "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:4,intStream:2"));
                     assertSingleLv(d, 0, 0, "0-4-*"); // FIXME should be 0-4-0
@@ -303,10 +392,42 @@ public class Test_Linking1 extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "m25".equals(d.enclosingMethod().name)) {
+                assertEquals("$21", d.methodInfo().typeInfo.name());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertTrue(d.methodAnalysis().preventInlining());
+                assertEquals("selector.test(x)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertFalse(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+
+                assertDv(d.p(0), MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("test".equals(d.methodInfo().name) && "m26".equals(d.enclosingMethod().name)) {
+                assertEquals("$22", d.methodInfo().typeInfo.name());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertTrue(d.methodAnalysis().preventInlining());
+                assertEquals("selector.test(x)", d.methodAnalysis().getSingleReturnValue().toString());
+                assertFalse(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+            if ("test".equals(d.methodInfo().name) && "m27".equals(d.enclosingMethod().name)) {
+                assertEquals("$23", d.methodInfo().typeInfo.name());
+                assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
+                assertFalse(d.methodAnalysis().preventInlining());
+                String expected = d.iteration() == 0 ? "<m:test>" : "/*inline test*/selector.test(x)";
+                assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
+                assertEquals(d.iteration() > 0, d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
+
+                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+            }
+        };
+
         // finalizer on a parameter
         testClass("Linking_1", 6, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

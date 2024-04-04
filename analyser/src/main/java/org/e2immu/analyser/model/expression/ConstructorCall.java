@@ -79,12 +79,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
     When creating an anonymous instance of a class (new SomeType() { })
      */
     public static ConstructorCall withAnonymousClass(Identifier identifier,
+                                                     InspectionProvider inspectionProvider,
                                                      Expression scope,
-                                                     @NotNull ParameterizedType parameterizedType,
                                                      @NotNull TypeInfo anonymousClass,
                                                      Diamond diamond) {
-        return new ConstructorCall(identifier, scope, null, parameterizedType, diamond,
-                List.of(), anonymousClass, null);
+        ParameterizedType pt = anonymousClass.asParameterizedType(inspectionProvider);
+        return new ConstructorCall(identifier, scope, null, pt, diamond, List.of(), anonymousClass,
+                null);
     }
 
     /*
@@ -702,7 +703,6 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     @Override
     public TypeInfo typeInfoOfReturnType() {
-        if (anonymousClass != null) return anonymousClass;
-        return super.typeInfoOfReturnType();
+        return parameterizedType.typeInfo;
     }
 }

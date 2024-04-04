@@ -102,8 +102,7 @@ public class ParseObjectCreationExpr {
                     typeContext.typeMap().getE2ImmuAnnotationExpressions(), false,
                     expressionContext.resolver().storeComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
-
-            return ConstructorCall.withAnonymousClass(id, tas.scope, parameterizedType, anonymousType, diamond);
+            return ConstructorCall.withAnonymousClass(id, typeContext, tas.scope, anonymousType, diamond);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType == null ? null :

@@ -286,18 +286,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (forwardEvaluationInfo.isOnlySort()) {
             return evaluateComponents(context, forwardEvaluationInfo);
         }
-        MethodInfo concreteMethod = concreteMethod(context, forwardEvaluationInfo);
+        MethodAndDelay methodAndDelay = concreteMethod(context, forwardEvaluationInfo);
+        MethodInfo concreteMethod = methodAndDelay.methodInfo;
 
-        boolean breakCallCycleDelay = concreteMethod.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
-        boolean recursiveCall = LinkHelper.recursiveCall(concreteMethod, context.evaluationContext());
+        // cannot let these two be dependent on a delay in concreteMethod
+        boolean breakCallCycleDelay = methodInfo.methodResolution.get().ignoreMeBecauseOfPartOfCallCycle();
+        boolean recursiveCall = LinkHelper.recursiveCall(methodInfo, context.evaluationContext());
         boolean firstInCallCycle = recursiveCall || breakCallCycleDelay;
 
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(concreteMethod);
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
-        DV modifiedBeforeCorrection = firstInCallCycle ? DV.FALSE_DV : modifiedMethod;
-
+        DV modifiedBeforeCorrection;
+        if (firstInCallCycle) {
+            modifiedBeforeCorrection = DV.FALSE_DV;
+        } else if (methodAndDelay.causesOfDelay.isDelayed() && modifiedMethod.valueIsTrue()) {
+            // the concrete method may be non-modifying, whilst the abstract one is modifying
+            modifiedBeforeCorrection = methodAndDelay.causesOfDelay;
+        } else {
+            modifiedBeforeCorrection = modifiedMethod;
+        }
         // see Independent1_5, functional interface as parameter has @IgnoreModification
         // IMPORTANT: we derive @IgnoreModifications from "object" and not from "objectValue" at the moment
         // we're assuming it is only present contractually at the moment
@@ -472,24 +481,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return new EvaluationResultImpl.Builder(context).setExpression(mc).build();
     }
 
-    private MethodInfo concreteMethod(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
+    private record MethodAndDelay(MethodInfo methodInfo, CausesOfDelay causesOfDelay) {
+    }
+
+    private MethodAndDelay concreteMethod(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
         MethodInfo concreteMethod;
 
         /* abstract method... is there a concrete implementation? we should give preference to that one
            we don't allow switching when we're expanding an inline method ... this may lead to new variables
            being introduced, or context properties to change (Symbol for CNN, InlinedMethod_10 for new variables)
-
+           See also Linking_2.m2c: the implementation has properties different from the abstract method
          */
-        if (methodInfo.isAbstract() && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
+        CausesOfDelay causesOfDelay;
+        // can the method be overridden? vs does the method have overrides?
+        TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(methodInfo.typeInfo);
+        MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
+        if (typeInspection.isExtensible()
+            && !(methodInspection.isFinal())
+            && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
-            TypeInfo typeInfo;
-            if (expression instanceof VariableExpression ve) {
-                Expression value = context.currentValue(ve.variable());
-                typeInfo = value.typeInfoOfReturnType();
+            Expression value;
+            /*
+            the only reason to delay the modification computation is when the object is a functional interface variable
+             */
+            if (expression instanceof DelayedVariableExpression dve && !(dve.variable instanceof This)) {
+                value = expression;
+                causesOfDelay = value.causesOfDelay();
+            } else if (expression instanceof VariableExpression ve && !(ve.variable() instanceof This)) {
+                value = context.currentValue(ve.variable());
+                causesOfDelay = value.causesOfDelay();
             } else {
-                typeInfo = expression.typeInfoOfReturnType();
+                value = expression;
+                // do not care about other delays!
+                causesOfDelay = CausesOfDelay.EMPTY;
             }
+            TypeInfo typeInfo = value.typeInfoOfReturnType();
             if (typeInfo != null) {
                 MethodInfo concrete = methodInfo.implementationIn(typeInfo);
                 concreteMethod = concrete == null ? methodInfo : concrete;
@@ -498,8 +525,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         } else {
             concreteMethod = methodInfo;
+            causesOfDelay = CausesOfDelay.EMPTY;
         }
-        return concreteMethod;
+        return new MethodAndDelay(concreteMethod, causesOfDelay);
     }
 
 

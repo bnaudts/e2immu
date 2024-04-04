@@ -274,6 +274,7 @@ abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notModified.typeInfo() == t) {
                     // @NotModified
                     setProperty(modified, falseTrue);
+                    contractedNonModified();
                 } else if (e2ImmuAnnotationExpressions.modified.typeInfo() == t) {
                     // @Modified
                     setProperty(modified, trueFalse);
@@ -391,6 +392,10 @@ abstract class AbstractAnalysisBuilder implements Analysis {
             writeLinkToReturnValue(true);
         }
         return messages;
+    }
+
+    protected void contractedNonModified() {
+        // do nothing, only in MAB
     }
 
     protected void getSet(String fieldName) {

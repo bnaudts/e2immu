@@ -17,18 +17,19 @@ package org.e2immu.analyser.parser.impl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.ImportantClasses;
+import org.e2immu.support.SetOnce;
 
 import java.util.List;
 
 public class ImportantClassesImpl implements ImportantClasses {
 
     private final ParameterizedType iterable;
-    private final MethodInfo arrayFieldAccess;
+    private final TypeInfo list;
+    private final SetOnce<MethodInfo> arrayFieldAccess = new SetOnce<>();
 
     public ImportantClassesImpl(TypeContext typeContext) {
         iterable = typeContext.getFullyQualified(Iterable.class).asParameterizedType(typeContext);
-        TypeInfo list = typeContext.getFullyQualified(List.class);
-        arrayFieldAccess = list.findUniqueMethod("get", typeContext.getPrimitives().intTypeInfo());
+        list = typeContext.getFullyQualified(List.class);
     }
 
     public ParameterizedType iterable() {
@@ -36,6 +37,11 @@ public class ImportantClassesImpl implements ImportantClasses {
     }
 
     public MethodInfo arrayFieldAccess() {
-        return arrayFieldAccess;
+        synchronized (arrayFieldAccess) {
+            if (!arrayFieldAccess.isSet()) {
+                arrayFieldAccess.set(list.findUniqueMethod("get", list));
+            }
+        }
+        return arrayFieldAccess.get();
     }
 }
