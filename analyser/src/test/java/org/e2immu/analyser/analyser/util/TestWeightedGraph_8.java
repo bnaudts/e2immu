@@ -18,7 +18,18 @@ public class TestWeightedGraph_8 extends CommonWG {
     WeightedGraph wg;
     ShortestPath shortestPath;
 
-    // Map<K,V> map = ...; Set<K> keys = map.keySet(); Collection<V> values = map.values()
+    /*
+     Map<K,V> map = ...; Set<K> keys = map.keySet(); Collection<V> values = map.values()
+
+     map 1--4--0 values
+     0
+     |
+     4
+     |
+     0
+     keys
+
+     */
 
     @BeforeEach
     public void beforeEach() {

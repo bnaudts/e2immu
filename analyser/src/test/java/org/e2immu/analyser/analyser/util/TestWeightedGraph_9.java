@@ -17,9 +17,17 @@ public class TestWeightedGraph_9 extends CommonWG {
     WeightedGraph wg;
     ShortestPath shortestPath;
 
-    // M is modifiable
-    // Map<M,V> map = ...; Set<M> keys = map.keySet(); Collection<V> values = map.values()
+    /* M is modifiable
+       Map<M,V> map = ...; Set<M> keys = map.keySet(); Collection<V> values = map.values()
 
+       map 1--4--0 values
+       0
+       |
+       4
+       |
+       0
+       keys
+     */
     @BeforeEach
     public void beforeEach() {
         keys = makeVariable("keys");
