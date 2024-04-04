@@ -143,16 +143,54 @@ public class Test_Linking2 extends CommonTestRunner {
                     }
                 }
                 case "m3" -> {
-                    if ("1.0.0".equals(d.statementId()) && "m".equals(d.variableName())) {
-                        assertLinked(d, it(0, 1, "ms:-1,selection:-1,selector:-1"),
-                                it(2, "ms:4,selection:4,selector:4"));
-                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    if ("m".equals(d.variableName())) {
+                        if ("1.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it(0, 1, "ms:-1,selector:-1"),
+                                    it(2, "ms:4,selector:4"));
+                        }
+                        if ("1.0.1.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                        if ("1.0.1".equals(d.statementId())) {
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
                     }
-                    if ("2".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
-                        assertCurrentValue(d, 2,
-                                "ms.isEmpty()?new ArrayList<>()/*0==this.size()*/:selector.test(nullable instance 1 type M)?instance 1.0.0.0.0 type List<M>:instance 1 type List<M>");
-                        assertLinked(d, it(0, 1, "ms:-1,selection:0,selector:-1"),
-                                it(2, "ms:4,selection:0,selector:4"));
+                    if ("selection".equals(d.variableName())) {
+                        if ("1.0.1.0.0".equals(d.statementId())) {
+                            String expected = d.iteration() < 2
+                                    ? "<vl:selection:Type java.util.ArrayList<org.e2immu.analyser.parser.modification.testexample.Linking_2.M>>"
+                                    : "instance 1.0.1.0.0 type List<M>";
+                            assertEquals(expected, d.currentValue().toString());
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    }
+                }
+                case "m4" -> {
+                    if (d.variable() instanceof ParameterInfo pi && "selector".equals(pi.name)) {
+                        if ("1.0.1".equals(d.statementId())) {
+                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                    }
+                    if ("m".equals(d.variableName())) {
+                        if ("1.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it(0, 1, "ms:-1,selector:-1"),
+                                    it(2, "ms:4,selector:4"));
+                        }
+                        if ("1.0.1.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
+                        if ("1.0.1".equals(d.statementId())) {
+                            assertLinked(d, it0("b:-1,ms:-1,selection:-1,selector:-1"),
+                                    it1("ms:-1,selection:-1,selector:-1"),
+                                    it(2, "ms:4,selection:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                            assertSingleLv(d, 2, 1, "*M-4-0M");
+                            assertSingleLv(d, 2, 2, "*M-4-0M");
+                            // FIXME change in selection --/--> change in m, the *M-4-0M should be interpreted as unidirectional
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        }
                     }
                 }
             }
@@ -168,7 +206,7 @@ public class Test_Linking2 extends CommonTestRunner {
         };
 
         testClass("Linking_2", 0, 0, new DebugConfiguration.Builder()
-          //      .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }

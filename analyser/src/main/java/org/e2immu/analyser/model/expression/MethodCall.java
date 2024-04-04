@@ -501,22 +501,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             && forwardEvaluationInfo.allowSwitchingToConcreteMethod()) {
             EvaluationResult objProbe = object.evaluate(context, ForwardEvaluationInfo.DEFAULT);
             Expression expression = objProbe.value();
-            Expression value;
-            /*
-            the only reason to delay the modification computation is when the object is a functional interface variable
-             */
+
+            TypeInfo typeInfo;
             if (expression instanceof DelayedVariableExpression dve && !(dve.variable instanceof This)) {
-                value = expression;
-                causesOfDelay = value.causesOfDelay();
+                if (dve.typeOfVariableInLoopDefinedOutside != null) {
+                    /* this is an efficiency: when a variable's value is delayed, but it has been defined outside a loop,
+                     and we're in the loop, we need not wait if we had a value before the loop -- it cannot change type
+                     */
+                    typeInfo = dve.typeOfVariableInLoopDefinedOutside.bestTypeInfo(context.getAnalyserContext());
+                    causesOfDelay = CausesOfDelay.EMPTY;
+                } else {
+                    typeInfo = dve.typeInfoOfReturnType();
+                    causesOfDelay = dve.causesOfDelay();
+                }
             } else if (expression instanceof VariableExpression ve && !(ve.variable() instanceof This)) {
-                value = context.currentValue(ve.variable());
+                Expression value = context.currentValue(ve.variable());
                 causesOfDelay = value.causesOfDelay();
+                typeInfo = value.typeInfoOfReturnType();
             } else {
-                value = expression;
+                typeInfo = expression.typeInfoOfReturnType();
                 // do not care about other delays!
                 causesOfDelay = CausesOfDelay.EMPTY;
             }
-            TypeInfo typeInfo = value.typeInfoOfReturnType();
             if (typeInfo != null) {
                 MethodInfo concrete = methodInfo.implementationIn(typeInfo);
                 concreteMethod = concrete == null ? methodInfo : concrete;

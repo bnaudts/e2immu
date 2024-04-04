@@ -528,7 +528,10 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                                                    Properties valuePropertiesIn,
                                                    GroupPropertyValues groupPropertyValues,
                                                    CausesOfDelay causes) {
-        Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+        ParameterizedType typeVDOL = vic.getPreviousOrInitial().valueIsSet() ?
+                vic.getPreviousOrInitial().getValue().returnType() : null;
+        Expression delayedValue = DelayedVariableExpression.forLocalVariableInLoop(variable, causes,
+                typeVDOL);
         Properties delayedVPs;
         if (valuePropertiesIn != null) {
             delayedVPs = valuePropertiesIn;
@@ -558,7 +561,9 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         CausesOfDelay causes = valueProperties.delays();
         Expression value;
         if (causes.isDelayed()) {
-            value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes);
+            ParameterizedType typeVDOL = vic.getPreviousOrInitial().valueIsSet() ?
+                    vic.getPreviousOrInitial().getValue().returnType() : null;
+            value = DelayedVariableExpression.forLocalVariableInLoop(variable, causes, typeVDOL);
         } else {
             Identifier identifier = statement().getIdentifier();
             value = Instance.forVariableInLoopDefinedOutside(identifier, index(), variable.parameterizedType(),

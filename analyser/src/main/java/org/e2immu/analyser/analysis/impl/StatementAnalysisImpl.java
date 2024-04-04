@@ -1527,7 +1527,10 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         Expression value;
         if (evaluatedIterable.isDelayed() || delayed.isDelayed()) {
             CausesOfDelay causes = evaluatedIterable.isDelayed() ? evaluatedIterable.causesOfDelay() : delayed;
-            value = DelayedVariableExpression.forLocalVariableInLoop(loopVar, causes);
+            // as soon as iterable has been evaluated, we know the type of the loopVar, and can fix it so that
+            // method calls don't have to wait for a 'concreteType'
+            ParameterizedType typeOfVDOL = evaluatedIterable.isDone() ? loopVar.parameterizedType() : null;
+            value = DelayedVariableExpression.forLocalVariableInLoop(loopVar, causes, typeOfVDOL);
         } else {
             value = Instance.forLoopVariable(evaluatedIterable.getIdentifier(), index, loopVar, valueProperties);
         }

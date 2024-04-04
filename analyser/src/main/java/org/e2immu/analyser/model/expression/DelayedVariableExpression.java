@@ -43,11 +43,13 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     public final Variable variable;
     public final CausesOfDelay causesOfDelay;
     public final int statementTime;
+    public final ParameterizedType typeOfVariableInLoopDefinedOutside;
 
     private DelayedVariableExpression(String msg,
                                       Variable variable,
                                       int statementTime,
-                                      CausesOfDelay causesOfDelay) {
+                                      CausesOfDelay causesOfDelay,
+                                      ParameterizedType typeOfVariableInLoopDefinedOutside) {
         super(Identifier.constant(variable.fullyQualifiedName() + ":" + statementTime),
                 variable.getComplexity());
         this.msg = msg;
@@ -58,12 +60,13 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                 : "Causes of delay: " + causesOfDelay;
         assert causesOfDelay.isDelayed();
         this.variable = variable;
+        this.typeOfVariableInLoopDefinedOutside = typeOfVariableInLoopDefinedOutside;
     }
 
     public static DelayedVariableExpression forParameter(ParameterInfo parameterInfo,
                                                          CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<p:" + parameterInfo.name + ">", parameterInfo,
-                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay, null);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
@@ -76,14 +79,14 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
                                                                            int statementTime,
                                                                            CauseOfDelay causeOfDelay) {
         return new DelayedVariableExpression("<f*:" + fieldString(fieldReference) + ">", fieldReference,
-                statementTime, DelayFactory.createDelay(causeOfDelay));
+                statementTime, DelayFactory.createDelay(causeOfDelay), null);
     }
 
     public static DelayedVariableExpression forField(FieldReference fieldReference,
                                                      int statementTime,
                                                      CausesOfDelay causesOfDelay) {
         return new DelayedVariableExpression("<f:" + fieldString(fieldReference) + ">", fieldReference,
-                statementTime, causesOfDelay);
+                statementTime, causesOfDelay, null);
     }
 
     private static String fieldString(FieldReference fieldReference) {
@@ -96,30 +99,33 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             return forField(fieldReference, statementTime, causesOfDelay);
         if (variable instanceof ParameterInfo parameterInfo) return forParameter(parameterInfo, causesOfDelay);
         return new DelayedVariableExpression("<v:" + variable.simpleName() + ">", variable,
-                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
+                VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay, null);
     }
 
 
-    public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay) {
-        String msg = "<vl:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay);
+    public static Expression forLocalVariableInLoop(Variable variable, CausesOfDelay causesOfDelay,
+                                                    ParameterizedType typeOfVariableInLoopDefinedOutside) {
+        String typeStr = typeOfVariableInLoopDefinedOutside == null ? null : ":" + typeOfVariableInLoopDefinedOutside;
+        String msg = "<vl:" + variable.simpleName() + typeStr + ">";
+        return new DelayedVariableExpression(msg, variable, VariableInfoContainer.IGNORE_STATEMENT_TIME, causesOfDelay,
+                typeOfVariableInLoopDefinedOutside);
     }
 
     public static Expression forDelayedValueProperties(Variable variable,
                                                        int statementTime,
                                                        CausesOfDelay causesOfDelay) {
         String msg = "<vp:" + variable.simpleName() + ":" + causesOfDelay + ">";
-        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay);
+        return new DelayedVariableExpression(msg, variable, statementTime, causesOfDelay, null);
     }
 
     public static Expression forMerge(Variable variable, CausesOfDelay causes) {
         String msg = "<merge:" + variable.simpleName() + ">";
-        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes);
+        return new DelayedVariableExpression(msg, variable, variable.statementTime(), causes, null);
     }
 
     public static Expression forDependentVariable(DependentVariable dv, CausesOfDelay causesOfDelay) {
         String msg = "<dv:" + dv.simpleName + ">";
-        return new DelayedVariableExpression(msg, dv, dv.statementTime(), causesOfDelay);
+        return new DelayedVariableExpression(msg, dv, dv.statementTime(), causesOfDelay, null);
     }
 
     @Override
@@ -269,7 +275,10 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
             // we'd rather not replace a DVE with a VE
             IsVariableExpression ive;
             if (expression.isDone() && (ive = expression.asInstanceOf(IsVariableExpression.class)) != null) {
-                return new DelayedVariableExpression("<dv:" + ive.variable() + ">", ive.variable(), statementTime, causesOfDelay);
+                ParameterizedType translatedTypeVILDO = typeOfVariableInLoopDefinedOutside == null ? null :
+                        translationMap.translateType(typeOfVariableInLoopDefinedOutside);
+                return new DelayedVariableExpression("<dv:" + ive.variable() + ">", ive.variable(), statementTime, causesOfDelay,
+                        translatedTypeVILDO);
             }
             return expression;
         }
@@ -328,7 +337,8 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
 
     @Override
     public Expression mergeDelays(CausesOfDelay causesOfDelay) {
-        return new DelayedVariableExpression(msg, variable, statementTime, this.causesOfDelay.merge(causesOfDelay));
+        return new DelayedVariableExpression(msg, variable, statementTime, this.causesOfDelay.merge(causesOfDelay),
+                typeOfVariableInLoopDefinedOutside);
     }
 
     @Override
@@ -341,5 +351,9 @@ public class DelayedVariableExpression extends BaseExpression implements IsVaria
     @Override
     public Set<Variable> directAssignmentVariables() {
         return Set.of(variable);
+    }
+
+    public boolean isVariableInLoop() {
+        return msg.startsWith("<vl:");
     }
 }

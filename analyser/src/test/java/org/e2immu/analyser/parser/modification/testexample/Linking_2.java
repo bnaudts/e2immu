@@ -20,7 +20,7 @@ public class Linking_2 {
             this.i = i;
         }
     }
-
+/*
     static List<String> m1(List<String> strings, Predicate<String> selector) {
         List<String> selection = new ArrayList<>();
         for (String string : strings) {
@@ -52,7 +52,7 @@ public class Linking_2 {
         }
         return selection;
     }
-/*
+
     // See Linking_1, but now in the context of a for-loop
     static <X> List<X> m2c(List<X> xs, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
@@ -69,12 +69,13 @@ public class Linking_2 {
             }
         }
         return selection;
-    }*/
-
+    }
+*/
     static List<M> m3(@Modified List<M> ms, Predicate<M> selector) {
         List<M> selection = new ArrayList<>();
         for (M m : ms) {
-            if (selector.test(m)) {
+            boolean b = selector.test(m);
+            if (b) {
                 selection.add(m);
             }
         }
@@ -84,7 +85,8 @@ public class Linking_2 {
     static List<M> m4(@NotModified List<M> ms, @Container(contract = true) Predicate<M> selector) {
         List<M> selection = new ArrayList<>();
         for (M m : ms) {
-            if (selector.test(m)) {
+            boolean b = selector.test(m);
+            if (b) {
                 selection.add(m);
             }
         }

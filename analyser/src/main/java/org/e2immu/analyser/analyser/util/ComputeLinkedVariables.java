@@ -169,7 +169,7 @@ public class ComputeLinkedVariables {
         LinkedVariables afterChangeToDelay;
         if (viE != vi1
             && viE.getValue() instanceof DelayedVariableExpression dve
-            && dve.msg.startsWith("<vl:")
+            && dve.isVariableInLoop()
             && !afterRemove.isDelayed()) {
             afterChangeToDelay = afterRemove.changeNonStaticallyAssignedToDelay(viE.getValue().causesOfDelay());
         } else {
