@@ -787,7 +787,8 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         EvaluationContext evaluationContext = sharedState.evaluationContext();
-        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(statementAnalysis, EVALUATION,
+        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(sharedState.evaluationContext(),
+                statementAnalysis, EVALUATION,
                 false,
                 (vic, v) -> variableUnknown(v),
                 reassigned,

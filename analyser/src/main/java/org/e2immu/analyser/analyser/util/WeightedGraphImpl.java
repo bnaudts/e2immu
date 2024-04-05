@@ -143,8 +143,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             assert !LINK_INDEPENDENT.equals(linkLevel);
             assert !(target instanceof ReturnVariable);
             /*
-            ASSIGNED links are symmetrical, except for links involving the return variable.
-            All other links can be asymmetrical.
+             Links from the return variable are asymmetrical
              */
             LV min = node.dependsOn.merge(target, linkLevel, LV::min);
             if (!(v instanceof ReturnVariable)) {
@@ -175,7 +174,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             REVERSE_STRING_COMPARATOR.compare(v1.fullyQualifiedName(), v2.fullyQualifiedName());
 
     @Override
-    public ShortestPath shortestPath() {
+    public ShortestPath shortestPath(boolean forModification) {
         int n = nodeMap.size();
         Variable[] variables = new Variable[n];
         // -- CACHE --
@@ -218,11 +217,16 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     }
                     DijkstraShortestPath.Connection mine;
                     DijkstraShortestPath.Connection theirs;
-                    if (e2.getValue().isCommonHC()) {
-                        mine = e2.getValue().mine();
-                        theirs = e2.getValue().theirs();
+                    if (dv.isCommonHC()) {
+                        // we'll be skipping any link that points to All, so *-4-* and 0-4-* will be ignored
+                        if (forModification && dv.theirs().isAll()) continue;
+
+                        mine = dv.mine();
+                        theirs = dv.theirs();
                         if (dv.commonHCContainsMutable()) {
                             correctedLv = LINK_HC_MUTABLE;
+                        } else if (forModification) {
+                            continue; // we can ignore this link at the mutable level
                         } else {
                             correctedLv = dv;
                         }

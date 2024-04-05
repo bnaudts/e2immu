@@ -168,21 +168,72 @@ public class Test_Linking2 extends CommonTestRunner {
                 }
                 case "m4" -> {
                     if (d.variable() instanceof ParameterInfo pi && "selector".equals(pi.name)) {
+                        if ("1.0.0".equals(d.statementId())) {
+                            assertDv(d, 2, MultiLevel.IGNORE_MODS_DV, Property.IGNORE_MODIFICATIONS);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it(0, 1, "m:-1,ms:-1"),
+                                    it(2, "m:4,ms:4"));
+
+                            // without M, not to be followed in ShortestPath for modification
+                            assertSingleLv(d, 2, 0, "0M-4-*M");
+                            assertSingleLv(d, 2, 1, "0-4-0");
+                        }
                         if ("2".equals(d.statementId())) {
                             assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it(0, 1, "ms:-1,selection:-1"),
                                     it(2, "ms:4,selection:4"));
-                            assertSingleLv(d, 2, 0, "0M-4-0M"); // FIXME??
-                            assertSingleLv(d, 2, 1, "0M-4-0M"); // FIXME??
+
+                            // without M, not to be followed in ShortestPath for modification
+                            assertSingleLv(d, 2, 0, "0-4-0");
+                            assertSingleLv(d, 2, 1, "0-4-0");
                         }
                     }
-                    if("selection".equals(d.variableName())) {
+                    if (d.variable() instanceof ParameterInfo pi && "ms".equals(pi.name)) {
+                        if ("1.0.0".equals(d.statementId())) {
+                            assertLinked(d, it(0, 1, "m:-1,selector:-1"),
+                                    it(2, "m:4,selector:4"));
+
+                            // without M, not to be followed in ShortestPath for modification
+                            assertSingleLv(d, 2, 0, "0M-4-*M");
+                            assertSingleLv(d, 2, 1, "0-4-0");
+                        }
+                        if ("2".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it(0, 1, "selection:-1,selector:-1"),
+                                    it(2, "selection:4,selector:4"));
+
+                            // without M, not to be followed in ShortestPath for modification
+                            assertSingleLv(d, 2, 0, "0-4-0");
+                            assertSingleLv(d, 2, 1, "0-4-0");
+                        }
+                    }
+                    if ("selection".equals(d.variableName())) {
+                        if ("1.0.1.0.0".equals(d.statementId())) {
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it0("b:-1,m:-1,ms:-1,selector:-1"),
+                                    it1("m:-1,ms:-1,selector:-1"),
+                                    it(2, "m:4,ms:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "0M-4-*M");
+                            assertSingleLv(d, 2, 1, "0-4-0");
+                            assertSingleLv(d, 2, 2, "0-4-0");
+                        }
+                        if ("1.0.1".equals(d.statementId())) {
+                            assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it0("b:-1,m:-1,ms:-1,selector:-1"),
+                                    it1("m:-1,ms:-1,selector:-1"),
+                                    it(2, "m:4,ms:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "0M-4-*M");
+                            assertSingleLv(d, 2, 1, "0-4-0"); // FIXME
+                            assertSingleLv(d, 2, 2, "0-4-0");
+                        }
                         if ("2".equals(d.statementId())) {
                             assertDv(d, 1, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it(0, 1, "ms:-1,selector:-1"),
                                     it(2, "ms:4,selector:4"));
-                            assertSingleLv(d, 2, 0, "0M-4-0M"); // FIXME??
-                            assertSingleLv(d, 2, 1, "0M-4-0M"); // FIXME??
+
+                            // without M, not to be followed in ShortestPath for modification
+                            assertSingleLv(d, 2, 0, "0-4-0");
+                            assertSingleLv(d, 2, 1, "0-4-0");
                         }
                     }
                     if ("m".equals(d.variableName())) {
@@ -190,6 +241,8 @@ public class Test_Linking2 extends CommonTestRunner {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it(0, 1, "ms:-1,selector:-1"),
                                     it(2, "ms:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                            assertSingleLv(d, 2, 1, "*M-4-0M");
                         }
                         if ("1.0.1.0.0".equals(d.statementId())) {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -198,6 +251,8 @@ public class Test_Linking2 extends CommonTestRunner {
                             assertLinked(d, it0("b:-1,ms:-1,selection:-1,selector:-1"),
                                     it1("ms:-1,selection:-1,selector:-1"),
                                     it(2, "ms:4,selection:4,selector:4"));
+
+                            // with M, to be followed in ShortestPath for modification
                             assertSingleLv(d, 2, 0, "*M-4-0M");
                             assertSingleLv(d, 2, 1, "*M-4-0M");
                             assertSingleLv(d, 2, 2, "*M-4-0M");

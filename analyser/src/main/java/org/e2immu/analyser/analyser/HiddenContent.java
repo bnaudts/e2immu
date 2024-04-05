@@ -28,7 +28,8 @@ public interface HiddenContent {
     String niceHiddenContentTypes(ParameterizedType concreteType);
 
     static HiddenContentSelector selectAllCorrectForMutable(EvaluationContext evaluationContext,
-                                                            ParameterizedType parameterizedType) {
+                                                            ParameterizedType parameterizedType,
+                                                            boolean correct) {
         if (parameterizedType.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
         ParameterizedType formal = parameterizedType.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
         HiddenContent hcFormal = from(formal);
@@ -41,7 +42,7 @@ public interface HiddenContent {
             }
             boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfParameterizedType);
             if (immutable) return HiddenContentSelector.None.INSTANCE;
-            boolean mutable = MultiLevel.isMutable(immutableOfParameterizedType);
+            boolean mutable = correct && MultiLevel.isMutable(immutableOfParameterizedType);
             return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
         }
         HiddenContentImpl hci = (HiddenContentImpl) hcFormal;
@@ -59,7 +60,7 @@ public interface HiddenContent {
                 } else {
                     boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
                     if (!immutable) {
-                        boolean mutable = MultiLevel.isMutable(immutableDv);
+                        boolean mutable = correct && MultiLevel.isMutable(immutableDv);
                         res.put(tpi, mutable);
                     }
                 }
@@ -269,7 +270,7 @@ public interface HiddenContent {
                     }
                 }
             }
-            if(targetType.equals(wholeType)) {
+            if (targetType.equals(wholeType)) {
                 return HiddenContentSelector.All.INSTANCE;
             }
             // FIXME we should make another value?

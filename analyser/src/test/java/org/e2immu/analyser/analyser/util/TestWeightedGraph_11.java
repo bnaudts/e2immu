@@ -27,7 +27,7 @@ public class TestWeightedGraph_11 extends CommonWG {
      */
     Variable m, ms, n;
     WeightedGraph wg;
-    ShortestPath shortestPath;
+    ShortestPath shortestPath, shortestPathM;
 
     @BeforeEach
     public void beforeEach() {
@@ -46,6 +46,9 @@ public class TestWeightedGraph_11 extends CommonWG {
         wg.addNode(n, Map.of(ms, link));
         shortestPath = wg.shortestPath();
         assertEquals("0(2:3)1(2:3)2(0:3;1:3)", ((ShortestPathImpl) shortestPath).getCacheKey());
+
+        shortestPathM = wg.shortestPath(true);
+        assertEquals("0(2:3)1(2:3)2()", ((ShortestPathImpl) shortestPathM).getCacheKey());
     }
 
     @Test
@@ -56,16 +59,44 @@ public class TestWeightedGraph_11 extends CommonWG {
         assertEquals(v0, startAt.get(m));
         assertTrue(startAt.get(ms).isCommonHC());
         assertTrue(startAt.get(n).isCommonHC());
+
+        Map<Variable, LV> startAtM = shortestPathM.links(m, null);
+        assertEquals(2, startAtM.size());
+        assertEquals(v0, startAtM.get(m));
+        assertTrue(startAtM.get(ms).isCommonHC());
+        assertNull(startAtM.get(n));
+    }
+
+
+    @Test
+    @DisplayName("start in n")
+    public void testN() {
+        Map<Variable, LV> startAt = shortestPath.links(n, null);
+        assertEquals(3, startAt.size());
+        assertEquals(v0, startAt.get(n));
+        assertTrue(startAt.get(ms).isCommonHC());
+        assertTrue(startAt.get(m).isCommonHC());
+
+        Map<Variable, LV> startAtM = shortestPathM.links(n, null);
+        assertEquals(2, startAtM.size());
+        assertEquals(v0, startAtM.get(n));
+        assertTrue(startAtM.get(ms).isCommonHC());
+        assertNull(startAtM.get(m));
     }
 
     @Test
-    @DisplayName("start in m, HC mutable level")
-    public void testMm() {
-        Map<Variable, LV> startAt = shortestPath.links(ms, LV.LINK_HC_MUTABLE);
-        assertEquals(2, startAt.size());
+    @DisplayName("start in ms")
+    public void testMS() {
+        Map<Variable, LV> startAt = shortestPath.links(ms, null);
+        assertEquals(3, startAt.size());
         assertEquals(v0, startAt.get(ms));
         assertTrue(startAt.get(m).isCommonHC());
         assertTrue(startAt.get(n).isCommonHC());
-    }
 
+        Map<Variable, LV> startAtM = shortestPathM.links(ms, null);
+        assertEquals(1, startAtM.size());
+        assertEquals(v0, startAtM.get(ms));
+        assertNull(startAtM.get(m));
+        assertNull(startAtM.get(n));
+    }
 }

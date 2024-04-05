@@ -47,16 +47,23 @@ public class TestComputeLinkedVariables {
 
     private final Primitives primitives = new PrimitivesImpl();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
-    private final AnalyserContext analyserContext = new AnalyserContext() {
+    private final AnalyserContext analyserContext = () -> primitives;
+
+    private final TypeInfo currentType = new TypeInfo("com.foo", "Bar");
+
+    private final EvaluationContext evaluationContext = new AbstractEvaluationContextImpl() {
         @Override
-        public Primitives getPrimitives() {
-            return primitives;
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+
+        @Override
+        public TypeInfo getCurrentType() {
+            return currentType;
         }
     };
 
     private final StringConstant valueOfSomeTypeWithoutHc = new StringConstant(primitives, X);
-    private final TypeInfo currentType = new TypeInfo("com.foo", "Bar");
-
     private final TypeInfo someTypeWithHC = new TypeInfo("com.foo", "HC");
     private final TypeParameter tp0 = new TypeParameterImpl(someTypeWithHC, "T", 0).noTypeBounds();
     private final ParameterizedType tp0Pt = new ParameterizedType(tp0, 0, ParameterizedType.WildCard.NONE);
@@ -179,7 +186,7 @@ public class TestComputeLinkedVariables {
             default -> throw new UnsupportedOperationException("Variable " + v.fullyQualifiedName());
         };
 
-        ComputeLinkedVariables clv = ComputeLinkedVariables.create(sa, Stage.EVALUATION,
+        ComputeLinkedVariables clv = ComputeLinkedVariables.create(evaluationContext, sa, Stage.EVALUATION,
                 false, (vic, v) -> false, Set.of(),
                 lvs, new GraphCacheImpl(10), BreakDelayLevel.NONE);
 

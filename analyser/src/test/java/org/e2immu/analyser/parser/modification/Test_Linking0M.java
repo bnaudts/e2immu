@@ -61,7 +61,7 @@ public class Test_Linking0M extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
                                 it(2, "this.listM:4,this:4"));
-                        assertSingleLv(d, 2, 0, "*M-4-*M");
+                        assertSingleLv(d, 2, 0, "*-4-*"); // FIXME this is not a good notation
                         assertSingleLv(d, 2, 1, "*M-4-0M");
                     }
                 }
