@@ -21,16 +21,27 @@ public class Linking_0M {
     }
 
     private final List<M> listM = new ArrayList<>();
+    private final List<M> listM2 = new ArrayList<>();
 
     @Modified
-    public void m1(int index) {
+    void m1(int index) {
         M m = listM.get(index);
         m.setI(3);
     }
 
 
     @NotModified
-    public List<M> getListM() {
+    List<M> getListM() {
         return listM;
+    }
+
+    List<M> getListM2() {
+        return listM2;
+    }
+
+    @Modified
+    void m2(M m) {
+        listM.add(m);
+        listM2.add(m);
     }
 }

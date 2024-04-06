@@ -262,12 +262,17 @@ public abstract class VisitorTestSupport {
         fail("Did not see iteration info for iteration " + d.iteration());
     }
 
-
-    protected void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, int index, String expected) {
+    protected void assertSingleLv(StatementAnalyserVariableVisitor.Data d,
+                                  LinkedVariables lvs,
+                                  int iteration, int index, String expected) {
         if (d.iteration() >= iteration) {
-            LV value = d.variableInfo().getLinkedVariables().select(index);
+            LV value = lvs.select(index);
             assertEquals(expected, value.toString());
         }
+    }
+
+    protected void assertSingleLv(StatementAnalyserVariableVisitor.Data d, int iteration, int index, String expected) {
+        assertSingleLv(d, d.variableInfo().getLinkedVariables(), iteration, index, expected);
     }
 
 
