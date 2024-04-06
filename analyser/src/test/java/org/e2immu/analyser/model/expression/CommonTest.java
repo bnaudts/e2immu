@@ -65,6 +65,9 @@ public abstract class CommonTest {
     protected final TypeInfo mutable = new TypeInfo("com.foo", "Mutable");
     protected final ParameterizedType mutablePt = new ParameterizedType(mutable, List.of());
 
+    protected final TypeInfo mutable2 = new TypeInfo("com.foo", "Mutable2");
+    protected final ParameterizedType mutable2Pt = new ParameterizedType(mutable2, List.of());
+
     protected final TypeInfo immutableDelayed = new TypeInfo("com.foo", "ImmutableDelayed");
     protected final ParameterizedType immutableDelayedPt = new ParameterizedType(immutableDelayed, List.of());
     protected final CausesOfDelay immutableDelay = DelayFactory.createDelay(Location.NOT_YET_SET,
@@ -84,9 +87,6 @@ public abstract class CommonTest {
     protected final ParameterizedType immutableHcPtWithOneTypeParameter
             = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(tpHc0Pt));
 
-    protected static final LV LINK_COMMON_HC_ALL = LV.createHC(HiddenContentSelector.All.INSTANCE,
-            HiddenContentSelector.All.INSTANCE);
-
     protected final ImportantClasses importantClasses = new ImportantClasses() {
         @Override
         public ParameterizedType iterable() {
@@ -99,7 +99,7 @@ public abstract class CommonTest {
             MethodInfo mi = new MethodInspectionImpl.Builder(mutableWithOneTypeParameter, "get",
                     MethodInfo.MethodType.METHOD)
                     .setAccess(Inspection.Access.PUBLIC)
-                    .setReturnType(tpHc0Pt)
+                    .setReturnType(tp0Pt)
                     .build(inspectionProvider).getMethodInfo();
             MethodAnalysisImpl.Builder mab = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                     analysisProvider, inspectionProvider, mi, mutableWithOneTypeParameter.typeAnalysis.get(), List.of());

@@ -88,7 +88,7 @@ public interface HiddenContent {
                 // add prefix to each sequence, set array type
                 return new HiddenContentImpl(withoutArrays.sequence.stream().map(it -> it.addPrefix(prefix)).toList());
             }
-            return new HiddenContentImpl(List.of(new IndexedType(null, prefix)));
+            return new HiddenContentImpl(List.of(new IndexedType(pt.copyWithoutArrays(), prefix)));
         }
         return withoutArrays;
     }
@@ -131,7 +131,11 @@ public interface HiddenContent {
         return new HiddenContentImpl(List.copyOf(sequence));
     }
 
-    HiddenContentSelector select(ParameterizedType targetType);
+    HiddenContentSelector.CsSet select(ParameterizedType targetType);
+
+    ParameterizedType byIndex(int i);
+
+    int indexOf(ParameterizedType formalType);
 
     record IndexedType(ParameterizedType parameterizedType, List<Integer> index) {
         private static int realIndex(int i) {
@@ -261,20 +265,17 @@ public interface HiddenContent {
         }
 
         @Override
-        public HiddenContentSelector select(ParameterizedType targetType) {
+        public HiddenContentSelector.CsSet select(ParameterizedType targetType) {
             if (sequence != null) {
                 for (IndexedType it : sequence) {
                     if (targetType.equals(it.parameterizedType)) {
                         int last = it.index.get(it.index.size() - 1);
-                        if (last >= 0) return new HiddenContentSelector.CsSet(Set.of(last));
+                        boolean mutable = last < 0;
+                        return new HiddenContentSelector.CsSet(Map.of(IndexedType.realIndex(last), mutable));
                     }
                 }
             }
-            if (targetType.equals(wholeType)) {
-                return HiddenContentSelector.All.INSTANCE;
-            }
-            // FIXME we should make another value?
-            return HiddenContentSelector.All.INSTANCE;
+            throw new UnsupportedOperationException("You should not call with " + targetType);
         }
 
         // for testing
@@ -283,6 +284,30 @@ public interface HiddenContent {
             return hiddenContentTypes(concreteType).entrySet().stream()
                     .map(e -> e.getKey() + ":" + e.getValue()).sorted()
                     .collect(Collectors.joining(", ", "[", "]"));
+        }
+
+        @Override
+        public ParameterizedType byIndex(int i) {
+            assert sequence != null;
+            for (IndexedType it : sequence) {
+                int last = it.index.get(it.index.size() - 1);
+                if (i == last) return it.parameterizedType;
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int indexOf(ParameterizedType formalType) {
+            assert sequence != null;
+            for (IndexedType it : sequence) {
+                if (formalType.copyWithoutWildcard().equals(it.parameterizedType.copyWithoutWildcard())) {
+                    int last = it.index.get(it.index.size() - 1);
+                    if (last >= 0) {
+                        return last;
+                    }
+                }
+            }
+            throw new UnsupportedOperationException();
         }
     }
 }

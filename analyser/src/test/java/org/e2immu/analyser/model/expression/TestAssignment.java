@@ -332,7 +332,8 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mock1 = new ExpressionMock() {
             @Override
             public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-                LV commonHc = LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.All.INSTANCE);
+                LV commonHc = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0),
+                        HiddenContentSelector.CsSet.selectTypeParameter(0));
                 LinkedVariables lv = LinkedVariables.of(Map.of(
                         va.variable(), LINK_DEPENDENT,
                         vc.variable(), LINK_ASSIGNED,

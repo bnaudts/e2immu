@@ -59,10 +59,11 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, delayed")
     public void test2() {
-        MethodInfo constructor = constructorOneArgument(mutablePt,null,
+        MethodInfo constructor = constructorOneArgument(mutablePt, mutable2Pt, null,
+                HiddenContentSelector.None.INSTANCE,
                 HiddenContentSelector.None.INSTANCE);
 
-        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt);
+        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt, mutable2Pt);
         assertEquals("a:-1", er.linkedVariablesOfExpression().toString());
         assertEquals("independent@Parameter_p0", er.linkedVariablesOfExpression().causesOfDelay().toString());
     }
@@ -70,30 +71,41 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, dependent")
     public void test2b() {
-        MethodInfo constructor = constructorOneArgument(mutablePt, MultiLevel.DEPENDENT_DV,
+        MethodInfo constructor = constructorOneArgument(mutablePt, mutable2Pt,
+                MultiLevel.DEPENDENT_DV,
+                HiddenContentSelector.None.INSTANCE,
                 HiddenContentSelector.None.INSTANCE);
 
-        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt);
+        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt, mutable2Pt);
         assertEquals("a:2", er.linkedVariablesOfExpression().toString());
         assertTrue(er.linkedVariablesOfExpression().causesOfDelay().isDone());
     }
 
     @Test
-    @DisplayName("direct assignment of mutable type, independent HC")
+    @DisplayName("direct assignment of mutable type, independent HC, 1")
     public void test2c() {
-        MethodInfo constructor1 = constructorOneArgument(mutablePt, MultiLevel.INDEPENDENT_HC_DV,
+        MethodInfo constructor1 = constructorOneArgument(mutablePt, tp0Pt, MultiLevel.INDEPENDENT_HC_DV,
+                HiddenContentSelector.None.INSTANCE,
                 HiddenContentSelector.None.INSTANCE);
         // the parameter has HiddenContentSelector == HiddenContentSelector.None.INSTANCE
-        assertThrows(AssertionError.class, () -> evaluateConstructorOneArgument(constructor1, mutablePt));
+        assertThrows(AssertionError.class, () -> evaluateConstructorOneArgument(constructor1, mutablePt, tp0Pt));
+    }
 
-        HiddenContentSelector tp0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-        MethodInfo constructor = constructorOneArgument(mutablePt, MultiLevel.INDEPENDENT_HC_DV, tp0);
+    /*
+    new MutableOneTp<T>(T t)
+     */
+    @Test
+    @DisplayName("direct assignment of mutable type, independent HC, 2")
+    public void test2cb() {
+        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+        MethodInfo constructor = constructorOneArgument(mutablePtWithOneTypeParameter, tp0Pt,
+                MultiLevel.INDEPENDENT_HC_DV, select0, HiddenContentSelector.All.INSTANCE);
 
         ParameterInfo p0 = constructor.methodInspection.get().getParameters().get(0);
-        assertEquals("Type com.foo.MutableTP<T>", p0.parameterizedType.toString());
-        assertEquals("0", p0.parameterAnalysis.get().getHiddenContentSelector().toString());
+        assertEquals("Type param T", p0.parameterizedType.toString());
+        assertEquals("*", p0.parameterAnalysis.get().getHiddenContentSelector().toString());
 
-        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePtWithOneTypeParameter);
+        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePtWithOneTypeParameter, tp0Pt);
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
         assertTrue(er.linkedVariablesOfExpression().causesOfDelay().isDone());
     }
@@ -101,20 +113,24 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, independent")
     public void test2d() {
-        MethodInfo constructor = constructorOneArgument(primitives.stringParameterizedType(), MultiLevel.INDEPENDENT_DV,
+        MethodInfo constructor = constructorOneArgument(primitives.stringParameterizedType(),
+                mutablePt,
+                MultiLevel.INDEPENDENT_DV,
+                HiddenContentSelector.None.INSTANCE,
                 HiddenContentSelector.None.INSTANCE);
 
-        EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt);
+        EvaluationResult er = evaluateConstructorOneArgument(constructor, primitives.stringParameterizedType(), mutablePt);
         assertTrue(er.linkedVariablesOfExpression().isEmpty());
         assertTrue(er.linkedVariablesOfExpression().causesOfDelay().isDone());
     }
 
     private EvaluationResult evaluateConstructorOneArgument(MethodInfo constructor,
-                                                            ParameterizedType parameterAndConstructorType) {
+                                                            ParameterizedType constructorType,
+                                                            ParameterizedType parameterType) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePt);
-        ExpressionMock m = simpleMock(parameterAndConstructorType, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));
-        ConstructorCall cc = new ConstructorCall(newId(), null, constructor, parameterAndConstructorType,
+        ExpressionMock m = simpleMock(parameterType, LinkedVariables.of(va.variable(), LV.LINK_ASSIGNED));
+        ConstructorCall cc = new ConstructorCall(newId(), null, constructor, constructorType,
                 Diamond.NO, List.of(m), null, null);
         Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
 
@@ -123,13 +139,14 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     }
 
     private MethodInfo constructorOneArgument(ParameterizedType constructorType,
+                                              ParameterizedType parameterType,
                                               DV independentP0,
+                                              HiddenContentSelector constructorHcs,
                                               HiddenContentSelector p0Hcs) {
-        ParameterizedType parameterType = p0Hcs.isNone() ? mutablePt : mutablePtWithOneTypeParameter;
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 parameterType, "p0", 0);
 
-        MethodInfo constructor = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(),
+        MethodInfo constructor = new MethodInspectionImpl.Builder(newId(), constructorType.typeInfo,
                 MethodInfo.MethodType.CONSTRUCTOR)
                 .setReturnType(constructorType)
                 .addParameter(param0Inspection)
@@ -150,7 +167,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
-        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+        builder.setHiddenContentSelector(constructorHcs);
         constructor.setAnalysis(builder.build());
 
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),

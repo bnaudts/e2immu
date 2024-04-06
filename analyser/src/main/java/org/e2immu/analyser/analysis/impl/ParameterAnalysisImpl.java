@@ -221,7 +221,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         private LinkedVariables hcLinkToParameters(int[] linkParameters) {
             Map<Variable, LV> map = new HashMap<>();
-            int n = (int) parameterInfo.getMethodInfo().typeInfo.typeInspection.get().typeParameters().stream()
+            TypeInfo typeInfo = parameterInfo.getMethodInfo().typeInfo;
+            int n = (int) typeInfo.typeInspection.get().typeParameters().stream()
                     .filter(TypeParameter::isUnbound).count();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
             HiddenContentSelector mine = bestHiddenContentSelector(n, false, parameterInfo.parameterizedType);
@@ -234,7 +235,13 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     ParameterInfo pi = parameters.get(parameterIndex);
                     HiddenContentSelector theirs = bestHiddenContentSelector(n,
                             pi.parameterInspection.get().isVarArgs(), pi.parameterizedType);
-                    map.put(pi, LV.createHC(mine, theirs));
+                    // System.arrayCopy... what we mean is: 0-0
+                    if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
+                        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+                        map.put(pi, LV.createHC(select0, select0));
+                    } else {
+                        map.put(pi, LV.createHC(mine, theirs));
+                    }
                 }
             }
             return LinkedVariables.of(map);

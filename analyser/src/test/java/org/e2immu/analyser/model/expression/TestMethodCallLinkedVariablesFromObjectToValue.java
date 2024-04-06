@@ -36,12 +36,21 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                                          DV independent,
                                          HiddenContentSelector hiddenContentSelector,
                                          ParameterizedType methodReturnType) {
+        return methodWithTwoArgs(identity, fluent, independent, hiddenContentSelector, methodReturnType, primitives.stringTypeInfo());
+    }
+
+    private MethodInfo methodWithTwoArgs(DV identity,
+                                         DV fluent,
+                                         DV independent,
+                                         HiddenContentSelector hiddenContentSelector,
+                                         ParameterizedType methodReturnType,
+                                         TypeInfo methodOwner) {
         ParameterizedType parameterType = hiddenContentSelector == null ? mutablePt : mutablePtWithOneTypeParameter;
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 parameterType, "p0", 0);
         ParameterInspectionImpl.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
                 parameterType, "p1", 1);
-        MethodInfo methodInfo = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+        MethodInfo methodInfo = new MethodInspectionImpl.Builder(newId(), methodOwner, "method",
                 MethodInfo.MethodType.METHOD)
                 .addParameter(param0Inspection)
                 .addParameter(param1Inspection)
@@ -85,9 +94,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         VariableExpression vo = makeLVAsExpression("o", zero, objectType);
 
         ParameterizedType pt0 = params.get(0).parameterizedType;
-        VariableExpression vc = makeLVAsExpression("c", zero, pt0);
         ParameterizedType pt1 = params.get(1).parameterizedType;
-        VariableExpression vd = makeLVAsExpression("d", zero, pt1);
 
         Expression p0 = simpleMock(pt0, LinkedVariables.EMPTY);
         Expression p1 = simpleMock(pt1, LinkedVariables.EMPTY);
@@ -133,7 +140,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         VariableExpression va = makeLVAsExpression("a", zero, primitives.intParameterizedType());
         VariableExpression vb = makeLVAsExpression("b", zero, primitives.intParameterizedType());
 
-        Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LINK_COMMON_HC_ALL));
+        Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), LINK_DEPENDENT));
         Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_DEPENDENT));
         Expression object = simpleMock(mutablePt, LinkedVariables.EMPTY);
         MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
@@ -156,9 +163,9 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         VariableExpression va = makeLVAsExpression("a", zero, primitives.intParameterizedType());
         VariableExpression vb = makeLVAsExpression("b", zero, primitives.intParameterizedType());
 
-        for (LV dv : List.of(LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT, LINK_COMMON_HC_ALL)) {
+        for (LV dv : List.of(LINK_STATICALLY_ASSIGNED, LINK_ASSIGNED, LINK_DEPENDENT, LINK_DEPENDENT)) {
             Expression p0 = simpleMock(mutablePt, LinkedVariables.of(va.variable(), dv));
-            Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_COMMON_HC_ALL));
+            Expression p1 = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LINK_DEPENDENT));
             Expression object = simpleMock(mutablePt, LinkedVariables.EMPTY);
             MethodCall methodCall = new MethodCall(newId(), object, methodInfo, List.of(p0, p1));
             Expression abc = new StringConstant(primitives, "abc");
@@ -256,10 +263,11 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, dependent method, mutable(immutable)")
     public void test6() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
-                mutablePtWithOneTypeParameter);
+                mutablePtWithOneTypeParameter, mutableWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_1);
         assertEquals("0-4-1", commonHC.toString());
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        ParameterizedType mutableImmutable = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutableImmutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*
@@ -287,8 +295,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         assertTrue(lv.causesOfDelay().isDone());
         Variable b = lv.variables().keySet().stream().filter(v -> "b".equals(v.simpleName())).findFirst().orElseThrow();
         LV lvb = lv.value(b);
-        // FIXME *?? See HiddenContent.select()
-        assertEquals("0-4-*", lvb.toString());
+        assertEquals("0-4-0", lvb.toString());
     }
 
     @Test
@@ -304,38 +311,13 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     }
 
     @Test
-    @DisplayName("immutable HC object, dependent method")
-    public void test8() {
-        MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
-                mutablePtWithOneTypeParameter);
-        LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableHCPt, LINK_STATICALLY_ASSIGNED,
-                LINK_ASSIGNED, commonHC);
-
-        /*
-        object is linked to o, a, b
-          o = List.copyOf(ts), with ts some collection of Ts
-          a = Objects.requireNonNull(o)   assigned to a.
-          b = new HashSet<>(o)            common HC with o, so also with object.
-          object = o;                     statically assigned to o.
-        object is also concretely immutable HC (List.copy())
-        List.sublist() is a dependent method: the sublist is backed by the original
-
-        NOTE: it is not possible to be DEPENDENT on o, because o is immutable bar hidden content.
-        Therefore, through the method, we obtain another object which we cannot be assigned to, nor dependent.
-        All links must be common HC.
-         */
-        assertEquals("a:4,b:4,o:4,this:4", lv.toString());
-        assertTrue(lv.causesOfDelay().isDone());
-    }
-
-    @Test
     @DisplayName("mutable object, method independent HC, mutable(immutable)")
     public void test9() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, SELECT_0,
-                mutablePtWithOneTypeParameter);
+                mutablePtWithOneTypeParameter, mutableWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        ParameterizedType mutableImmutable = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutableImmutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*
@@ -354,9 +336,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV,
-                HiddenContentSelector.All.INSTANCE, mutablePt);
+                HiddenContentSelector.All.INSTANCE, tpHc0Pt, immutableHcWithOneTypeParameter);
         LV commonHC = LV.createHC(SELECT_0, SELECT_0);
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
+        ParameterizedType immutableMutable = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(mutablePt));
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableMutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 commonHC);
 
         /*

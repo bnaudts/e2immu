@@ -205,5 +205,11 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         public boolean containsMutable() {
             return map.values().stream().anyMatch(v -> v);
         }
+
+        public HiddenContentSelector ensureMutable(boolean addMutable) {
+            Map<Integer, Boolean> newMap = map.keySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(i -> i, i -> addMutable));
+            return new CsSet(newMap);
+        }
     }
 }

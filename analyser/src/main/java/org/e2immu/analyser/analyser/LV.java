@@ -82,6 +82,11 @@ public class LV implements Comparable<LV> {
     }
 
     public static LV createHC(HiddenContentSelector mine, HiddenContentSelector theirs) {
+        assert mine != null && theirs != null;
+        assert mine.containsMutable() == theirs.containsMutable();
+        assert !mine.isNone() && !theirs.isNone()
+               && !mine.isDelayed() && !theirs.isDelayed()
+               && !(mine.isAll() && theirs.isAll());
         return new LV(HC, mine, theirs, mine + "-4-" + theirs, CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     }
 
@@ -138,7 +143,7 @@ public class LV implements Comparable<LV> {
         }
         if (other.isDelayed()) return other;
         if (value < other.value) return other;
-        // FIXME assert value != HC || other.value != HC || mineEqualsTheirs(other);
+        assert value != HC || other.value != HC || mineEqualsTheirs(other);
         return this;
     }
 

@@ -30,7 +30,7 @@ public class TestShortestPathImpl extends CommonWG {
 
     @Test
     public void testCommonHC() {
-        LV commonHC = LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.All.INSTANCE);
+        LV commonHC = v4;
         long l = ShortestPathImpl.toDistanceComponent(commonHC);
         assertEquals(ShortestPathImpl.INDEPENDENT_HC, l);
         long h = ShortestPathImpl.toDistanceComponentHigh(commonHC);

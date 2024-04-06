@@ -50,6 +50,16 @@ public class TestHiddenContent extends CommonTest {
     }
 
     @Test
+    @DisplayName("array of mutable")
+    public void test1b() {
+        ParameterizedType tpArray = new ParameterizedType(mutable, 1);
+        assertEquals("Type com.foo.Mutable[]", tpArray.toString());
+        HiddenContent hc1 = HiddenContent.from(tpArray);
+        assertEquals("<*0>", hc1.toString());
+        assertEquals("0M", hc1.select(mutablePt).toString());
+    }
+
+    @Test
     @DisplayName("arrays of non-hidden content types")
     public void test2() {
         ParameterizedType intArray = new ParameterizedType(primitives.intTypeInfo(), 2);
@@ -88,5 +98,29 @@ public class TestHiddenContent extends CommonTest {
         ParameterizedType mmm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mm));
         assertEquals("Type com.foo.MutableTP<com.foo.MutableTP<com.foo.Mutable>>", mmm.toString());
         assertEquals("[0:Type com.foo.Mutable]", hc1.niceHiddenContentTypes(mmm));
+    }
+
+    @Test
+    @DisplayName("mutable<>")
+    public void test4() {
+        ParameterizedType mt = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
+        ParameterizedType mm = new ParameterizedType(mutableWithOneTypeParameter, List.of(mutablePt));
+
+        HiddenContent hcT = HiddenContent.from(mt);
+        assertEquals("<0>", hcT.toString());
+        assertEquals("[0:Type param T]", hcT.niceHiddenContentTypes());
+        assertEquals("0", hcT.selectAll().toString());
+        assertEquals("0", hcT.select(tp0Pt).toString());
+      //  assertEquals("*", hcT.select(mt).toString());
+      //  assertEquals("*", hcT.select(mm).toString()); // FIXME *M ?
+
+        HiddenContent hcM = HiddenContent.from(mm);
+        assertEquals("<*0>", hcM.toString());
+        assertEquals("[]", hcM.niceHiddenContentTypes());
+        assertEquals("0M", hcM.select(mutablePt).toString());
+     //   assertEquals("X", hcM.selectAll().toString()); // FIXME 0M?
+     //   assertEquals("*", hcM.select(mm).toString()); // FIXME inconsistent...
+
+
     }
 }

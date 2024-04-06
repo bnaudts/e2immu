@@ -535,6 +535,7 @@ public class ComputeLinkedVariables {
                                         Variable target,
                                         boolean correctForMutable) {
         LV newLv;
+        // FIXME select ALL -> select indices, if these are given
         HiddenContentSelector mine = HiddenContent.selectAllCorrectForMutable(evaluationContext,
                 variable.parameterizedType(), correctForMutable);
         HiddenContentSelector theirs = HiddenContent.selectAllCorrectForMutable(evaluationContext,

@@ -1126,4 +1126,11 @@ public class ParameterizedType {
         throw new UnsupportedOperationException("No typeInfo, no typeParameter -> no owner");
     }
 
+    public ParameterizedType copyWithoutWildcard() {
+        if (wildCard != WildCard.NONE) {
+            if (typeInfo != null) return new ParameterizedType(typeInfo, parameters, arrays);
+            if (typeParameter != null) return new ParameterizedType(typeParameter, arrays, WildCard.NONE);
+        }
+        return this;
+    }
 }
