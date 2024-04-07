@@ -1,6 +1,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
@@ -39,27 +40,29 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("copy into object on mutable type, o~b.set(p0~a~2d,p1~c~4d), independent delayed on p0")
     public void test1() {
-        MethodInfo method = methodWithTwoParameters(null, MultiLevel.INDEPENDENT_DV);
+        DV delayed = DelayFactory.createDelay(mutableWithOneTypeParameter.newLocation(), CauseOfDelay.Cause.VALUE_INDEPENDENT);
+        MethodInfo method = methodWithTwoParameters(delayed, MultiLevel.INDEPENDENT_DV);
 
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
         assertEquals("", er.linkedVariablesOfExpression().toString()); // void method
         assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:-1,c:-1,d:-1", cb.linkedVariables().toString());
-        assertEquals("independent@Parameter_p0", cb.linkedVariables().causesOfDelay().toString());
+        assertEquals("independent@Class_MutableTP", cb.linkedVariables().causesOfDelay().toString());
     }
 
     @Test
     @DisplayName("copy into object on mutable type, o~b.set(p0~a~2d,p1~c~4d), independent delayed x2")
     public void test1a() {
-        MethodInfo method = methodWithTwoParameters(null, null);
+        DV delayed = DelayFactory.createDelay(mutableWithOneTypeParameter.newLocation(), CauseOfDelay.Cause.VALUE_INDEPENDENT);
+        MethodInfo method = methodWithTwoParameters(delayed, MultiLevel.DEPENDENT_DV);
         EvaluationResult er = evaluateCallToMethodWithTwoParameters(method);
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:-1,c:-1,d:-1", cb.linkedVariables().toString());
         /* we only see the delay of p0 here, because 'independent' is a low priority delay cause; see the
           merge operation in SingleDelay
          */
-        assertEquals("independent@Parameter_p0", cb.linkedVariables().causesOfDelay().toString());
+        assertEquals("independent@Class_MutableTP", cb.linkedVariables().causesOfDelay().toString());
     }
 
     @Test
@@ -147,11 +150,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
     private MethodInfo methodWithTwoParameters(DV independentP0, DV independentP1) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
-                mutablePt, "p0", 0);
+                mutablePtWithOneTypeParameter, "p0", 0);
         ParameterInspectionImpl.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
-                mutablePt, "p1", 1);
+                mutablePtWithOneTypeParameter, "p1", 1);
 
-        MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
                 MethodInfo.MethodType.METHOD)
                 .setReturnType(primitives.voidParameterizedType())
                 .addParameter(param0Inspection)
@@ -183,26 +186,26 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         return method;
     }
 
-    private ParameterAnalysis parameterAnalysis(int index, DV independentP0, MethodInfo method, HiddenContentSelector select0) {
+    private ParameterAnalysis parameterAnalysis(int index, DV independentP0,
+                                                MethodInfo method,
+                                                HiddenContentSelector hcs) {
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(index);
-        ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl
-                .Builder(primitives, analysisProvider, param0);
-        HiddenContentSelector hcs;
-        if (independentP0 != null) {
-            p0Builder.setProperty(Property.INDEPENDENT, independentP0);
-            hcs = independentP0.equals(MultiLevel.INDEPENDENT_HC_DV) ? select0 : HiddenContentSelector.None.INSTANCE;
-        } else {
-            hcs = HiddenContentSelector.None.INSTANCE;
-        }
+        ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl.Builder(primitives, analysisProvider, param0);
+        p0Builder.setProperty(Property.INDEPENDENT, independentP0);
         p0Builder.setHiddenContentSelector(hcs);
         return (ParameterAnalysis) p0Builder.build();
     }
 
+    // TODO make a test with a sourceType SomeType extends MutableTP<String>, so that the concrete type != formal type,
+    //  and the type parameter is not directly visible in the concrete type
+    // also do one with a type SomeOtherType<T> extends MutableTP<T>
+    // then, make one where the lambda is of type I implements SyntheticConsumer<String>...
 
     @Test
     @DisplayName("b.forEach(e -> a.add(e))")
     public void test2() {
-        MethodInfo method = methodWithConsumerParameter(MultiLevel.DEPENDENT_DV, HiddenContentSelector.None.INSTANCE);
+        MethodInfo method = methodWithConsumerParameter(mutableWithOneTypeParameter,
+                MultiLevel.DEPENDENT_DV, HiddenContentSelector.None.INSTANCE);
 
         EvaluationResult er = evaluateMethodWithLambdaAsConsumerArgument(method, mutablePtWithOneTypeParameter);
         assertEquals("", er.linkedVariablesOfExpression().toString());
@@ -215,7 +218,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("a::add")
     public void test3() {
-        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.CsSet.selectTypeParameter(0));
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
 
         EvaluationResult er = evaluateMethodReference(add);
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
@@ -225,8 +228,9 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("b.forEach(a::add)")
     public void test3b() {
-        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.CsSet.selectTypeParameter(0));
-        MethodInfo forEach = methodWithConsumerParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.CsSet.selectTypeParameter(0));
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo forEach = methodWithConsumerParameter(mutableWithOneTypeParameter, MultiLevel.INDEPENDENT_HC_DV,
+                HiddenContentSelector.CsSet.selectTypeParameter(0));
 
         EvaluationResult er = evaluateMethodWithMethodReferenceArgument(forEach, add, mutablePtWithOneTypeParameter);
 
@@ -234,7 +238,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4", cb.linkedVariables().toString());
-        assertEquals("0-4-*", cb.linkedVariables().stream().map(Map.Entry::getValue).findFirst().orElseThrow().toString());
+        assertEquals("0-4-0", cb.linkedVariables().stream().map(Map.Entry::getValue).findFirst().orElseThrow().toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
@@ -259,8 +263,9 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     public void test3d() {
         MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
         ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
-        MethodInfo map = methodWithFunctionParameter(integerPt, MultiLevel.INDEPENDENT_HC_DV,
-                HiddenContentSelector.CsSet.selectTypeParameter(0), tp0Pt, MultiLevel.INDEPENDENT_DV, HiddenContentSelector.None.INSTANCE,
+        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+        MethodInfo map = methodWithFunctionParameter(mutableWithOneTypeParameter, integerPt, MultiLevel.INDEPENDENT_HC_DV,
+                select0, tp0Pt, MultiLevel.INDEPENDENT_DV, select0,
                 mutablePtWithOneTypeParameter);
         assertEquals("[com.foo.MutableTP|null]", tp0.getOwner().toString());
         ParameterInfo p0 = map.methodInspection.get().getParameters().get(0);
@@ -282,18 +287,19 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @DisplayName("b.map(a::get), Function<T,T>, a and b independent HC")
     public void test3e() {
         MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
-        MethodInfo map = methodWithFunctionParameter(tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV,
-                HiddenContentSelector.CsSet.selectTypeParameter(0), tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.CsSet.selectTypeParameter(0),
+        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+        MethodInfo map = methodWithFunctionParameter(immutableHcWithOneTypeParameter,
+                tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, select0, tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, select0,
                 immutableHcPtWithOneTypeParameter);
         assertEquals("[com.foo.ImmutableHcTP|null]", tpHc0.getOwner().toString());
         ParameterInfo p0 = map.methodInspection.get().getParameters().get(0);
         assertEquals("Type _internal_.SyntheticFunction1<T,T>", p0.parameterizedType.toString());
-        assertEquals("com.foo.MutableTP.method(_internal_.SyntheticFunction1<T,T>)",
+        assertEquals("com.foo.ImmutableHcTP.method(_internal_.SyntheticFunction1<T,T>)",
                 map.fullyQualifiedName());
 
         assertEquals("Type com.foo.ImmutableHcTP<T>", map.returnType().toString());
 
-        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get, tpHc0Pt);
+        EvaluationResult er = evaluateMethodWithMethodReferenceArgument(map, get, immutableHcPtWithOneTypeParameter);
 
         // b:4 should now be present, because in this example, b is feeding
         assertEquals("a:4,b:4", er.linkedVariablesOfExpression().toString());
@@ -306,18 +312,21 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         ParameterInfo p0 = method.methodInspection.get().getParameters().get(0);
         ParameterizedType concreteType = method.returnType();
         MethodReference mr = new MethodReference(newId(), va, method, concreteType);
-        Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
+        Expression thisMock = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.EMPTY);
         VariableExpression p0Var = new VariableExpression(newId(), p0);
         EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va, "p0", p0Var));
         return mr.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
     }
 
     // b.forEach(a::add)
-    private EvaluationResult evaluateMethodWithMethodReferenceArgument(MethodInfo forEach, MethodInfo add,
+    private EvaluationResult evaluateMethodWithMethodReferenceArgument(MethodInfo forEach,
+                                                                       MethodInfo add,
                                                                        ParameterizedType typeOfB) {
         Expression zero = IntConstant.zero(primitives);
         VariableExpression va = makeLVAsExpression("a", zero, mutablePtWithOneTypeParameter);
-        ParameterizedType concreteType = add.typeInfo.asParameterizedType(inspectionProvider);
+        ParameterInfo forEachP0 = forEach.methodInspection.get().getParameters().get(0);
+        assertNotNull(forEachP0.parameterizedType.typeInfo);
+        ParameterizedType concreteType = makeConcreteImplementation(forEachP0.parameterizedType.typeInfo, va);
         MethodReference mr = new MethodReference(newId(), va, add, concreteType);
 
         VariableExpression vb = makeLVAsExpression("b", zero, typeOfB);
@@ -339,8 +348,22 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         VariableExpression va = makeLVAsExpression("a", zero, typeOfAandB);
         VariableExpression vb = makeLVAsExpression("b", zero, typeOfAandB);
         TypeInfo consumerTypeInfo = typeMapBuilder.syntheticFunction(1, true);
-        MethodInfo abstractSam = consumerTypeInfo.findUniqueMethod("accept", 1);
         ParameterizedType abstractFunctionalType = consumerTypeInfo.asParameterizedType(inspectionProvider);
+        ParameterizedType implementationPt = makeConcreteImplementation(consumerTypeInfo, va);
+        Lambda concreteConsumer = new Lambda(newId(), inspectionProvider, abstractFunctionalType, implementationPt,
+                primitives.voidParameterizedType(), List.of(Lambda.OutputVariant.EMPTY));
+        ExpressionMock object = simpleMock(mutablePtWithOneTypeParameter,
+                LinkedVariables.of(vb.variable(), LV.LINK_DEPENDENT));
+
+        MethodCall mc = new MethodCall(newId(), object, methodWithConsumerParameter, List.of(concreteConsumer));
+        Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
+
+        EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va));
+        return mc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
+    }
+
+    private ParameterizedType makeConcreteImplementation(TypeInfo consumerTypeInfo, VariableExpression va) {
+        MethodInfo abstractSam = consumerTypeInfo.typeInspection.get().methods().get(0);
         ParameterizedType implementationInterfaceType = new ParameterizedType(consumerTypeInfo, List.of(mutablePt));
 
         TypeInfo implementation = new TypeInfo("com.foo", "I");
@@ -397,19 +420,10 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .addInterfaceImplemented(implementationInterfaceType)
                 .setParentClass(primitives.objectParameterizedType())
                 .setFunctionalInterface(sam.methodInspection.get())
+                .addTypeParameter(tp0)
                 .addMethod(sam)
                 .build(inspectionProvider));
-        ParameterizedType implementationPt = implementation.asParameterizedType(inspectionProvider);
-
-        Lambda concreteConsumer = new Lambda(newId(), inspectionProvider, abstractFunctionalType, implementationPt,
-                primitives.voidParameterizedType(), List.of(Lambda.OutputVariant.EMPTY));
-        ExpressionMock object = simpleMock(mutablePt, LinkedVariables.of(vb.variable(), LV.LINK_DEPENDENT));
-
-        MethodCall mc = new MethodCall(newId(), object, methodWithConsumerParameter, List.of(concreteConsumer));
-        Expression thisMock = simpleMock(primitives.stringParameterizedType(), LinkedVariables.EMPTY);
-
-        EvaluationContext ec = evaluationContext(Map.of("this", thisMock, "a", va));
-        return mc.evaluate(context(ec), ForwardEvaluationInfo.DEFAULT);
+        return implementation.asParameterizedType(inspectionProvider);
     }
 
     // e.g. boolean List.add(E)
@@ -417,7 +431,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 tp0Pt, "p0", 0);
 
-        MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
                 MethodInfo.MethodType.METHOD)
                 .setReturnType(primitives.booleanParameterizedType())
                 .addParameter(param0Inspection)
@@ -451,7 +465,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 primitives.intParameterizedType(), "p0", 0);
 
-        MethodInfo method = new MethodInspectionImpl.Builder(newId(), primitives.stringTypeInfo(), "method",
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
                 MethodInfo.MethodType.METHOD)
                 .setReturnType(tp0Pt)
                 .addParameter(param0Inspection)
@@ -460,7 +474,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 primitives.stringTypeInfo(), analyserContext).build();
 
         ParameterAnalysis p0Analysis = parameterAnalysis(0, MultiLevel.INDEPENDENT_DV, method,
-                HiddenContentSelector.None.INSTANCE);
+                hcs);
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 primitives, analysisProvider, inspectionProvider, method, typeAnalysisOfString,
@@ -482,13 +496,14 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     }
 
     // e.g. forEach(Consumer<E>)
-    private MethodInfo methodWithConsumerParameter(DV independentP0, HiddenContentSelector p0Hcs) {
-        return methodWithFunctionParameter(tp0Pt, independentP0, p0Hcs, primitives.voidParameterizedType(),
+    private MethodInfo methodWithConsumerParameter(TypeInfo owner, DV independentP0, HiddenContentSelector p0Hcs) {
+        return methodWithFunctionParameter(owner, tp0Pt, independentP0, p0Hcs, primitives.voidParameterizedType(),
                 MultiLevel.INDEPENDENT_DV, HiddenContentSelector.None.INSTANCE, primitives.voidParameterizedType());
     }
 
     // e.g. map(Function<List<T>,T>), forEach(Consumer<T>)
-    private MethodInfo methodWithFunctionParameter(ParameterizedType param0Pt,
+    private MethodInfo methodWithFunctionParameter(TypeInfo owner,
+                                                   ParameterizedType param0Pt,
                                                    DV independentP0,
                                                    HiddenContentSelector p0Hcs,
                                                    ParameterizedType returnType,
@@ -503,7 +518,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 function, "p0", 0);
 
-        MethodInfo method = new MethodInspectionImpl.Builder(newId(), mutableWithOneTypeParameter, "method",
+        MethodInfo method = new MethodInspectionImpl.Builder(newId(), owner, "method",
                 MethodInfo.MethodType.METHOD)
                 .setReturnType(methodReturnType)
                 .addParameter(param0Inspection)

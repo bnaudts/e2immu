@@ -255,6 +255,7 @@ public abstract class CommonTest {
         string.typeAnalysis.set(builder.build());
 
         fill(mutable, MultiLevel.MUTABLE_DV, null);
+        fill(mutable2, MultiLevel.MUTABLE_DV, null);
         fill(mutableWithOneTypeParameter, MultiLevel.MUTABLE_DV, tp0);
         fill(immutableHcWithOneTypeParameter, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, tpHc0);
         fill(immutableDelayed, immutableDelay, null);
