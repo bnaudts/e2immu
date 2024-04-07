@@ -276,10 +276,14 @@ public abstract class VisitorTestSupport {
     }
 
 
-    protected void assertSingleLv(EvaluationResultVisitor.Data d, int iteration, int index, String expected) {
+    protected void assertSingleLv(EvaluationResultVisitor.Data d, LinkedVariables lvs, int iteration, int index, String expected) {
         if (d.iteration() >= iteration) {
-            LV value = d.evaluationResult().linkedVariablesOfExpression().select(index);
+            LV value = lvs.select(index);
             assertEquals(expected, value.toString());
         }
+    }
+
+    protected void assertSingleLv(EvaluationResultVisitor.Data d, int iteration, int index, String expected) {
+        assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), iteration, index, expected);
     }
 }

@@ -542,6 +542,8 @@ public class ComputeLinkedVariables {
                 target.parameterizedType(), correctForMutable);
         if (mine.isDelayed() || theirs.isDelayed()) {
             newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
+        } else if(mine.isAll() && theirs.isAll()) {
+            return null;
         } else {
             newLv = theirs.isNone() || mine.isNone() ? null : LV.createHC(mine, theirs);
         }

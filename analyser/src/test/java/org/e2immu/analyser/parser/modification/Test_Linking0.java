@@ -51,12 +51,16 @@ public class Test_Linking0 extends CommonTestRunner {
                     assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
                     ChangeData cd = d.findValueChangeByToString("m1");
                     assertEquals(expectedLv, cd.linkedVariables().toString());
+                    assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), 2, 0,
+                            "*M-4-0M");
                 }
                 case "m7" -> {
-                    String expectedLv = "list:4";// d.iteration() < 2 ? "list:-1" : "list:2"; downgrade removed
+                    String expectedLv = d.iteration() < 2 ? "list:-1" : "list:4";
                     assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
                     ChangeData cd = d.findValueChangeByToString("m7");
                     assertEquals(expectedLv, cd.linkedVariables().toString());
+                    assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), 2, 0,
+                            "0M-4-0M");
                 }
                 default -> {
                 }
@@ -72,7 +76,12 @@ public class Test_Linking0 extends CommonTestRunner {
                     case "m1" -> {
                         assertCurrentValue(d, 2, "list.get(0)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
-                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    }
+                    case "m1b" -> {
+                        assertCurrentValue(d, 2, "(new ArrayList<>(list)).get(0)");
+                        assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "list.get(0)");

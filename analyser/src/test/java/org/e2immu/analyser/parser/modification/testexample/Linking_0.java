@@ -25,7 +25,7 @@ public class Linking_0 {
         return list.get(0);
     }
 
-    // rv ->4->list, corrected to allow modifications - not anymore!
+    // rv *M-4-0M list
     static M m1(List<M> list) {
         return list.get(0);
     }

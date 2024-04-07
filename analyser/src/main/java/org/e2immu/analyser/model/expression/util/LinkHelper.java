@@ -186,7 +186,9 @@ public class LinkHelper {
                 LV level = e.getValue();
                 LinkedVariables sourceLvs = parameterLvs.get(pi.index);
                 tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, concreteTargetType,
-                        level, pi.parameterizedType, sourceLvs, parameterLvs);
+                        target.parameterizedType, level,
+                        pi.parameterizedType, pi.parameterizedType,
+                        sourceLvs, parameterLvs);
             } // else: no value... empty varargs
         }));
     }
@@ -200,8 +202,10 @@ public class LinkHelper {
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           ParameterizedType targetType,
+                                          ParameterizedType formalTargetType,
                                           LV level,
                                           ParameterizedType sourceType,
+                                          ParameterizedType formalSourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
         LinkedVariables mergedLvs;
@@ -211,16 +215,14 @@ public class LinkHelper {
             mergedLvs = LinkedVariables.EMPTY;
             for (int i = targetIndex; i < parameterLvs.size(); i++) {
                 LinkedVariables lvs = parameterLvs.get(i);
-                // FIXME distinguish between formal and concrete source & target types!
-                LinkedVariables lv = linkedVariables(targetType, targetType, lvs, independentDv,
-                        hcsTarget, sourceType, sourceType);
+                LinkedVariables lv = linkedVariables(targetType, formalTargetType, lvs, independentDv,
+                        hcsTarget, sourceType, formalSourceType);
                 mergedLvs = mergedLvs.merge(lv);
             }
         } else {
             LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
-            // FIXME distinguish between formal and concrete source & target types!
-            mergedLvs = linkedVariables(targetType, targetType, targetLinkedVariables, independentDv, hcsTarget,
-                    sourceType, sourceType);
+            mergedLvs = linkedVariables(targetType, formalTargetType, targetLinkedVariables, independentDv, hcsTarget,
+                    sourceType, formalSourceType);
         }
         LinkedVariables finalMergedLvs = mergedLvs;
         sourceLinkedVariables.stream().forEach(e ->
