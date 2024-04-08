@@ -60,7 +60,7 @@ public final class TypeInfo implements NamedType,
 
         // the following two are not really necessary, but they help a lot of tests which don't use Annotated APIs.
         put("java.lang.Object", HardCoded.IMMUTABLE_HC);
-      //  put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
+        //  put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
     }});
 
     @NotNull
@@ -85,16 +85,16 @@ public final class TypeInfo implements NamedType,
 
     public boolean isNumeric() {
         return isInt() || isInteger() ||
-                isLong() || isBoxedLong() ||
-                isShort() || isBoxedShort() ||
-                isByte() || isBoxedByte() ||
-                isFloat() || isBoxedFloat() ||
-                isDouble() || isBoxedDouble();
+               isLong() || isBoxedLong() ||
+               isShort() || isBoxedShort() ||
+               isByte() || isBoxedByte() ||
+               isFloat() || isBoxedFloat() ||
+               isDouble() || isBoxedDouble();
     }
 
     public boolean isBoxedExcludingVoid() {
         return isBoxedByte() || isBoxedShort() || isInteger() || isBoxedLong()
-                || isCharacter() || isBoxedFloat() || isBoxedDouble() || isBoxedBoolean();
+               || isCharacter() || isBoxedFloat() || isBoxedDouble() || isBoxedBoolean();
     }
 
     public boolean allowInImport() {
@@ -199,7 +199,7 @@ public final class TypeInfo implements NamedType,
 
     public boolean isPrimitiveExcludingVoid() {
         return this.isByte() || this.isShort() || this.isInt() || this.isLong() ||
-                this.isChar() || this.isFloat() || this.isDouble() || this.isBoolean();
+               this.isChar() || this.isFloat() || this.isDouble() || this.isBoolean();
     }
 
     public boolean isJavaIoSerializable() {
@@ -349,8 +349,9 @@ public final class TypeInfo implements NamedType,
     }
 
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
-        List<ParameterizedType> typeParameters = inspectionProvider.getTypeInspection(this).typeParameters()
-                .stream().map(TypeParameter::toParameterizedType)
+        List<ParameterizedType> typeParameters = inspectionProvider.getTypeInspection(this)
+                .typeParameterStream(inspectionProvider)
+                .map(TypeParameter::toParameterizedType)
                 .collect(Collectors.toList());
         return new ParameterizedType(this, typeParameters);
     }
@@ -437,14 +438,14 @@ public final class TypeInfo implements NamedType,
                         .parameterizedType.typeInfo))
                 .findAny().orElseThrow(() -> new IllegalArgumentException(
                         "Cannot find unique method with first parameter type " + typeOfFirstParameter.fullyQualifiedName
-                                + " in " + fullyQualifiedName));
+                        + " in " + fullyQualifiedName));
     }
 
     public MethodInfo findUniqueMethod(InspectionProvider inspectionProvider, String methodName, int parameters) {
         TypeInspection inspection = inspectionProvider.getTypeInspection(this);
         return inspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName) &&
-                        inspectionProvider.getMethodInspection(m).getParameters().size() == parameters)
+                             inspectionProvider.getMethodInspection(m).getParameters().size() == parameters)
                 .findAny().orElseThrow();
     }
 
@@ -460,7 +461,7 @@ public final class TypeInfo implements NamedType,
                 .filter(m -> m.methodResolution.get().overrides().contains(abstractMethodInfo))
                 .findFirst().orElse(null);
         if (foundHere != null
-                && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPubliclyAccessible())) {
+            && (foundHere.computedAnalysis() || foundHere.methodInspection.get().isPubliclyAccessible())) {
             return foundHere;
         }
         TypeInspection inspection = typeInspection.get();
@@ -789,13 +790,13 @@ public final class TypeInfo implements NamedType,
 
             // in the same compilation unit, analysed at the same time
             boolean inHierarchy = bestType.parentalHierarchyContains(this, inspectionProvider) ||
-                    parentalHierarchyContains(bestType, inspectionProvider) ||
-                    bestType.nonStaticallyEnclosingTypesContains(this, inspectionProvider) ||
-                    nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
+                                  parentalHierarchyContains(bestType, inspectionProvider) ||
+                                  bestType.nonStaticallyEnclosingTypesContains(this, inspectionProvider) ||
+                                  nonStaticallyEnclosingTypesContains(bestType, inspectionProvider);
             if (inHierarchy) return IsMyself.YES;
             // must be symmetrical: see e.g. Basics_24
             if (typeResolution.get().fieldsAccessedInRestOfPrimaryType()
-                    || bestType.typeResolution.get().fieldsAccessedInRestOfPrimaryType()) {
+                || bestType.typeResolution.get().fieldsAccessedInRestOfPrimaryType()) {
                 return IsMyself.PTA;
             }
         }

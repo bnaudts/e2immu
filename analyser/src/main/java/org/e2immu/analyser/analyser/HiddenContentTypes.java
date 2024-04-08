@@ -115,7 +115,7 @@ public class HiddenContentTypes {
         HiddenContentTypes hcsParent;
         TypeInfo typeInfoParent = parent.typeInfo;
         TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoParent);
-        if (parentAnalysis != null) {
+        if (parentAnalysis != null && parentAnalysis.hiddenContentDelays().isDone()) {
             hcsParent = parentAnalysis.getHiddenContentTypes();
         } else if (allowRecursiveComputation) {
             LOGGER.debug("Recursively computing HCS for {}", typeInfoParent);
@@ -146,8 +146,10 @@ public class HiddenContentTypes {
         for (ParameterizedType pt : parent.parameters) {
             assert i < formalParentType.parameters.size();
             ParameterizedType formalParameter = formalParentType.parameters.get(i);
-            int indexInParent = hcsParent.typeToIndex.get(formalParameter);
-            parentHcsToMyType.put(indexInParent, pt);
+            Integer indexInParent = hcsParent.typeToIndex.get(formalParameter);
+            if (indexInParent != null) {
+                parentHcsToMyType.put(indexInParent, pt);
+            }
             i++;
         }
         RelationToParent rtp = new RelationToParent(hcsParent, Map.copyOf(parentHcsToMyType));

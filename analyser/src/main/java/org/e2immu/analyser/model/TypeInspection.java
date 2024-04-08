@@ -61,6 +61,9 @@ public interface TypeInspection extends Inspection {
     List<TypeParameter> typeParameters();
 
     @NotNull(content = true)
+    Stream<TypeParameter> typeParameterStream(InspectionProvider inspectionProvider);
+
+    @NotNull(content = true)
     List<ParameterizedType> interfacesImplemented();
 
     /**

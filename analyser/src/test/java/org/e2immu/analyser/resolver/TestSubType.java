@@ -151,7 +151,14 @@ public class TestSubType extends CommonTest {
         TypeInfo realArrayList = typeMap.get(ArrayList.class);
         TypeInfo realItr = realArrayList.typeInspection.get().subTypes().stream()
                 .filter(st -> "Itr".equals(st.simpleName)).findFirst().orElseThrow();
-        assertEquals("Type java.util.Iterator<E>",
-                realItr.typeInspection.get().interfacesImplemented().get(0).toString());
+        ParameterizedType itE = realItr.typeInspection.get().interfacesImplemented().get(0);
+        assertEquals("Type java.util.Iterator<E>", itE.toString());
+        assertEquals("Type param E", itE.parameters.get(0).toString());
+        assertEquals("E as #0 in java.util.ArrayList", itE.parameters.get(0).typeParameter.toString());
+
+        ParameterizedType formalAL = realArrayList.asParameterizedType(typeMap);
+        assertEquals("Type java.util.ArrayList<E>", formalAL.toString());
+        ParameterizedType formalItr = realItr.asParameterizedType(typeMap);
+        assertEquals("Type java.util.ArrayList<E>.Itr", formalItr.toString());
     }
 }

@@ -20,13 +20,17 @@ public class TestHiddenContentTypes {
     final Primitives primitives = new PrimitivesImpl();
     final AnalyserContext analyserContext = () -> primitives;
 
+    final TypeInfo iterator = new TypeInfo("java.util", "Iterator");
     final TypeInfo collection = new TypeInfo("java.util", "Collection");
     final TypeInfo list = new TypeInfo("java.util", "List");
     final TypeInfo arrayList = new TypeInfo("java.util", "ArrayList");
     final TypeInfo stringList = new TypeInfo("com.foo", "StringList");
     final TypeInfo stringListInterface = new TypeInfo("com.foo", "StringListInterface");
     final TypeInfo stringListImpl = new TypeInfo("com.foo", "StringListImpl");
+    final TypeInfo arrayListItr = new TypeInfo(arrayList, "Itr"); // inner class
+    final TypeInfo arrayListListItr = new TypeInfo(arrayList, "ListItr"); // inner class, extends Itr
 
+    ParameterizedType iteratorEPt;
     ParameterizedType collectionEPt;
     ParameterizedType listEPt;
     ParameterizedType arrayListEPt;
@@ -48,6 +52,19 @@ public class TestHiddenContentTypes {
         primitives.stringTypeInfo().typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 primitives, primitives.stringTypeInfo(), analyserContext)
                 .setHiddenContentTypes(stringHcs)
+                .build());
+
+        TypeParameter iteratorE = new TypeParameterImpl(iterator, "E", 0).noTypeBounds();
+        iteratorEPt = new ParameterizedType(iteratorE, 0, ParameterizedType.WildCard.NONE);
+
+        iterator.typeInspection.set(new TypeInspectionImpl.Builder(iterator, Inspector.BY_HAND)
+                .setAccess(Inspection.Access.PUBLIC)
+                .setTypeNature(TypeNature.INTERFACE)
+                .addTypeParameter(iteratorE)
+                .setParentClass(primitives.objectParameterizedType())
+                .build(analyserContext));
+        iterator.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, iterator, analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext, iterator.typeInspection.get()))
                 .build());
 
         TypeParameter collectionE = new TypeParameterImpl(collection, "E", 0).noTypeBounds();
@@ -126,6 +143,29 @@ public class TestHiddenContentTypes {
                 stringListImpl, analyserContext)
                 .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
                         stringListImpl.typeInspection.get()))
+                .build());
+
+        arrayListItr.typeInspection.set(new TypeInspectionImpl.Builder(arrayListItr, Inspector.BY_HAND)
+                .setAccess(Inspection.Access.PRIVATE)
+                .setTypeNature(TypeNature.CLASS)
+                .setParentClass(primitives.objectParameterizedType())
+                .addInterfaceImplemented(new ParameterizedType(iterator, List.of(arrayListEPt)))
+                .build(analyserContext));
+        arrayListItr.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                arrayListItr, analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                        arrayListItr.typeInspection.get()))
+                .build());
+
+        arrayListListItr.typeInspection.set(new TypeInspectionImpl.Builder(arrayListListItr, Inspector.BY_HAND)
+                .setAccess(Inspection.Access.PRIVATE)
+                .setTypeNature(TypeNature.CLASS)
+                .setParentClass(new ParameterizedType(arrayListItr, List.of(arrayListEPt)))
+                .build(analyserContext));
+        arrayListListItr.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
+                arrayListListItr, analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                        arrayListListItr.typeInspection.get()))
                 .build());
     }
 
@@ -228,5 +268,39 @@ public class TestHiddenContentTypes {
         // collection 0 -> String
         ParameterizedType ptC = rtpC.parentHcsToMyType().get(0);
         assertSame(primitives.stringTypeInfo(), ptC.typeInfo);
+    }
+
+    @Test
+    @DisplayName("ArrayList.Itr")
+    public void test8() {
+        ParameterizedType formalArrayListItr = arrayListItr.asParameterizedType(analyserContext);
+        assertEquals("Type java.util.ArrayList<E>.Itr", formalArrayListItr.toString());
+        HiddenContentTypes hcs = arrayListItr.typeAnalysis.get().getHiddenContentTypes();
+        assertTrue(hcs.hasHiddenContent());
+
+        HiddenContentTypes.RelationToParent rtpI = hcs.relationToParent(iterator);
+        assertEquals(1, rtpI.parentHcsToMyType().size());
+        // collection 0 -> String
+        ParameterizedType ptC = rtpI.parentHcsToMyType().get(0);
+        assertSame(arrayListEPt.typeParameter, ptC.typeParameter);
+    }
+
+
+    @Test
+    @DisplayName("ArrayList.ListItr")
+    public void test9() {
+        ParameterizedType formalArrayListListItr = arrayListListItr.asParameterizedType(analyserContext);
+        assertEquals("Type java.util.ArrayList<E>.ListItr", formalArrayListListItr.toString());
+        HiddenContentTypes hcs = arrayListListItr.typeAnalysis.get().getHiddenContentTypes();
+        assertTrue(hcs.hasHiddenContent());
+
+        HiddenContentTypes.RelationToParent rtpI = hcs.relationToParent(iterator);
+        assertEquals(1, rtpI.parentHcsToMyType().size());
+        // collection 0 -> String
+        ParameterizedType ptC = rtpI.parentHcsToMyType().get(0);
+        assertSame(arrayListEPt.typeParameter, ptC.typeParameter);
+
+        HiddenContentTypes.RelationToParent rtpItr = hcs.relationToParent(arrayListItr);
+        assertTrue(rtpItr.parentHcsToMyType().isEmpty());
     }
 }

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.inspector.InspectionState.*;
 import static org.e2immu.analyser.inspector.TypeInspector.PACKAGE_NAME_FIELD;
@@ -169,6 +170,18 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public List<TypeInfo> permittedWhenSealed() {
         return permittedWhenSealed;
+    }
+
+
+    @Override
+    public Stream<TypeParameter> typeParameterStream(InspectionProvider inspectionProvider) {
+        Stream<TypeParameter> fromEnclosing = typeNature == TypeNature.CLASS
+                                              && !isStatic()
+                                              && typeInfo.packageNameOrEnclosingType.isRight()
+                ? inspectionProvider.getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight())
+                .typeParameterStream(inspectionProvider)
+                : Stream.of();
+        return Stream.concat(fromEnclosing, typeParameters.stream());
     }
 
     @Override
@@ -501,6 +514,17 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public List<TypeParameter> typeParameters() {
             return List.copyOf(typeParameters);
+        }
+
+        @Override
+        public Stream<TypeParameter> typeParameterStream(InspectionProvider inspectionProvider) {
+            Stream<TypeParameter> fromEnclosing = typeNature == TypeNature.CLASS
+                                                  && !isStatic()
+                                                  && typeInfo.packageNameOrEnclosingType.isRight()
+                    ? inspectionProvider.getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight())
+                    .typeParameterStream(inspectionProvider)
+                    : Stream.of();
+            return Stream.concat(fromEnclosing, typeParameters.stream());
         }
 
         @Override
