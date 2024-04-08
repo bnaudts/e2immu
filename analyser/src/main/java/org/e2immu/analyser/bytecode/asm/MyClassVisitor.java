@@ -79,8 +79,8 @@ public class MyClassVisitor extends ClassVisitor {
     private String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
         String methodName = "<init>".equals(name) ? typeInfo.simpleName : name;
         return methodName + "(" +
-                types.stream().map(pt -> pt.detailedString(localTypeMap)).collect(Collectors.joining(", ")) +
-                ")";
+               types.stream().map(pt -> pt.detailedString(localTypeMap)).collect(Collectors.joining(", ")) +
+               ")";
     }
 
     @Override
@@ -146,15 +146,34 @@ public class MyClassVisitor extends ClassVisitor {
             }
         } else {
             try {
+                TypeContext withEnclosing;
+
+                if (currentTypeNature == TypeNature.CLASS
+                    && currentType.packageNameOrEnclosingType.isRight()
+                    && !typeInspectionBuilder.modifiers().contains(TypeModifier.STATIC)) {
+                    LOGGER.debug("Inner class");
+                    String enclosingName = currentType.packageNameOrEnclosingType.getRight().fullyQualifiedName;
+                    TypeMap.InspectionAndState situationEncl = localTypeMap.typeInspectionSituation(enclosingName);
+                    assert situationEncl != null && situationEncl.typeInspection() != null;
+                    if (!situationEncl.typeInspection().typeParameters().isEmpty()) {
+                        withEnclosing = new TypeContextImpl(typeContext);
+                        situationEncl.typeInspection().typeParameters().forEach(withEnclosing::addToContext);
+                    } else {
+                        withEnclosing = typeContext;
+                    }
+                } else {
+                    withEnclosing = typeContext;
+                }
+
                 int pos = 0;
                 if (signature.charAt(0) == '<') {
-                    ParseGenerics parseGenerics = new ParseGenerics(typeContext, currentType, typeInspectionBuilder,
+                    ParseGenerics parseGenerics = new ParseGenerics(withEnclosing, currentType, typeInspectionBuilder,
                             localTypeMap, LocalTypeMap.LoadMode.NOW);
                     pos = parseGenerics.parseTypeGenerics(signature) + 1;
                 }
                 {
                     String substring = signature.substring(pos);
-                    ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
+                    ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(withEnclosing,
                             localTypeMap, LocalTypeMap.LoadMode.NOW, substring);
                     if (res == null) {
                         LOGGER.error("Stop inspection of {}, parent type unknown", currentType);
@@ -167,7 +186,7 @@ public class MyClassVisitor extends ClassVisitor {
                 if (interfaces != null) {
                     for (int i = 0; i < interfaces.length; i++) {
                         String interfaceSignature = signature.substring(pos);
-                        ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
+                        ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(withEnclosing,
                                 localTypeMap, LocalTypeMap.LoadMode.NOW, interfaceSignature);
                         if (interFaceRes == null) {
                             LOGGER.error("Stop inspection of {}, interface type unknown", currentType);
@@ -353,7 +372,7 @@ public class MyClassVisitor extends ClassVisitor {
             String fqnOuter = Resources.pathToFqn(outerName);
             boolean stepDown = currentTypePath.equals(outerName);
             boolean stepSide = currentType.packageNameOrEnclosingType.isRight() &&
-                    currentType.packageNameOrEnclosingType.getRight().fullyQualifiedName.equals(fqnOuter);
+                               currentType.packageNameOrEnclosingType.getRight().fullyQualifiedName.equals(fqnOuter);
             // step down
             if (stepSide || stepDown) {
                 String fqn = fqnOuter + "." + innerName;
