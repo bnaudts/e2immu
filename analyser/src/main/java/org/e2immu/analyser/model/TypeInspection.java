@@ -215,11 +215,11 @@ public interface TypeInspection extends Inspection {
         // this type
         Set<ParameterizedType> typesOfFields = fields().stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
-        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider).types());
+        typesOfFields.addAll(typesOfMethodsAndConstructors(inspectionProvider));
         return typesOfFields;
     }
 
-    default HiddenContentTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
+    default Set<ParameterizedType> typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
             if (!methodInfo.isConstructor() && !methodInfo.isVoid()) {
@@ -229,7 +229,7 @@ public interface TypeInspection extends Inspection {
                 result.add(parameterInfo.parameterizedType);
             }
         }
-        return new HiddenContentTypes(result);
+        return result;
     }
 
     static String createStaticBlockMethodName(int identifier) {

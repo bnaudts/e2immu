@@ -51,12 +51,12 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
             if (computed.value.isDone()) {
                 if (!inMap.equals(computed.value)) {
                     if (typeInfo.typeInspection.get().isPublic()
-                            && Input.acceptFQN(typeInfo.fullyQualifiedName)
-                            && independenceIsNotContracted(typeInfo)) {
+                        && Input.acceptFQN(typeInfo.fullyQualifiedName)
+                        && independenceIsNotContracted(typeInfo)) {
                         analyserResultBuilder.add(Message.newMessage(typeInfo.newLocation(),
                                 Message.Label.TYPE_HAS_DIFFERENT_VALUE_FOR_INDEPENDENT,
                                 "Found " + inMap + ", computed " + computed.value
-                                        + " in " + computed.explanation));
+                                + " in " + computed.explanation));
                     }
                 }
                 analyserResultBuilder.addMessages(computed.messages.stream());
@@ -132,10 +132,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         This computation does not differentiate between interfaces (which provide a specification only) and classes
         which provide specification and implementation: we cannot see inside the class anyway in this analyser.
          */
-        Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
-                .filter(TypeParameter::isUnbound)
-                .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        HiddenContentTypes hiddenContentTypes = new HiddenContentTypes(typeParametersAsParameterizedTypes);
+        HiddenContentTypes hiddenContentTypes = HiddenContentTypes.computeShallow(analyserContext, typeInspection);
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();
@@ -251,8 +248,8 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
                             .methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                             .filter(isAccessible)
                             .allMatch(m -> (m.isConstructor() || m.isVoid() || m.returnType().isPrimitiveStringClass())
-                                    && m.methodInspection.get().getParameters().stream()
-                                    .allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
+                                           && m.methodInspection.get().getParameters().stream()
+                                                   .allMatch(p -> p.parameterizedType.isPrimitiveStringClass()));
             if (allMethodsOnlyPrimitives) {
                 Stream<TypeInfo> superTypes = builder.typeInfo.typeResolution.get().superTypesExcludingJavaLangObject()
                         .stream();

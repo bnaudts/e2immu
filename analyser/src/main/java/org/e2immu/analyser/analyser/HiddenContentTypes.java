@@ -14,67 +14,163 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.NamedType;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public record HiddenContentTypes(Set<ParameterizedType> types) {
+/*
+Primary goal is to allow for a very efficient handling of hidden content types when computing HC Links.
+IntegerList -> ArrayList -> List -> Collection; when given IntegerList as concrete type and Collection as formal type,
+relating E=TP#0 in Collection to Integer as in IntegerList extends ArrayList<Integer> should be efficient.
 
-    public static final HiddenContentTypes EMPTY = new HiddenContentTypes(Set.of());
+Important: this information is orthogonal to mutability - immutability.
+The mutable type List<E> is both extensible (it is an interface), mutable (e.g., add) and it has an unbound type
+parameter. It definitely has hidden content. At the same time, some of its instances may be immutable (with
+or without hidden content), e.g. List.of(...), List.copyOf(...).
 
-    public HiddenContentTypes(Set<ParameterizedType> types) {
-        this.types = Set.copyOf(types);
+ */
+public class HiddenContentTypes {
+
+    public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(false, Map.of(), Map.of());
+    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(true, Map.of(), Map.of());
+
+    // FIXME
+    public Set<ParameterizedType> types() {
+        return typeToIndex.keySet();
     }
 
-    public static HiddenContentTypes of(ParameterizedType pt) {
-        return new HiddenContentTypes(Set.of(pt));
+    public record RelationToParent(HiddenContentTypes hcs,
+                                   Map<Integer, ParameterizedType> parentHcsToMyType) {
+        // E(=0 in List) -> 0 (in ArrayList), follow 0->E(=0 in ArrayList) -> Integer (as in IntList extends ArrayList<Integer>)
+        public RelationToParent follow(RelationToParent rtp, HiddenContentTypes hcs) {
+            Map<Integer, ParameterizedType> map = new HashMap<>();
+            for (Map.Entry<Integer, ParameterizedType> entry : parentHcsToMyType.entrySet()) {
+                int inHcs = hcs.typeToIndex.get(entry.getValue());
+                ParameterizedType concrete = rtp.parentHcsToMyType.get(inHcs);
+                map.put(entry.getKey(), concrete);
+            }
+            return new RelationToParent(hcs, map);
+        }
+    }
+
+    private final boolean typeIsExtensible;
+    private final ParameterizedType[] types;
+    private final Map<ParameterizedType, Integer> typeToIndex;
+    private final Map<TypeInfo, RelationToParent> ancestorMap;
+
+    private HiddenContentTypes(boolean typeIsExtensible,
+                               Map<ParameterizedType, Integer> typeToIndex,
+                               Map<TypeInfo, RelationToParent> ancestorMap) {
+        this.typeIsExtensible = typeIsExtensible;
+        this.typeToIndex = typeToIndex;
+        this.types = new ParameterizedType[typeToIndex.size()];
+        typeToIndex.forEach((pt, i) -> types[i] = pt);
+        this.ancestorMap = ancestorMap;
+    }
+
+    public static HiddenContentTypes computeShallow(AnalyserContext analyserContext,
+                                                    TypeInspection typeInspection) {
+        TypeInfo typeInfo = typeInspection.typeInfo();
+        if (typeInfo.isJavaLangObject()) return OF_OBJECT;
+
+        Map<TypeInfo, RelationToParent> ancestorMap = new HashMap<>();
+        ParameterizedType parent = typeInspection.parentClass();
+        assert parent != null && parent.typeInfo != null;
+        if (!parent.typeInfo.isJavaLangObject()) {
+            TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent.typeInfo);
+            HiddenContentTypes hcsParent = parentAnalysis.getHiddenContentTypes();
+            assert hcsParent.typeIsExtensible;
+            ParameterizedType formalParentType = parent.typeInfo.asParameterizedType(analyserContext);
+            recursivelyFillRelationToParent(parent, formalParentType, hcsParent, ancestorMap);
+        }
+
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
+            TypeAnalysis interfaceAnalysis = analyserContext.getTypeAnalysis(interfaceType.typeInfo);
+            HiddenContentTypes hcsInterface = interfaceAnalysis.getHiddenContentTypes();
+            assert hcsInterface.typeIsExtensible;
+            ParameterizedType formalInterfaceType = interfaceType.typeInfo.asParameterizedType(analyserContext);
+            recursivelyFillRelationToParent(interfaceType, formalInterfaceType, hcsInterface, ancestorMap);
+        }
+
+        Map<ParameterizedType, Integer> typeToIndex = typeInspection.typeParameters().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
+                        TypeParameter::getIndex));
+        return new HiddenContentTypes(typeInspection.isExtensible(), typeToIndex, Map.copyOf(ancestorMap));
+    }
+
+    /*
+     parent = ArrayList<Integer>, formal parent = ArrayList<E>, we'll map 0(=E in ArrayList) -> Integer
+     at the same time, we already have in ArrayList,
+     parent = List<E>, formal List<E>, 0(=E in List) -> E in ArrayList
+
+     we want to add List to the ancestor map, but now with 0(=E in List) -> Integer
+     */
+
+    private static void recursivelyFillRelationToParent(ParameterizedType parent,
+                                                        ParameterizedType formalParentType,
+                                                        HiddenContentTypes hcsParent,
+                                                        Map<TypeInfo, RelationToParent> ancestorMap) {
+        Map<Integer, ParameterizedType> parentHcsToMyType = new HashMap<>();
+        int i = 0;
+        for (ParameterizedType pt : parent.parameters) {
+            ParameterizedType formalParameter = formalParentType.parameters.get(i);
+            int indexInParent = hcsParent.typeToIndex.get(formalParameter);
+            parentHcsToMyType.put(indexInParent, pt);
+            i++;
+        }
+        RelationToParent rtp = new RelationToParent(hcsParent, Map.copyOf(parentHcsToMyType));
+        ancestorMap.put(formalParentType.typeInfo, rtp);
+        for (Map.Entry<TypeInfo, RelationToParent> entry : hcsParent.ancestorMap.entrySet()) {
+            if (!ancestorMap.containsKey(entry.getKey())) {
+                RelationToParent newRtp = entry.getValue().follow(rtp, hcsParent);
+                ancestorMap.put(entry.getKey(), newRtp);
+            } // else there could be duplicates in the hierarchy, we're assuming they have the same R2P!!
+        }
+    }
+
+    public boolean hasHiddenContent() {
+        return typeIsExtensible || types.length > 0;
     }
 
     // if T is hidden, then ? extends T is hidden as well
     public boolean contains(ParameterizedType parameterizedType) {
-        if (types.contains(parameterizedType)) return true;
+        if (typeToIndex.containsKey(parameterizedType)) return true;
         if (parameterizedType.typeParameter != null) {
             if (parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
                 ParameterizedType withoutWildcard = parameterizedType.copyWithoutWildcard();
-                return types.contains(withoutWildcard);
+                return typeToIndex.containsKey(withoutWildcard);
             } else {
                 // try with wildcard
                 ParameterizedType withWildCard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
                         ParameterizedType.WildCard.EXTENDS);
-                return types.contains(withWildCard);
+                return typeToIndex.containsKey(withWildCard);
             }
         }
         return false;
     }
 
     public boolean isEmpty() {
-        return types.isEmpty();
+        return types.length == 0;
     }
 
     @Override
     public String toString() {
-        return types.stream().map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
+        return typeToIndex.keySet().stream().map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
     }
 
     public HiddenContentTypes union(HiddenContentTypes other) {
-        Set<ParameterizedType> set = new HashSet<>(types);
-        set.addAll(other.types);
-        return new HiddenContentTypes(set);
-    }
-
-    public HiddenContentTypes intersection(HiddenContentTypes other) {
-        Set<ParameterizedType> set = new HashSet<>(types);
-        set.retainAll(other.types);
-        return new HiddenContentTypes(set);
+        // Set<ParameterizedType> set = new HashSet<>(types);
+        //  set.addAll(other.types);
+        // return new HiddenContentTypes(set);
+        throw new UnsupportedOperationException();
     }
 
     public int size() {
-        return types.size();
+        return typeToIndex.size();
     }
 
     /*
@@ -85,10 +181,11 @@ public record HiddenContentTypes(Set<ParameterizedType> types) {
      */
     public HiddenContentTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
         Map<NamedType, ParameterizedType> map = pt.initialTypeParameterMap(inspectionProvider);
-        Set<ParameterizedType> newTypes = types.stream()
+        Set<ParameterizedType> newTypes = typeToIndex.keySet().stream()
                 .map(t -> translate(inspectionProvider, pt, map, t))
                 .collect(Collectors.toUnmodifiableSet());
-        return new HiddenContentTypes(newTypes);
+        // return new HiddenContentTypes(newTypes);
+        throw new UnsupportedOperationException();
     }
 
     private ParameterizedType translate(InspectionProvider inspectionProvider,
@@ -101,11 +198,7 @@ public record HiddenContentTypes(Set<ParameterizedType> types) {
         return t.applyTranslation(inspectionProvider.getPrimitives(), map);
     }
 
-    public HiddenContentTypes dropArrays() {
-        if (types.isEmpty()) return this;
-        Set<ParameterizedType> newSet = types.stream()
-                .map(ParameterizedType::copyWithoutArrays)
-                .collect(Collectors.toUnmodifiableSet());
-        return new HiddenContentTypes(newSet);
+    public RelationToParent relationToParent(TypeInfo ancestor) {
+        return Objects.requireNonNull(ancestorMap.get(ancestor));
     }
 }

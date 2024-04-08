@@ -61,8 +61,6 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant);
 
-    HiddenContentTypes explicitTypesOfJLO();
-
     ParameterizedType byteParameterizedType();
 
     ParameterizedType objectParameterizedType();

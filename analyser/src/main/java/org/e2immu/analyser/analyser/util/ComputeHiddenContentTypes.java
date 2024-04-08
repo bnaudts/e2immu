@@ -131,6 +131,8 @@ public class ComputeHiddenContentTypes {
     }
 
     public HiddenContentTypes build() {
-        return new HiddenContentTypes(types);
+        // FIXME
+        throw new UnsupportedOperationException();
+       // return HiddenContentTypes.computeShallow(analyserContext, types);
     }
 }

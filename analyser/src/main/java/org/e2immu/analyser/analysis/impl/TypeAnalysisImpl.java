@@ -456,17 +456,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             if 2 of the 3 key properties of an immutable type are present, but not the third, add it in "absent" mode
              */
             if (MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV.equals(immutable) && modified.valueIsFalse()
-                    && independent.equals(MultiLevel.DEPENDENT_DV) && !addedIndependent) {
+                && independent.equals(MultiLevel.DEPENDENT_DV) && !addedIndependent) {
                 addAnnotation(E2ImmuAnnotationExpressions.create(primitives,
                         Independent.class, E2ImmuAnnotationExpressions.ABSENT, true));
             }
             if (modified.valueIsFalse() && MultiLevel.isAtLeastIndependentHC(independent)
-                    && immutable.equals(MultiLevel.MUTABLE_DV)) {
+                && immutable.equals(MultiLevel.MUTABLE_DV)) {
                 addAnnotation(E2ImmuAnnotationExpressions.create(primitives,
                         FinalFields.class, E2ImmuAnnotationExpressions.ABSENT, true));
             }
             if (MultiLevel.isAtLeastIndependentHC(independent) && MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV.equals(immutable)
-                    && modified.valueIsTrue()) {
+                && modified.valueIsTrue()) {
                 addAnnotation(e2ImmuAnnotationExpressions.modified);
             }
         }
@@ -491,8 +491,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             immutableDeterminedByTypeParameters.set(b);
         }
 
-        public void setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
+        public Builder setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
             this.hiddenContentTypes.set(hiddenContentTypes);
+            return this;
         }
 
         public void setHiddenContentTypesDelay(CausesOfDelay causes) {
@@ -507,7 +508,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
                     guardedByEventuallyImmutableFields.toImmutableSet(),
-                    hiddenContentTypes.isSet() ? hiddenContentTypes.get() : HiddenContentTypes.EMPTY,
+                    hiddenContentTypes.get(),
                     getAspects(),
                     visibleFields,
                     immutableDeterminedByTypeParameters.getOrDefault(false),
@@ -537,7 +538,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public Set<FieldInfo> nonFinalFieldsNotApprovedOrGuarded(List<FieldReference> nonFinalFields) {
             return nonFinalFields.stream()
                     .filter(fr -> !approvedPreconditionsE1.isSet(fr)
-                            && !guardedByEventuallyImmutableFields.contains(fr.fieldInfo()))
+                                  && !guardedByEventuallyImmutableFields.contains(fr.fieldInfo()))
                     .map(FieldReference::fieldInfo)
                     .collect(Collectors.toUnmodifiableSet());
         }

@@ -87,7 +87,8 @@ record HardCodedTypeAnalysis(String fullyQualifiedName,
 
     @Override
     public HiddenContentTypes getHiddenContentTypes() {
-        return HiddenContentTypes.EMPTY;
+        return hardCoded == TypeInfo.HardCoded.IMMUTABLE_HC ? HiddenContentTypes.OF_OBJECT
+                : HiddenContentTypes.OF_PRIMITIVE;
     }
 
     @Override

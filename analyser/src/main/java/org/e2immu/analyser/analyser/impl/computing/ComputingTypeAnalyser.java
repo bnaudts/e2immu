@@ -297,7 +297,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             for (CompanionMethodName companionMethodName : companionMethodNames) {
                 if (companionMethodName.aspect() == null) {
                     throw new UnsupportedOperationException("Aspect is null in aspect definition of " +
-                            mainMethod.fullyQualifiedName());
+                                                            mainMethod.fullyQualifiedName());
                 }
                 String aspect = companionMethodName.aspect();
                 if (!typeAnalysis.aspects.isSet(aspect)) {
@@ -306,7 +306,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     MethodInfo inMap = typeAnalysis.aspects.get(aspect);
                     if (!inMap.equals(mainMethod)) {
                         throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " +
-                                mainMethod.fullyQualifiedName());
+                                                                mainMethod.fullyQualifiedName());
                     }
                 }
             }
@@ -316,9 +316,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseHiddenContentTypes() {
         if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
 
-        HiddenContentTypes typeParameters = new HiddenContentTypes(typeInspection.typeParameters().stream()
-                .map(TypeParameter::toParameterizedType)
-                .collect(Collectors.toUnmodifiableSet()));
+        HiddenContentTypes typeParameters = HiddenContentTypes.computeShallow(analyserContext, typeInspection);
         ComputeHiddenContentTypes computeHc = new ComputeHiddenContentTypes(typeInfo, analyserContext)
                 .go(typeParameters);
         CausesOfDelay hiddenContentDelays = computeHc.delays();
@@ -353,7 +351,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         Optional<MethodAnalyser> oEmpty = assigningMethods.stream()
                 .filter(ma -> ma.getMethodAnalysis().getPreconditionForEventual() != null &&
-                        ma.getMethodAnalysis().getPreconditionForEventual().isEmpty())
+                              ma.getMethodAnalysis().getPreconditionForEventual().isEmpty())
                 .findFirst();
         if (oEmpty.isPresent()) {
             LOGGER.debug("Not all assigning methods have a valid precondition in {}; (findFirst) {}", typeInfo,
@@ -430,7 +428,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 .filter(ma -> {
                     StatementAnalysis statementAnalysis = ma.getMethodAnalysis().getLastStatement();
                     return statementAnalysis != null && statementAnalysis.assignsToFields() &&
-                            statementAnalysis.noIncompatiblePrecondition();
+                           statementAnalysis.noIncompatiblePrecondition();
                 })
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -490,7 +488,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
         Optional<MethodAnalyser> optEmptyPreconditions = methodList.stream()
                 .filter(ma -> ma.getMethodAnalysis().getProperty(Property.MODIFIED_METHOD_ALT_TEMP).valueIsTrue() &&
-                        ma.getMethodAnalysis().getPreconditionForEventual() == null)
+                              ma.getMethodAnalysis().getPreconditionForEventual() == null)
                 .filter(ma -> !exclude.contains(ma))
                 .findFirst();
         if (optEmptyPreconditions.isPresent()) {
@@ -651,7 +649,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 boolean linked = linkedVariables.variables().entrySet().stream()
                         .filter(e -> e.getValue().le(LV.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
-                                && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
+                                       && !analyserContext.getMethodInspection(pi.getMethod()).isPrivate());
                 if (linked) {
                     fields.add(fieldInfo);
                 }
@@ -696,7 +694,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         // TODO:IS_HC see also CMA.linkedToAnyOfTheFields, CTA.analyseFieldsGuardedForContainerProperty
                         .filter(e -> e.getValue().le(LV.LINK_DEPENDENT))
                         .anyMatch(e -> e.getKey() instanceof ParameterInfo pi
-                                && !Collections.disjoint(methodsToLinkToFields,
+                                       && !Collections.disjoint(methodsToLinkToFields,
                                 pi.getMethodInfo().methodResolution.get().overrides()));
                 if (linked) {
                     fields.add(fieldInfo);
@@ -754,7 +752,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                         TypeInfo firstStaticEnclosingType = this.typeInfo.firstStaticEnclosingType(analyserContext);
                         TypeInfo ptType = parameterInfo.parameterizedType.typeInfo;
                         if (ptType != null
-                                && ptType.firstStaticEnclosingType(analyserContext).equals(firstStaticEnclosingType)) {
+                            && ptType.firstStaticEnclosingType(analyserContext).equals(firstStaticEnclosingType)) {
                             /*
                              self... we'll occasionally be shooting ourselves in the foot!
                              without the value property CONTAINER, we have no value, which may delay MODIFIED...
@@ -800,8 +798,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                                 */
                                 DV cm = lv.stream()
                                         .filter(e -> e.getKey() instanceof FieldReference fr
-                                                && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo())
-                                                && e.getValue().le(LV.LINK_DEPENDENT))
+                                                     && fr.scopeIsRecursivelyThis() && fields.contains(fr.fieldInfo())
+                                                     && e.getValue().le(LV.LINK_DEPENDENT))
                                         .map(e -> vi.getProperty(CONTEXT_MODIFIED))
                                         .reduce(DelayFactory.initialDelay(), DV::max);
                                 return cm.valueIsTrue();
@@ -921,16 +919,16 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         } else {
             valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
                     .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate()
-                            && ma.getMethodInfo().hasReturnValue()
-                            && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType(), typeInfo))
+                                  && ma.getMethodInfo().hasReturnValue()
+                                  && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType(), typeInfo))
                     .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
                     .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
             if (valueFromMethodReturnValue.isDelayed()) {
                 if (sharedState.breakDelayLevel().acceptType()) {
                     valueFromMethodReturnValue = myMethodAnalysersExcludingSAMs.stream()
                             .filter(ma -> !ma.getMethodInfo().methodInspection.get().isPrivate()
-                                    && ma.getMethodInfo().hasReturnValue()
-                                    && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType(), typeInfo))
+                                          && ma.getMethodInfo().hasReturnValue()
+                                          && !isOfOwnOrInnerClassType(ma.getMethodInspection().getReturnType(), typeInfo))
                             .map(ma -> ma.getMethodAnalysis().getProperty(Property.INDEPENDENT))
                             .filter(DV::isDone)
                             .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
@@ -1063,9 +1061,9 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 long fieldsWithInitialiser = typeInspection.fields().stream().filter(fieldInfo -> {
                     ConstructorCall cc;
                     return fieldInfo.fieldInspection.get().fieldInitialiserIsSet() &&
-                            (cc = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().asInstanceOf(ConstructorCall.class)) != null &&
-                            cc.constructor() != null &&
-                            typeInspection.constructors().contains(cc.constructor());
+                           (cc = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser().asInstanceOf(ConstructorCall.class)) != null &&
+                           cc.constructor() != null &&
+                           typeInspection.constructors().contains(cc.constructor());
                 }).count();
                 if (fieldsWithInitialiser == 1L) {
                     LOGGER.debug("Type {} is @Singleton, found exactly one new object creation in field initialiser",
@@ -1090,10 +1088,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
             Precondition precondition = constructorAnalysis.getPrecondition();
             VariableExpression ve;
             if (!precondition.isEmpty() && (ve = variableExpressionOrNegated(precondition.expression())) != null
-                    && ve.variable() instanceof FieldReference fr
-                    && fr.fieldInfo().fieldInspection.get().isStatic()
-                    && fr.fieldInfo().fieldInspection.get().isPrivate()
-                    && fr.fieldInfo().type.isBoolean()) {
+                && ve.variable() instanceof FieldReference fr
+                && fr.fieldInfo().fieldInspection.get().isStatic()
+                && fr.fieldInfo().fieldInspection.get().isPrivate()
+                && fr.fieldInfo().type.isBoolean()) {
                 // one thing that's left is that there is an assignment in the constructor, and no assignment anywhere else
                 boolean wantAssignmentToTrue = precondition.expression() instanceof Negation;
                 String fieldFqn = ve.variable().fullyQualifiedName();
@@ -1111,7 +1109,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     VariableInfo variableInfo = lastStatement.getLatestVariableInfo(fieldFqn);
                     if (variableInfo == null) throw new UnsupportedOperationException("? have precondition");
                     if (variableInfo.isAssigned() && variableInfo.getValue() instanceof BooleanConstant booleanConstant &&
-                            booleanConstant.getValue() == wantAssignmentToTrue) {
+                        booleanConstant.getValue() == wantAssignmentToTrue) {
                         LOGGER.debug("Type {} is a  @Singleton, found boolean variable with precondition", typeInfo);
                         typeAnalysis.setProperty(Property.SINGLETON, DV.TRUE_DV);
                         return DONE;
@@ -1130,7 +1128,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         VariableExpression ve;
         if ((ve = expression.asInstanceOf(VariableExpression.class)) != null) return ve;
         if (expression instanceof Negation negation &&
-                ((ve = negation.expression.asInstanceOf(VariableExpression.class)) != null)) return ve;
+            ((ve = negation.expression.asInstanceOf(VariableExpression.class)) != null)) return ve;
         return null;
     }
 
@@ -1165,7 +1163,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                 } else if (ParameterizedType.notEqualsTypeParametersOnlyIndex(commonTypeOfFirstParameter,
                         typeOfFirstParameter)) {
                     LOGGER.debug("Type {} is not an @ExtensionClass, it has no common type for the first " +
-                                    "parameter (or return type, if no parameters) of static methods, seeing {} vs {}",
+                                 "parameter (or return type, if no parameters) of static methods, seeing {} vs {}",
                             typeInfo, commonTypeOfFirstParameter.detailedString(), typeOfFirstParameter.detailedString());
                     commonTypeOfFirstParameter = null;
                     break;
@@ -1185,7 +1183,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                     if (notNull.lt(MultiLevel.EFFECTIVELY_NOT_NULL_DV)) {
                         LOGGER.debug("Type {} is not an @ExtensionClass, method {} does not have either a " +
-                                        "@NotNull 1st parameter, or no parameters and returns @NotNull", typeInfo,
+                                     "@NotNull 1st parameter, or no parameters and returns @NotNull", typeInfo,
                                 methodInfo);
                         commonTypeOfFirstParameter = null;
                         break;
@@ -1249,8 +1247,8 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     .getFieldInitialiser();
             ConstructorCall cc;
             if (fieldInitialiser != null
-                    && (cc = fieldInitialiser.initialiser().asInstanceOf(ConstructorCall.class)) != null
-                    && cc.constructor().typeInfo == this.typeInfo) {
+                && (cc = fieldInitialiser.initialiser().asInstanceOf(ConstructorCall.class)) != null
+                && cc.constructor().typeInfo == this.typeInfo) {
                 LOGGER.debug("Type {} looks like a @UtilityClass, but an object of the class is created in field {}",
                         typeInfo, fieldAnalyser);
                 typeAnalysis.setProperty(Property.UTILITY_CLASS, DV.FALSE_DV);

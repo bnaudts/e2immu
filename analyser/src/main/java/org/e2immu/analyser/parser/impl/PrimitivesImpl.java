@@ -268,7 +268,7 @@ public class PrimitivesImpl implements Primitives {
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.setHiddenContentTypes(HiddenContentTypes.EMPTY);
+            builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
             builder.setImmutableDeterminedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
         }
@@ -289,7 +289,7 @@ public class PrimitivesImpl implements Primitives {
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
-            builder.setHiddenContentTypes(HiddenContentTypes.EMPTY);
+            builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
             builder.setImmutableDeterminedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
         }
@@ -494,12 +494,6 @@ public class PrimitivesImpl implements Primitives {
             return voidTypeInfo;
         }
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public HiddenContentTypes explicitTypesOfJLO() {
-        return new HiddenContentTypes(Set.of(stringParameterizedType, objectParameterizedType,
-                classTypeInfo.asSimpleParameterizedType()));
     }
 
     @Override
