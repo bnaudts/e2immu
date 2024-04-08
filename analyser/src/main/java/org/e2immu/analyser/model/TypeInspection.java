@@ -104,6 +104,10 @@ public interface TypeInspection extends Inspection {
         return inspectionProvider.getMethodInspection(methods.get(0));
     }
 
+    default boolean isInnerClass() {
+        return !isStatic() && typeNature() == TypeNature.CLASS && typeInfo().packageNameOrEnclosingType.isRight();
+    }
+
     enum Methods {
 
         THIS_TYPE_ONLY(false, false, null),

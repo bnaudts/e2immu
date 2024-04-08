@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.ConstructorCallErasure;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class ParseObjectCreationExpr {
 
@@ -85,7 +86,14 @@ public class ParseObjectCreationExpr {
                         impliedParameterizedType);
             }
         } else {
-            parameterizedType = typeAsIs;
+            if (formalType.parameters.size() > typeAsIs.parameters.size()
+                && typeContext.getTypeInspection(typeAsIs.typeInfo).isInnerClass()) {
+                List<ParameterizedType> add = tas.scope.returnType().parameters;
+                List<ParameterizedType> all = Stream.concat(add.stream(), typeAsIs.parameters.stream()).toList();
+                parameterizedType = new ParameterizedType(typeAsIs.typeInfo, all);
+            } else {
+                parameterizedType = typeAsIs;
+            }
         }
 
         Identifier id = Identifier.from(objectCreationExpr);

@@ -175,9 +175,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     @Override
     public Stream<TypeParameter> typeParameterStream(InspectionProvider inspectionProvider) {
-        Stream<TypeParameter> fromEnclosing = typeNature == TypeNature.CLASS
-                                              && !isStatic()
-                                              && typeInfo.packageNameOrEnclosingType.isRight()
+        Stream<TypeParameter> fromEnclosing = isInnerClass()
                 ? inspectionProvider.getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight())
                 .typeParameterStream(inspectionProvider)
                 : Stream.of();
@@ -518,9 +516,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public Stream<TypeParameter> typeParameterStream(InspectionProvider inspectionProvider) {
-            Stream<TypeParameter> fromEnclosing = typeNature == TypeNature.CLASS
-                                                  && !isStatic()
-                                                  && typeInfo.packageNameOrEnclosingType.isRight()
+            Stream<TypeParameter> fromEnclosing = isInnerClass()
                     ? inspectionProvider.getTypeInspection(typeInfo.packageNameOrEnclosingType.getRight())
                     .typeParameterStream(inspectionProvider)
                     : Stream.of();

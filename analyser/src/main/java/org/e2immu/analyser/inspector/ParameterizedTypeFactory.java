@@ -25,6 +25,7 @@ import org.e2immu.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class ParameterizedTypeFactory {
     @Nullable
@@ -79,12 +80,11 @@ public class ParameterizedTypeFactory {
         List<ParameterizedType> parameters = new ArrayList<>();
         if (baseType instanceof ClassOrInterfaceType cit) {
             name = cit.getName().getIdentifier();
-            if (cit.getTypeArguments().isPresent()) {
-                for (Type typeArgument : cit.getTypeArguments().get()) {
-                    ParameterizedType subPt = from(context, typeArgument, ParameterizedType.WildCard.NONE, false,
-                            null, true);
-                    parameters.add(subPt);
-                }
+            List<Type> allTypeArguments = allTypeArguments(cit);
+            for (Type typeArgument : allTypeArguments) {
+                ParameterizedType subPt = from(context, typeArgument, ParameterizedType.WildCard.NONE, false,
+                        null, true);
+                parameters.add(subPt);
             }
             if (cit.getScope().isPresent()) {
                 // first, check for a FQN
@@ -123,9 +123,15 @@ public class ParameterizedTypeFactory {
         }
         if (complain) {
             throw new UnsupportedOperationException("Unknown type: " + name + " at line "
-                    + baseType.getBegin() + " of " + baseType.getClass());
+                                                    + baseType.getBegin() + " of " + baseType.getClass());
         }
         return null;
+    }
+
+    private static List<Type> allTypeArguments(ClassOrInterfaceType cit) {
+        Stream<Type> fromEnclosing = cit.getScope().isPresent() ? allTypeArguments(cit.getScope().get()).stream() : Stream.of();
+        Stream<Type> fromCit = cit.getTypeArguments().isPresent() ? cit.getTypeArguments().get().stream() : Stream.of();
+        return Stream.concat(fromEnclosing, fromCit).toList();
     }
 
 
