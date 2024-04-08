@@ -17,6 +17,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,6 +35,7 @@ or without hidden content), e.g. List.of(...), List.copyOf(...).
 
  */
 public class HiddenContentTypes {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HiddenContentTypes.class);
 
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(false, Map.of(), Map.of());
     public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(true, Map.of(), Map.of());
@@ -48,8 +51,13 @@ public class HiddenContentTypes {
         public RelationToParent follow(RelationToParent rtp, HiddenContentTypes hcs) {
             Map<Integer, ParameterizedType> map = new HashMap<>();
             for (Map.Entry<Integer, ParameterizedType> entry : parentHcsToMyType.entrySet()) {
-                int inHcs = hcs.typeToIndex.get(entry.getValue());
-                ParameterizedType concrete = rtp.parentHcsToMyType.get(inHcs);
+                Integer inHcs = hcs.typeToIndex.get(entry.getValue());
+                ParameterizedType concrete;
+                if (inHcs != null) {
+                    concrete = rtp.parentHcsToMyType.get(inHcs);
+                } else {
+                    concrete = entry.getValue();
+                }
                 map.put(entry.getKey(), concrete);
             }
             return new RelationToParent(hcs, map);
@@ -73,6 +81,12 @@ public class HiddenContentTypes {
 
     public static HiddenContentTypes computeShallow(AnalyserContext analyserContext,
                                                     TypeInspection typeInspection) {
+        return computeShallow(analyserContext, typeInspection, false);
+    }
+
+    public static HiddenContentTypes computeShallow(AnalyserContext analyserContext,
+                                                    TypeInspection typeInspection,
+                                                    boolean allowRecursiveComputation) {
         TypeInfo typeInfo = typeInspection.typeInfo();
         if (typeInfo.isJavaLangObject()) return OF_OBJECT;
 
@@ -80,19 +94,11 @@ public class HiddenContentTypes {
         ParameterizedType parent = typeInspection.parentClass();
         assert parent != null && parent.typeInfo != null;
         if (!parent.typeInfo.isJavaLangObject()) {
-            TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysis(parent.typeInfo);
-            HiddenContentTypes hcsParent = parentAnalysis.getHiddenContentTypes();
-            assert hcsParent.typeIsExtensible;
-            ParameterizedType formalParentType = parent.typeInfo.asParameterizedType(analyserContext);
-            recursivelyFillRelationToParent(parent, formalParentType, hcsParent, ancestorMap);
+            handleExtension(analyserContext, parent, ancestorMap, allowRecursiveComputation);
         }
 
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
-            TypeAnalysis interfaceAnalysis = analyserContext.getTypeAnalysis(interfaceType.typeInfo);
-            HiddenContentTypes hcsInterface = interfaceAnalysis.getHiddenContentTypes();
-            assert hcsInterface.typeIsExtensible;
-            ParameterizedType formalInterfaceType = interfaceType.typeInfo.asParameterizedType(analyserContext);
-            recursivelyFillRelationToParent(interfaceType, formalInterfaceType, hcsInterface, ancestorMap);
+            handleExtension(analyserContext, interfaceType, ancestorMap, allowRecursiveComputation);
         }
 
         Map<ParameterizedType, Integer> typeToIndex = typeInspection.typeParameters().stream()
@@ -100,6 +106,27 @@ public class HiddenContentTypes {
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
                         TypeParameter::getIndex));
         return new HiddenContentTypes(typeInspection.isExtensible(), typeToIndex, Map.copyOf(ancestorMap));
+    }
+
+    private static void handleExtension(AnalyserContext analyserContext,
+                                        ParameterizedType parent,
+                                        Map<TypeInfo, RelationToParent> ancestorMap,
+                                        boolean allowRecursiveComputation) {
+        HiddenContentTypes hcsParent;
+        TypeInfo typeInfoParent = parent.typeInfo;
+        TypeAnalysis parentAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(typeInfoParent);
+        if (parentAnalysis != null) {
+            hcsParent = parentAnalysis.getHiddenContentTypes();
+        } else if (allowRecursiveComputation) {
+            LOGGER.debug("Recursively computing HCS for {}", typeInfoParent);
+            TypeInspection parentInspection = analyserContext.getTypeInspection(typeInfoParent);
+            hcsParent = computeShallow(analyserContext, parentInspection, true);
+        } else {
+            throw new UnsupportedOperationException("Have no hidden content for " + typeInfoParent);
+        }
+        assert hcsParent.typeIsExtensible;
+        ParameterizedType formalParentType = typeInfoParent.asParameterizedType(analyserContext);
+        recursivelyFillRelationToParent(parent, formalParentType, hcsParent, ancestorMap);
     }
 
     /*
@@ -117,6 +144,7 @@ public class HiddenContentTypes {
         Map<Integer, ParameterizedType> parentHcsToMyType = new HashMap<>();
         int i = 0;
         for (ParameterizedType pt : parent.parameters) {
+            assert i < formalParentType.parameters.size();
             ParameterizedType formalParameter = formalParentType.parameters.get(i);
             int indexInParent = hcsParent.typeToIndex.get(formalParameter);
             parentHcsToMyType.put(indexInParent, pt);
@@ -200,5 +228,13 @@ public class HiddenContentTypes {
 
     public RelationToParent relationToParent(TypeInfo ancestor) {
         return Objects.requireNonNull(ancestorMap.get(ancestor));
+    }
+
+    public ParameterizedType typeByIndex(int i) {
+        return types[i];
+    }
+
+    public int indexOf(ParameterizedType type) {
+        return typeToIndex.get(type);
     }
 }

@@ -29,6 +29,7 @@ import org.e2immu.analyser.resolver.testexample.importhelper.SubType_4Helper;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -128,11 +129,29 @@ public class TestSubType extends CommonTest {
 
     @Test
     public void test4() throws IOException {
-        TypeMap typeMap =inspectAndResolve(TestImport.IMPORT_HELPER, SubType_4.class);
+        TypeMap typeMap = inspectAndResolve(TestImport.IMPORT_HELPER, SubType_4.class);
         TypeInfo d = typeMap.get(SubType_4Helper.D.class);
         ParameterizedType dPt = d.asParameterizedType(typeMap);
         TypeInfo st4 = typeMap.get(SubType_4.class);
         MethodInfo createD = st4.findUniqueMethod("createD", 1);
         assertEquals(dPt, createD.returnType());
+    }
+
+    @Test
+    public void test5() throws IOException {
+        TypeMap typeMap = inspectAndResolve(SubType_5.class);
+        TypeInfo st5 = typeMap.get(SubType_5.class);
+        TypeInfo arrayList = st5.typeInspection.get().subTypes().stream()
+                .filter(st -> "ArrayList".equals(st.simpleName)).findFirst().orElseThrow();
+        TypeInfo itr = arrayList.typeInspection.get().subTypes().stream()
+                .filter(st -> "Itr".equals(st.simpleName)).findFirst().orElseThrow();
+        assertEquals("Type org.e2immu.analyser.resolver.testexample.SubType_5.Iterator<T>",
+                itr.typeInspection.get().interfacesImplemented().get(0).toString());
+
+        TypeInfo realArrayList = typeMap.get(ArrayList.class);
+        TypeInfo realItr = realArrayList.typeInspection.get().subTypes().stream()
+                .filter(st -> "Itr".equals(st.simpleName)).findFirst().orElseThrow();
+        assertEquals("Type java.util.Iterator<E>",
+                realItr.typeInspection.get().interfacesImplemented().get(0).toString());
     }
 }

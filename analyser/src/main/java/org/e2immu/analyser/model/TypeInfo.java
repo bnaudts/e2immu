@@ -60,7 +60,7 @@ public final class TypeInfo implements NamedType,
 
         // the following two are not really necessary, but they help a lot of tests which don't use Annotated APIs.
         put("java.lang.Object", HardCoded.IMMUTABLE_HC);
-        put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
+      //  put("java.lang.Enum", HardCoded.IMMUTABLE_HC);
     }});
 
     @NotNull

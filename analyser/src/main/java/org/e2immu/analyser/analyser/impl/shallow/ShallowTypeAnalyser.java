@@ -132,7 +132,8 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         This computation does not differentiate between interfaces (which provide a specification only) and classes
         which provide specification and implementation: we cannot see inside the class anyway in this analyser.
          */
-        HiddenContentTypes hiddenContentTypes = HiddenContentTypes.computeShallow(analyserContext, typeInspection);
+        HiddenContentTypes hiddenContentTypes = HiddenContentTypes.computeShallow(analyserContext, typeInspection,
+                true);
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();
