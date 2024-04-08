@@ -150,9 +150,9 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
             typeAnalysis.setHiddenContentTypesDelay(delays);
             return delays;
         }
-        SetOfTypes unionHiddenContent = implementingAnalyses.get().stream()
+        HiddenContentTypes unionHiddenContent = implementingAnalyses.get().stream()
                 .map(TypeAnalysis::getHiddenContentTypes)
-                .reduce(SetOfTypes.EMPTY, SetOfTypes::union);
+                .reduce(HiddenContentTypes.EMPTY, HiddenContentTypes::union);
         typeAnalysis.setHiddenContentTypes(unionHiddenContent);
         return DONE;
     }

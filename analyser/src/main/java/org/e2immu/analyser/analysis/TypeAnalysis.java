@@ -147,7 +147,7 @@ public interface TypeAnalysis extends Analysis {
      *
      * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
      */
-    SetOfTypes getHiddenContentTypes();
+    HiddenContentTypes getHiddenContentTypes();
 
     @NotNull
     CausesOfDelay hiddenContentDelays();

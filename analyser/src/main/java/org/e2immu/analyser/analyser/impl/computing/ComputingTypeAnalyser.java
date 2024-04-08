@@ -316,7 +316,7 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private AnalysisStatus analyseHiddenContentTypes() {
         if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
 
-        SetOfTypes typeParameters = new SetOfTypes(typeInspection.typeParameters().stream()
+        HiddenContentTypes typeParameters = new HiddenContentTypes(typeInspection.typeParameters().stream()
                 .map(TypeParameter::toParameterizedType)
                 .collect(Collectors.toUnmodifiableSet()));
         ComputeHiddenContentTypes computeHc = new ComputeHiddenContentTypes(typeInfo, analyserContext)

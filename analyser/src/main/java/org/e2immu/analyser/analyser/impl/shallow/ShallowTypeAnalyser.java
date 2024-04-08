@@ -135,7 +135,7 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         Set<ParameterizedType> typeParametersAsParameterizedTypes = typeInspection.typeParameters().stream()
                 .filter(TypeParameter::isUnbound)
                 .map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toSet());
-        SetOfTypes hiddenContentTypes = new SetOfTypes(typeParametersAsParameterizedTypes);
+        HiddenContentTypes hiddenContentTypes = new HiddenContentTypes(typeParametersAsParameterizedTypes);
         typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
 
         ensureImmutableAndContainer();

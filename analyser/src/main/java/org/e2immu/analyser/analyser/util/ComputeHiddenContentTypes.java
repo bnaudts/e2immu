@@ -18,7 +18,7 @@ package org.e2immu.analyser.analyser.util;
 import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.SetOfTypes;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public class ComputeHiddenContentTypes {
         this.typeInfo = typeInfo;
     }
 
-    public ComputeHiddenContentTypes go(SetOfTypes typeParameters) {
+    public ComputeHiddenContentTypes go(HiddenContentTypes typeParameters) {
         types.addAll(typeParameters.types()); // these are the unbound type parameters of the type
         if (!typeInfo.isJavaLangObject()) {
             recurse(typeInfo);
@@ -104,7 +104,7 @@ public class ComputeHiddenContentTypes {
                 LOGGER.debug("Delaying hidden content computation, waiting for HC of {}", bestType);
                 delays.add(typeAnalysis.hiddenContentDelays().causesOfDelay());
             } else {
-                SetOfTypes hidden = typeAnalysis.getHiddenContentTypes().translate(analyserContext, type);
+                HiddenContentTypes hidden = typeAnalysis.getHiddenContentTypes().translate(analyserContext, type);
                 if (immutable.isDelayed()) {
                     LOGGER.debug("Delaying hidden content computation, waiting for IMMUTABLE of {}", bestType);
                     delays.add(immutable.causesOfDelay());
@@ -130,7 +130,7 @@ public class ComputeHiddenContentTypes {
         return delays.stream().reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
     }
 
-    public SetOfTypes build() {
-        return new SetOfTypes(types);
+    public HiddenContentTypes build() {
+        return new HiddenContentTypes(types);
     }
 }

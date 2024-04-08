@@ -1699,7 +1699,7 @@ graph
 	node
 	[
 		id 283
-		label "org.e2immu.analyser.analyser.SetOfTypes"
+		label "org.e2immu.analyser.analyser.HiddenContentTypes"
 		weight 1411392
 	]
 	node

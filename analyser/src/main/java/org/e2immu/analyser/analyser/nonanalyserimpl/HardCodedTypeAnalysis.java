@@ -86,8 +86,8 @@ record HardCodedTypeAnalysis(String fullyQualifiedName,
     }
 
     @Override
-    public SetOfTypes getHiddenContentTypes() {
-        return SetOfTypes.EMPTY;
+    public HiddenContentTypes getHiddenContentTypes() {
+        return HiddenContentTypes.EMPTY;
     }
 
     @Override

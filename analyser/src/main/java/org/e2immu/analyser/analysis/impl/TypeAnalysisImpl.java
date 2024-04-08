@@ -41,7 +41,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Map<FieldReference, Expression> approvedPreconditionsE1;
     private final Map<FieldReference, Expression> approvedPreconditionsE2;
 
-    private final SetOfTypes hiddenContentTypes;
+    private final HiddenContentTypes hiddenContentTypes;
     private final Map<String, MethodInfo> aspects;
     private final Set<FieldInfo> eventuallyImmutableFields;
     private final Set<FieldInfo> guardedByEventuallyImmutableFields;
@@ -57,7 +57,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<FieldReference, Expression> approvedPreconditionsE2,
                              Set<FieldInfo> eventuallyImmutableFields,
                              Set<FieldInfo> guardedByEventuallyImmutableFields,
-                             SetOfTypes hiddenContentTypes,
+                             HiddenContentTypes hiddenContentTypes,
                              Map<String, MethodInfo> aspects,
                              Set<FieldInfo> visibleFields,
                              boolean immutableDeterminedByTypeParameters,
@@ -153,7 +153,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public SetOfTypes getHiddenContentTypes() {
+    public HiddenContentTypes getHiddenContentTypes() {
         return hiddenContentTypes;
     }
 
@@ -224,7 +224,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         private final AddOnceSet<FieldInfo> eventuallyImmutableFields = new AddOnceSet<>();
         private final AddOnceSet<FieldInfo> guardedByEventuallyImmutableFields = new AddOnceSet<>();
 
-        private final VariableFirstThen<CausesOfDelay, SetOfTypes> hiddenContentTypes;
+        private final VariableFirstThen<CausesOfDelay, HiddenContentTypes> hiddenContentTypes;
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
 
@@ -401,7 +401,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public SetOfTypes getHiddenContentTypes() {
+        public HiddenContentTypes getHiddenContentTypes() {
             return hiddenContentTypes.get();
         }
 
@@ -491,8 +491,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
             immutableDeterminedByTypeParameters.set(b);
         }
 
-        public void setHiddenContentTypes(SetOfTypes setOfTypes) {
-            hiddenContentTypes.set(setOfTypes);
+        public void setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
+            this.hiddenContentTypes.set(hiddenContentTypes);
         }
 
         public void setHiddenContentTypesDelay(CausesOfDelay causes) {
@@ -507,7 +507,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     approvedPreconditionsE2.toImmutableMap(),
                     eventuallyImmutableFields.toImmutableSet(),
                     guardedByEventuallyImmutableFields.toImmutableSet(),
-                    hiddenContentTypes.isSet() ? hiddenContentTypes.get() : SetOfTypes.EMPTY,
+                    hiddenContentTypes.isSet() ? hiddenContentTypes.get() : HiddenContentTypes.EMPTY,
                     getAspects(),
                     visibleFields,
                     immutableDeterminedByTypeParameters.getOrDefault(false),

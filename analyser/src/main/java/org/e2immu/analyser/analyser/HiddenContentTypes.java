@@ -23,16 +23,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record SetOfTypes(Set<ParameterizedType> types) {
+public record HiddenContentTypes(Set<ParameterizedType> types) {
 
-    public static final SetOfTypes EMPTY = new SetOfTypes(Set.of());
+    public static final HiddenContentTypes EMPTY = new HiddenContentTypes(Set.of());
 
-    public SetOfTypes(Set<ParameterizedType> types) {
+    public HiddenContentTypes(Set<ParameterizedType> types) {
         this.types = Set.copyOf(types);
     }
 
-    public static SetOfTypes of(ParameterizedType pt) {
-        return new SetOfTypes(Set.of(pt));
+    public static HiddenContentTypes of(ParameterizedType pt) {
+        return new HiddenContentTypes(Set.of(pt));
     }
 
     // if T is hidden, then ? extends T is hidden as well
@@ -40,8 +40,7 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         if (types.contains(parameterizedType)) return true;
         if (parameterizedType.typeParameter != null) {
             if (parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
-                ParameterizedType withoutWildcard = new ParameterizedType(parameterizedType.typeParameter, parameterizedType.arrays,
-                        ParameterizedType.WildCard.NONE);
+                ParameterizedType withoutWildcard = parameterizedType.copyWithoutWildcard();
                 return types.contains(withoutWildcard);
             } else {
                 // try with wildcard
@@ -62,16 +61,16 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         return types.stream().map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
     }
 
-    public SetOfTypes union(SetOfTypes other) {
+    public HiddenContentTypes union(HiddenContentTypes other) {
         Set<ParameterizedType> set = new HashSet<>(types);
         set.addAll(other.types);
-        return new SetOfTypes(set);
+        return new HiddenContentTypes(set);
     }
 
-    public SetOfTypes intersection(SetOfTypes other) {
+    public HiddenContentTypes intersection(HiddenContentTypes other) {
         Set<ParameterizedType> set = new HashSet<>(types);
         set.retainAll(other.types);
-        return new SetOfTypes(set);
+        return new HiddenContentTypes(set);
     }
 
     public int size() {
@@ -82,14 +81,14 @@ public record SetOfTypes(Set<ParameterizedType> types) {
     make a translation map based on pt2, and translate from formal to concrete.
 
     If types contains E=formal type parameter of List<E>, and pt = List<T>, we want
-    to return a SetOfTypes containing T instead of E
+    to return a HiddenContentTypes containing T instead of E
      */
-    public SetOfTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
+    public HiddenContentTypes translate(InspectionProvider inspectionProvider, ParameterizedType pt) {
         Map<NamedType, ParameterizedType> map = pt.initialTypeParameterMap(inspectionProvider);
         Set<ParameterizedType> newTypes = types.stream()
                 .map(t -> translate(inspectionProvider, pt, map, t))
                 .collect(Collectors.toUnmodifiableSet());
-        return new SetOfTypes(newTypes);
+        return new HiddenContentTypes(newTypes);
     }
 
     private ParameterizedType translate(InspectionProvider inspectionProvider,
@@ -102,11 +101,11 @@ public record SetOfTypes(Set<ParameterizedType> types) {
         return t.applyTranslation(inspectionProvider.getPrimitives(), map);
     }
 
-    public SetOfTypes dropArrays() {
+    public HiddenContentTypes dropArrays() {
         if (types.isEmpty()) return this;
         Set<ParameterizedType> newSet = types.stream()
                 .map(ParameterizedType::copyWithoutArrays)
                 .collect(Collectors.toUnmodifiableSet());
-        return new SetOfTypes(newSet);
+        return new HiddenContentTypes(newSet);
     }
 }

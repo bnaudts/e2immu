@@ -14,7 +14,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.SetOfTypes;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -61,7 +61,7 @@ public interface Primitives extends PrimitivesWithoutParameterizedType {
 
     int isAssignableFromTo(ParameterizedType from, ParameterizedType to, boolean covariant);
 
-    SetOfTypes explicitTypesOfJLO();
+    HiddenContentTypes explicitTypesOfJLO();
 
     ParameterizedType byteParameterizedType();
 

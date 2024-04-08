@@ -14,8 +14,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.SetOfTypes;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -220,7 +219,7 @@ public interface TypeInspection extends Inspection {
         return typesOfFields;
     }
 
-    default SetOfTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
+    default HiddenContentTypes typesOfMethodsAndConstructors(InspectionProvider inspectionProvider) {
         Set<ParameterizedType> result = new HashSet<>();
         for (MethodInfo methodInfo : methodsAndConstructors()) {
             if (!methodInfo.isConstructor() && !methodInfo.isVoid()) {
@@ -230,7 +229,7 @@ public interface TypeInspection extends Inspection {
                 result.add(parameterInfo.parameterizedType);
             }
         }
-        return new SetOfTypes(result);
+        return new HiddenContentTypes(result);
     }
 
     static String createStaticBlockMethodName(int identifier) {
