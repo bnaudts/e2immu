@@ -107,7 +107,10 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>()
                 .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_HC_TYPES, iteration -> analyseHiddenContentTypes())
+                .add(ANALYSE_HC_TYPES, iteration -> {
+                    analyseHiddenContentTypes();
+                    return DONE;
+                })
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
 
         if (typeInfo.isInterface()) {
@@ -313,21 +316,12 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         }
     }
 
-    private AnalysisStatus analyseHiddenContentTypes() {
-        if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
-
-        HiddenContentTypes typeParameters = HiddenContentTypes.computeShallow(analyserContext, typeInspection);
-        ComputeHiddenContentTypes computeHc = new ComputeHiddenContentTypes(typeInfo, analyserContext)
-                .go(typeParameters);
-        CausesOfDelay hiddenContentDelays = computeHc.delays();
-        if (hiddenContentDelays.isDelayed()) {
-            LOGGER.debug("Delaying hidden content type computation of {}", typeInfo);
-            typeAnalysis.setHiddenContentTypesDelay(hiddenContentDelays);
-            return AnalysisStatus.of(hiddenContentDelays);
+    private void analyseHiddenContentTypes() {
+        if(typeAnalysis.hiddenContentDelays().isDelayed()) {
+            HiddenContentTypes typeParameters = HiddenContentTypes.compute(analyserContext, typeInspection, false,
+                    true);
+            typeAnalysis.setHiddenContentTypes(typeParameters);
         }
-        LOGGER.debug("Computed hidden content types of {}", typeInfo);
-        typeAnalysis.setHiddenContentTypes(computeHc.build());
-        return DONE;
     }
 
     private AnalysisStatus computeApprovedPreconditionsFinalFields(SharedState sharedState) {

@@ -47,7 +47,7 @@ public class TestHiddenContentTypes {
                 .setAccess(Inspection.Access.PUBLIC)
                 .addTypeModifier(TypeModifier.FINAL)
                 .build(analyserContext));
-        HiddenContentTypes stringHcs = HiddenContentTypes.computeShallow(analyserContext,
+        HiddenContentTypes stringHcs = HiddenContentTypes.compute(analyserContext,
                 primitives.stringTypeInfo().typeInspection.get());
         primitives.stringTypeInfo().typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
                 primitives, primitives.stringTypeInfo(), analyserContext)
@@ -64,7 +64,7 @@ public class TestHiddenContentTypes {
                 .setParentClass(primitives.objectParameterizedType())
                 .build(analyserContext));
         iterator.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, iterator, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext, iterator.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext, iterator.typeInspection.get()))
                 .build());
 
         TypeParameter collectionE = new TypeParameterImpl(collection, "E", 0).noTypeBounds();
@@ -77,7 +77,7 @@ public class TestHiddenContentTypes {
                 .setParentClass(primitives.objectParameterizedType())
                 .build(analyserContext));
         collection.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, collection, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext, collection.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext, collection.typeInspection.get()))
                 .build());
 
         TypeParameter listE = new TypeParameterImpl(list, "E", 0).noTypeBounds();
@@ -90,7 +90,7 @@ public class TestHiddenContentTypes {
                 .addInterfaceImplemented(new ParameterizedType(collection, List.of(listEPt)))
                 .build(analyserContext));
         list.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, list, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext, list.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext, list.typeInspection.get()))
                 .build());
 
         TypeParameter arrayListE = new TypeParameterImpl(arrayList, "E", 0).noTypeBounds();
@@ -104,7 +104,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         arrayList.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 arrayList, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         arrayList.typeInspection.get()))
                 .build());
 
@@ -117,7 +117,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         stringList.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 stringList, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         stringList.typeInspection.get()))
                 .build());
 
@@ -129,7 +129,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         stringListInterface.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 stringListInterface, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         stringListInterface.typeInspection.get()))
                 .build());
 
@@ -141,7 +141,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         stringListImpl.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 stringListImpl, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         stringListImpl.typeInspection.get()))
                 .build());
 
@@ -153,7 +153,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         arrayListItr.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 arrayListItr, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         arrayListItr.typeInspection.get()))
                 .build());
 
@@ -164,7 +164,7 @@ public class TestHiddenContentTypes {
                 .build(analyserContext));
         arrayListListItr.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 arrayListListItr, analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.computeShallow(analyserContext,
+                .setHiddenContentTypes(HiddenContentTypes.compute(analyserContext,
                         arrayListListItr.typeInspection.get()))
                 .build());
     }
@@ -172,7 +172,7 @@ public class TestHiddenContentTypes {
     @Test
     @DisplayName("Object")
     public void test0() {
-        HiddenContentTypes objectHcs = HiddenContentTypes.computeShallow(analyserContext,
+        HiddenContentTypes objectHcs = HiddenContentTypes.compute(analyserContext,
                 primitives.objectTypeInfo().typeInspection.get());
         assertSame(HiddenContentTypes.OF_OBJECT, objectHcs);
     }

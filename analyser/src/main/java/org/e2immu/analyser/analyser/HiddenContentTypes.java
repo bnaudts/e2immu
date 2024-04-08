@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /*
 Primary goal is to allow for a very efficient handling of hidden content types when computing HC Links.
@@ -79,14 +80,14 @@ public class HiddenContentTypes {
         this.ancestorMap = ancestorMap;
     }
 
-    public static HiddenContentTypes computeShallow(AnalyserContext analyserContext,
-                                                    TypeInspection typeInspection) {
-        return computeShallow(analyserContext, typeInspection, false);
+    public static HiddenContentTypes compute(AnalyserContext analyserContext, TypeInspection typeInspection) {
+        return compute(analyserContext, typeInspection, true, false);
     }
 
-    public static HiddenContentTypes computeShallow(AnalyserContext analyserContext,
-                                                    TypeInspection typeInspection,
-                                                    boolean allowRecursiveComputation) {
+    public static HiddenContentTypes compute(AnalyserContext analyserContext,
+                                             TypeInspection typeInspection,
+                                             boolean shallow,
+                                             boolean allowRecursiveComputation) {
         TypeInfo typeInfo = typeInspection.typeInfo();
         if (typeInfo.isJavaLangObject()) return OF_OBJECT;
 
@@ -94,23 +95,38 @@ public class HiddenContentTypes {
         ParameterizedType parent = typeInspection.parentClass();
         assert parent != null && parent.typeInfo != null;
         if (!parent.typeInfo.isJavaLangObject()) {
-            handleExtension(analyserContext, parent, ancestorMap, allowRecursiveComputation);
+            handleExtension(analyserContext, parent, ancestorMap, shallow, allowRecursiveComputation);
         }
 
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
-            handleExtension(analyserContext, interfaceType, ancestorMap, allowRecursiveComputation);
+            handleExtension(analyserContext, interfaceType, ancestorMap, shallow, allowRecursiveComputation);
+        }
+        Set<TypeParameter> typeParametersInFields;
+        if (shallow) {
+            typeParametersInFields = Set.of();
+        } else {
+            typeParametersInFields = typeInspection.fields().stream()
+                    .flatMap(fi -> typeParameterStream(fi.type))
+                    .collect(Collectors.toUnmodifiableSet());
         }
 
         Map<ParameterizedType, Integer> typeToIndex = typeInspection.typeParameters().stream()
+                .filter(tp -> shallow || typeParametersInFields.contains(tp))
                 .collect(Collectors.toUnmodifiableMap(
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
                         TypeParameter::getIndex));
         return new HiddenContentTypes(typeInspection.isExtensible(), typeToIndex, Map.copyOf(ancestorMap));
     }
 
+    private static Stream<TypeParameter> typeParameterStream(ParameterizedType type) {
+        if (type.isTypeParameter()) return Stream.of(type.typeParameter);
+        return type.parameters.stream().flatMap(HiddenContentTypes::typeParameterStream);
+    }
+
     private static void handleExtension(AnalyserContext analyserContext,
                                         ParameterizedType parent,
                                         Map<TypeInfo, RelationToParent> ancestorMap,
+                                        boolean shallow,
                                         boolean allowRecursiveComputation) {
         HiddenContentTypes hcsParent;
         TypeInfo typeInfoParent = parent.typeInfo;
@@ -120,7 +136,7 @@ public class HiddenContentTypes {
         } else if (allowRecursiveComputation) {
             LOGGER.debug("Recursively computing HCS for {}", typeInfoParent);
             TypeInspection parentInspection = analyserContext.getTypeInspection(typeInfoParent);
-            hcsParent = computeShallow(analyserContext, parentInspection, true);
+            hcsParent = compute(analyserContext, parentInspection, shallow, true);
         } else {
             throw new UnsupportedOperationException("Have no hidden content for " + typeInfoParent);
         }
