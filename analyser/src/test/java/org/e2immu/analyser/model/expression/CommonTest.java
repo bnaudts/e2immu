@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
@@ -47,8 +48,9 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class CommonTest {
+    protected final TypeMapImpl.Builder typeMapBuilder = new TypeMapImpl.Builder(new Resources(), false);
 
-    protected final Primitives primitives = new PrimitivesImpl();
+    protected final Primitives primitives = typeMapBuilder.getPrimitives();
     protected final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
     protected final AnalysisProvider analysisProvider = AnalysisProvider.DEFAULT_PROVIDER;
     protected final ForwardEvaluationInfo onlySort = new ForwardEvaluationInfo.Builder().setOnlySort(true).build();
@@ -135,6 +137,18 @@ public abstract class CommonTest {
         public ImportantClasses importantClasses() {
             return importantClasses;
         }
+
+        @Override
+        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+            if(typeInfo.packageNameOrEnclosingType.isLeft()
+               && Primitives.INTERNAL.equals(typeInfo.packageNameOrEnclosingType.getLeft())) {
+                HiddenContentTypes hct = HiddenContentTypes.compute(this, getTypeInspection(typeInfo),
+                        true, false);
+                return new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, typeInfo, this)
+                        .setHiddenContentTypes(hct).build();
+            }
+            return AnalyserContext.super.getTypeAnalysis(typeInfo);
+        }
     };
 
     protected final TypeMap typeMap = new TypeMap() {
@@ -158,8 +172,6 @@ public abstract class CommonTest {
             return inspectionProvider.getTypeInspection(typeInfo);
         }
     };
-
-    protected final TypeMapImpl.Builder typeMapBuilder = new TypeMapImpl.Builder(new Resources(), false);
 
     protected final TypeContext typeContext = new TypeContext() {
         @Override

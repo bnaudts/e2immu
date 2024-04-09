@@ -306,13 +306,18 @@ public class HiddenContentTypes {
             return type.typeParameter.getIndex();
         }
         // method type parameters
-        if (type.isTypeParameter()) {
+        if (type.isTypeParameter() && type.typeParameter.isMethodTypeParameter()) {
             ParameterizedType t = type.copyWithoutWildcard();
             Integer index = typeToIndex.get(t);
             if (index != null) {
                 // FIXME see inconsistency above
                 return t.typeParameter.getIndex();
             }
+        }
+        // result of function: type
+        MethodInspection sam = typeInfo.typeInspection.get().getSingleAbstractMethod();
+        if(type.isTypeParameter() && sam != null && sam.getReturnType().isTypeParameter()) {
+            return sam.getReturnType().typeParameter.getIndex();
         }
         RelationToParent rtp = ancestorMap.get(superType.typeInfo);
         assert rtp != null : "Supertype " + superType + " not present among " + ancestorMap.keySet() + " in map of " + typeInfo;

@@ -409,7 +409,7 @@ public class LinkHelper {
                             // both are CsSet, we'll set mutable what is mutable, in a common way
                             if (correctedTransferSelector instanceof HiddenContentSelector.CsSet mineCsSet) {
                                 Map<Integer, Boolean> mineMap = new HashMap<>();
-                                Map<Integer, Boolean> theirsMap = new HashMap<>();
+                            //    Map<Integer, Boolean> theirsMap = new HashMap<>();
                                 for (int i : mineCsSet.set()) {
                                     ParameterizedType type = typesCorrespondingToHCOfTarget.get(i);
                                     DV mutable = isMutable(context, type);
@@ -417,12 +417,12 @@ public class LinkHelper {
                                         causesOfDelay = causesOfDelay.merge(mutable.causesOfDelay());
                                     }
                                     mineMap.put(i, mutable.valueIsTrue());
-                                    ParameterizedType formalType = targetTypeHC.byIndex(i);
-                                    int indexInSourceType = hctSource.indexOfIn(formalType, formalTargetType);
-                                    theirsMap.put(indexInSourceType, mutable.valueIsTrue());
+                                 //   ParameterizedType formalType = targetTypeHC.byIndex(i);
+                                 //   int indexInSourceType = hctSource.indexOfIn(formalType, formalTargetType);
+                                 //   theirsMap.put(indexInSourceType, mutable.valueIsTrue());
                                 }
                                 mine = new HiddenContentSelector.CsSet(mineMap);
-                                theirs = new HiddenContentSelector.CsSet(theirsMap);
+                                theirs = mine;
                             } else {
                                 throw new UnsupportedOperationException();
                             }
