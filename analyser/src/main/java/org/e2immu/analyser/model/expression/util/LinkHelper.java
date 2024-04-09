@@ -373,7 +373,8 @@ public class LinkHelper {
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
 
-        HiddenContent sourceTypeHC = HiddenContent.from(formalSourceType);
+        HiddenContentTypes hct = HiddenContentTypes.from(context.getAnalyserContext(), formalTargetType);
+        HiddenContentTypes hctSource = HiddenContentTypes.from(context.getAnalyserContext(), formalSourceType);
 
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
@@ -400,19 +401,8 @@ public class LinkHelper {
                             }
                             mine = mutable.valueIsTrue() ? HiddenContentSelector.All.MUTABLE_INSTANCE
                                     : HiddenContentSelector.All.INSTANCE;
-                            TypeInfo targetTi = formalTargetType.isTypeParameter()
-                                    ? formalTargetType.typeParameter.getOwner().getLeft()
-                                    : formalTargetType.typeInfo;
-                            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(targetTi);
-                            HiddenContentTypes hct = typeAnalysis.getHiddenContentTypes();
-                            int index;
-                            if (formalSourceType.typeInfo.equals(targetTi)) {
-                                index = hct.indexOf(formalTargetType);
-                            } else {
-                                // 0 in ArrayList --> 0 in List, for the computation of theirs
-                                // formalTargetType E in ArrayList ~ E in List (formalSourceType), see Linking_0M
-                                index = hct.relationToParent(formalSourceType.typeInfo).indexOf(formalTargetType);
-                            }
+
+                            int index = hct.indexOfIn(formalTargetType, formalSourceType);
                             HiddenContentSelector.CsSet hcsSource = new HiddenContentSelector.CsSet(Set.of(index));
                             theirs = hcsSource.ensureMutable(mutable.valueIsTrue());
                         } else {
@@ -428,7 +418,7 @@ public class LinkHelper {
                                     }
                                     mineMap.put(i, mutable.valueIsTrue());
                                     ParameterizedType formalType = targetTypeHC.byIndex(i);
-                                    int indexInSourceType = sourceTypeHC.indexOf(formalType);
+                                    int indexInSourceType = hctSource.indexOfIn(formalType, formalTargetType);
                                     theirsMap.put(indexInSourceType, mutable.valueIsTrue());
                                 }
                                 mine = new HiddenContentSelector.CsSet(mineMap);

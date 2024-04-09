@@ -17,6 +17,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,9 @@ FIXME
 public class HiddenContentTypes {
     private static final Logger LOGGER = LoggerFactory.getLogger(HiddenContentTypes.class);
 
-    public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(false, Map.of(), Map.of());
-    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(true, Map.of(), Map.of());
+    public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of(), Map.of());
+    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of(), Map.of());
+
 
     public record RelationToParent(HiddenContentTypes hcs,
                                    Map<Integer, ParameterizedType> parentHcsToMyType) {
@@ -64,21 +66,26 @@ public class HiddenContentTypes {
         }
 
         public int indexOf(ParameterizedType targetType) {
-            assert parentHcsToMyType.containsValue(targetType);
+            ParameterizedType type = targetType.copyWithoutWildcard();
+            assert parentHcsToMyType.containsValue(type);
+
             return parentHcsToMyType.entrySet().stream()
-                    .filter(e -> e.getValue().equals(targetType))
+                    .filter(e -> e.getValue().equals(type))
                     .map(Map.Entry::getKey).findFirst().orElseThrow();
         }
     }
 
+    private final TypeInfo typeInfo;
     private final boolean typeIsExtensible;
     private final ParameterizedType[] types;
     private final Map<ParameterizedType, Integer> typeToIndex;
     private final Map<TypeInfo, RelationToParent> ancestorMap;
 
-    private HiddenContentTypes(boolean typeIsExtensible,
+    private HiddenContentTypes(TypeInfo typeInfo,
+                               boolean typeIsExtensible,
                                Map<ParameterizedType, Integer> typeToIndex,
                                Map<TypeInfo, RelationToParent> ancestorMap) {
+        this.typeInfo = typeInfo;
         this.typeIsExtensible = typeIsExtensible;
         this.typeToIndex = typeToIndex;
         this.types = new ParameterizedType[typeToIndex.size()];
@@ -125,7 +132,7 @@ public class HiddenContentTypes {
                 .collect(Collectors.toUnmodifiableMap(
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
                         TypeParameter::getIndex));
-        return new HiddenContentTypes(typeInspection.isExtensible(), typeToIndex, Map.copyOf(ancestorMap));
+        return new HiddenContentTypes(typeInfo, typeInspection.isExtensible(), typeToIndex, Map.copyOf(ancestorMap));
     }
 
     private static Stream<TypeParameter> typeParameterStream(ParameterizedType type) {
@@ -254,10 +261,6 @@ public class HiddenContentTypes {
         return t.applyTranslation(inspectionProvider.getPrimitives(), map);
     }
 
-    public RelationToParent relationToParent(TypeInfo ancestor) {
-        return Objects.requireNonNull(ancestorMap.get(ancestor));
-    }
-
     public ParameterizedType typeByIndex(int i) {
         return types[i];
     }
@@ -297,4 +300,41 @@ public class HiddenContentTypes {
                 .map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
     }
 
+    public int indexOfIn(ParameterizedType type, ParameterizedType superType) {
+        if (typeInfo == null || superType.typeInfo.equals(typeInfo)) {
+            assert type.typeParameter != null;
+            return type.typeParameter.getIndex();
+        }
+        // method type parameters
+        if (type.isTypeParameter()) {
+            ParameterizedType t = type.copyWithoutWildcard();
+            Integer index = typeToIndex.get(t);
+            if (index != null) {
+                // FIXME see inconsistency above
+                return t.typeParameter.getIndex();
+            }
+        }
+        RelationToParent rtp = ancestorMap.get(superType.typeInfo);
+        assert rtp != null : "Supertype " + superType + " not present among " + ancestorMap.keySet() + " in map of " + typeInfo;
+        return rtp.indexOf(type);
+    }
+
+    public static HiddenContentTypes from(AnalyserContext analyserContext, ParameterizedType formalTargetType) {
+        TypeInfo targetTi;
+        if (formalTargetType.typeParameter != null) {
+            Either<TypeInfo, MethodInfo> owner = formalTargetType.typeParameter.getOwner();
+            targetTi = owner.isLeft() ? owner.getLeft() : owner.getRight().typeInfo;
+        } else if (formalTargetType.typeInfo != null) {
+            targetTi = formalTargetType.typeInfo;
+        } else {
+            return OF_OBJECT;
+        }
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(targetTi);
+        return typeAnalysis.getHiddenContentTypes();
+    }
+
+
+    public RelationToParent relationToParent(TypeInfo typeInfo) {
+        return ancestorMap.get(typeInfo);
+    }
 }
