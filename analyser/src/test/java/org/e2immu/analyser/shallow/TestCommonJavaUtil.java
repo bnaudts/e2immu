@@ -228,6 +228,18 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     }
 
     @Test
+    public void testListSubList() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(List.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("subList", 2);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
+        assertEquals("0", methodAnalysis.getHiddenContentSelector().toString());
+    }
+
+    @Test
     public void testSet() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Set.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();

@@ -46,7 +46,6 @@ public class HiddenContentTypes {
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of(), Map.of());
     public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of(), Map.of());
 
-
     public record RelationToParent(HiddenContentTypes hcs,
                                    Map<Integer, ParameterizedType> parentHcsToMyType) {
         // E(=0 in List) -> 0 (in ArrayList), follow 0->E(=0 in ArrayList) -> Integer (as in IntList extends ArrayList<Integer>)
@@ -91,6 +90,12 @@ public class HiddenContentTypes {
         this.types = new ParameterizedType[typeToIndex.size()];
         typeToIndex.forEach((pt, i) -> types[i] = pt);
         this.ancestorMap = ancestorMap;
+    }
+
+    public HiddenContentSelector selectAllOfType() {
+        Set<Integer> set = typeToIndex.keySet().stream().filter(pt -> pt.typeParameter.getOwner().isLeft())
+                .map(pt -> pt.typeParameter.getIndex()).collect(Collectors.toUnmodifiableSet());
+        return set.isEmpty() ? HiddenContentSelector.None.INSTANCE : new HiddenContentSelector.CsSet(set);
     }
 
     public static HiddenContentTypes compute(AnalyserContext analyserContext, TypeInspection typeInspection) {
@@ -316,7 +321,7 @@ public class HiddenContentTypes {
         }
         // result of function: type
         MethodInspection sam = typeInfo.typeInspection.get().getSingleAbstractMethod();
-        if(type.isTypeParameter() && sam != null && sam.getReturnType().isTypeParameter()) {
+        if (type.isTypeParameter() && sam != null && sam.getReturnType().isTypeParameter()) {
             return sam.getReturnType().typeParameter.getIndex();
         }
         RelationToParent rtp = ancestorMap.get(superType.typeInfo);
