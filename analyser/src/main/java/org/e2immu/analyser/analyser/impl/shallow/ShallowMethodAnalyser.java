@@ -121,16 +121,15 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
          parameterAnalysis.fromAnnotationsIntoProperties
          */
         if (!methodAnalysis.hiddenContentSelectorIsSet()) {
-            HiddenContent hc = HiddenContent.from(methodInspection.getReturnType());
-            HiddenContentSelector hcs = hc.selectAll();
+            HiddenContentSelector hcs = HiddenContentSelector.positionBased(methodInspection.getReturnType());
             methodAnalysis.setHiddenContentSelector(hcs);
         }
 
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             if (!builder.hiddenContentSelectorIsSet()) {
-                HiddenContent hc = HiddenContent.from(builder.getParameterInfo().parameterizedType);
-                HiddenContentSelector hcs = hc.selectAll();
+                ParameterizedType parameterType = builder.getParameterInfo().parameterizedType;
+                HiddenContentSelector hcs = HiddenContentSelector.positionBased(parameterType);
                 builder.setHiddenContentSelector(hcs);
             }
             List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();

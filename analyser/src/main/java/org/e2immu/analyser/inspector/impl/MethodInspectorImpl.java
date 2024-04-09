@@ -194,7 +194,7 @@ public class MethodInspectorImpl implements MethodInspector {
             }
             if (!companionMethodName.methodName().equals(mainMethodName)) {
                 throw new UnsupportedOperationException("Companion method's name differs from the method name: " +
-                        companionMethodName + " vs " + mainMethodName);
+                                                        companionMethodName + " vs " + mainMethodName);
             }
         }
     }
@@ -368,7 +368,8 @@ public class MethodInspectorImpl implements MethodInspector {
     private ExpressionContext addTypeParameters(CallableDeclaration<?> md,
                                                 ExpressionContext expressionContext,
                                                 MethodInspection.Builder tempBuilder) {
-        int tpIndex = 0;
+        TypeInspection typeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);
+        int tpIndex = typeInspection.typeParameters().size();
         ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
                 expressionContext.newTypeContext("Method type parameters");
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {

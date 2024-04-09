@@ -130,13 +130,14 @@ record ParseGenerics(TypeContext typeContext,
     // ArrayList(java.util.Collection<? extends E>)     this is a constructor
     // copyOf(U[], int, java.lang.Class<? extends T[]>) spaces between parameter types
 
-    int parseMethodGenerics(String signature,
+    int parseMethodGenerics(int baseForTypeParameters,
+                            String signature,
                             MethodInspection.Builder methodInspectionBuilder,
                             TypeContext methodContext) {
         IterativeParsing<TypeParameter> iterativeParsing = new IterativeParsing<>();
         while (true) {
             iterativeParsing.startPos = 1;
-            AtomicInteger index = new AtomicInteger();
+            AtomicInteger index = new AtomicInteger(baseForTypeParameters);
             do {
                 iterativeParsing = iterativelyParseGenerics(signature,
                         iterativeParsing, name -> {

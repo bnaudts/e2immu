@@ -716,7 +716,10 @@ public class ParameterizedType {
                     definition = typeInspection.typeParameters().get(typeParameter.getIndex());
                 } else {
                     MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
-                    definition = methodInspection.getTypeParameters().get(typeParameter.getIndex());
+                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInspection.getMethodInfo().typeInfo);
+                    int index = typeParameter.getIndex() - typeInspection.typeParameters().size();
+                    assert index >= 0 : "For type parameter owner " + typeParameter.getOwner();
+                    definition = methodInspection.getTypeParameters().get(index);
                 }
                 if (!definition.getTypeBounds().isEmpty()) {
                     // IMPROVE should be a joint type

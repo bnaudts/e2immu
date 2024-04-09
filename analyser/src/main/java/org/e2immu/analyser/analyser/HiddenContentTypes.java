@@ -34,6 +34,10 @@ The mutable type List<E> is both extensible (it is an interface), mutable (e.g.,
 parameter. It definitely has hidden content. At the same time, some of its instances may be immutable (with
 or without hidden content), e.g. List.of(...), List.copyOf(...).
 
+FIXME
+  inconsistency at the moment: type parameters of methods are counting from n (== #type parameters of type)
+  for every method individually (instead of incrementally)
+  do we really need to (1) filter wrt fields? (2) keep a map, as long as there all HC is type parameter based??
  */
 public class HiddenContentTypes {
     private static final Logger LOGGER = LoggerFactory.getLogger(HiddenContentTypes.class);

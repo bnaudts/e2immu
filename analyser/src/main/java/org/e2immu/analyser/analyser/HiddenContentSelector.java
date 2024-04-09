@@ -1,5 +1,9 @@
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analysis.TypeAnalysis;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
@@ -212,23 +216,76 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             return new CsSet(newMap);
         }
     }
-/*
-    public static HiddenContentSelector fromConcrete(AnalyserContext analyserContext,
-                                                     ParameterizedType type) {
-        if (type.isTypeParameter()) return All.INSTANCE;
+
+    public static HiddenContentSelector selectAllCorrectForMutable(EvaluationContext evaluationContext,
+                                                                   ParameterizedType type,
+                                                                   boolean correct) {
+        if (type.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
         if (type.typeInfo == null) return None.INSTANCE;
-        HiddenContentTypes hct;
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(type.typeInfo);
-        if (typeAnalysis != null) {
-            hct = typeAnalysis.getHiddenContentTypes();
-        } else {
-            TypeInspection typeInspection = type.typeInfo.typeInspection.isSet() ? type.typeInfo.typeInspection.get(): null;
-            if(typeInspection != null) {
-                hct = HiddenContentTypes.compute(analyserContext, typeInspection, true, true);
+        ParameterizedType formal = type.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
+        if (formal.parameters.isEmpty()) {
+            // the formal type has no type parameters. Given that we're in the context of a ->4-> link,
+            // we must be dealing with the "All" side, and a type without type parameters
+            DV immutableOfParameterizedType = evaluationContext.immutable(type);
+            if (immutableOfParameterizedType.isDelayed()) {
+                return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
+            }
+            boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfParameterizedType);
+            if (immutable) return HiddenContentSelector.None.INSTANCE;
+            boolean mutable = correct && MultiLevel.isMutable(immutableOfParameterizedType);
+            return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
+        }
+        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+        Map<Integer, Boolean> res = new HashMap<>();
+        int index = 0;
+        for (ParameterizedType parameter : type.parameters) {
+            DV immutableDv = evaluationContext.immutable(parameter);
+            if (immutableDv.isDelayed()) {
+                causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
             } else {
-                return None.INSTANCE;
+                boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
+                if (!immutable) {
+                    boolean mutable = correct && MultiLevel.isMutable(immutableDv);
+                    res.put(index, mutable);
+                }
+            }
+            index++;
+        }
+        if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
+        if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+        return new HiddenContentSelector.CsSet(res);
+    }
+
+    /*
+    What to do with Set<Map.Entry<K, V>> ??
+    Currently, we return 0,1, but that's inconsistent with returning 0 for Collection<V>
+    yet we should return 0 ~ first type parameter of Set; but then, we lose the fact that both K, V are present.
+
+    Alt: return always WRT the owning type/method, but that's a completely different concept?
+     */
+    public static HiddenContentSelector positionBased(ParameterizedType type) {
+        if (type.isTypeParameter()) {
+            if (type.arrays > 0) return new CsSet(Map.of(0, false));
+            return All.INSTANCE;
+        }
+        if (type.typeInfo == null) return None.INSTANCE;
+        if (type.arrays > 0) {
+            // assert type.parameters.isEmpty(); // not doing the combination
+            return None.INSTANCE;
+        }
+        Set<Integer> set = new HashSet<>();
+        recursivelyCollectTypeParameterIndices(type, set);
+        if (set.isEmpty()) return None.INSTANCE;
+        return new CsSet(set);
+    }
+
+    private static void recursivelyCollectTypeParameterIndices(ParameterizedType type, Set<Integer> set) {
+        if (type.typeParameter != null) {
+            set.add(type.typeParameter.getIndex());
+        } else {
+            for (ParameterizedType parameter : type.parameters) {
+                recursivelyCollectTypeParameterIndices(parameter, set);
             }
         }
-        return hct.selector(type);
-    }*/
+    }
 }

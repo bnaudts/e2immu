@@ -535,10 +535,9 @@ public class ComputeLinkedVariables {
                                         Variable target,
                                         boolean correctForMutable) {
         LV newLv;
-        // FIXME select ALL -> select indices, if these are given
-        HiddenContentSelector mine = HiddenContent.selectAllCorrectForMutable(evaluationContext,
+        HiddenContentSelector mine = HiddenContentSelector.selectAllCorrectForMutable(evaluationContext,
                 variable.parameterizedType(), correctForMutable);
-        HiddenContentSelector theirs = HiddenContent.selectAllCorrectForMutable(evaluationContext,
+        HiddenContentSelector theirs = HiddenContentSelector.selectAllCorrectForMutable(evaluationContext,
                 target.parameterizedType(), correctForMutable);
         if (mine.isDelayed() || theirs.isDelayed()) {
             newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
