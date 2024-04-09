@@ -208,7 +208,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Basics_1".equals(d.typeInfo().simpleName)) {
-            assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+            assertTrue(d.typeInfo().typeResolution.get().hiddenContentTypes().isEmpty());
             assertDv(d, EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
         }
     };

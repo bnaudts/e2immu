@@ -775,11 +775,6 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
             fieldAnalysis.setProperty(Property.INDEPENDENT, delay);
             return delay;
         }
-        TypeAnalysis typeAnalysis = myTypeAnalyser.getTypeAnalysis();
-        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
-            LOGGER.debug("Field {} independent delayed: wait for hidden content of type", fieldInfo);
-            return typeAnalysis.hiddenContentDelays().causesOfDelay();
-        }
 
         // IMPROVE should we use fieldInfo.type or the concrete type from the value, if there?
         DV independent = fieldAnalysis.linkedVariables.get().stream()

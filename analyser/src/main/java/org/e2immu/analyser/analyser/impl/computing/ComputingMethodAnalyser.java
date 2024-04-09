@@ -1187,17 +1187,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 methodAnalysis.setProperty(INDEPENDENT, linkedVariables.causesOfDelay());
                 return linkedVariables.causesOfDelay();
             }
-            if (typeAnalysis.hiddenContentDelays().isDelayed()) {
-                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
-                    methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
-                    return DONE;
-                }
-                LOGGER.debug("Delaying independent of {}, hidden content not yet known", methodInfo);
-                CausesOfDelay delay = typeAnalysis.hiddenContentDelays().causesOfDelay();
-                methodAnalysis.setProperty(INDEPENDENT, delay);
-                return AnalysisStatus.of(delay);
-            }
-
             ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
             if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {
                 methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);

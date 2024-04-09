@@ -726,10 +726,10 @@ public class Test_01_Loops_6plus extends CommonTestRunner {
             if ("Container".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("Loops_18".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("----", d.delaySequence());

@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.resolver;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -25,9 +26,13 @@ import java.util.*;
  */
 public class ShallowMethodResolver {
 
-    public static MethodResolution onlyOverrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
+    public static MethodResolution onlyOverrides(InspectionProvider inspectionProvider, MethodInfo methodInfo,
+                                                 HiddenContentTypes hctOfType) {
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(hctOfType, methodInspection);
         return new MethodResolution(overrides(inspectionProvider, methodInfo), Set.of(),
-                MethodResolution.CallStatus.NOT_RESOLVED, true, Set.of(), false);
+                MethodResolution.CallStatus.NOT_RESOLVED, true, Set.of(), false,
+                hiddenContentTypes);
     }
 
     /**

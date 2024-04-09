@@ -453,20 +453,20 @@ public class Test_66_VariableScope extends CommonTestRunner {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 2, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("Qualification".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("TypeInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("VariableScope_5".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
         };
 
@@ -583,10 +583,10 @@ public class Test_66_VariableScope extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Message".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("VariableScope_7".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "Message");
+                assertHc(d, "Message");
             }
         };
 

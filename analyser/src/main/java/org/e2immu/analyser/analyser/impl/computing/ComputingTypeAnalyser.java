@@ -74,7 +74,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
     private static final Logger LOGGER = LoggerFactory.getLogger(ComputingTypeAnalyser.class);
     private static final AtomicInteger callCounterForDebugging = new AtomicInteger();
 
-    public static final String ANALYSE_HC_TYPES = "analyseHiddenContentTypes";
     public static final String ANALYSE_IMMUTABLE_CAN_BE_INCREASED = "analyseImmutableCanBeIncreased";
     public static final String FIND_ASPECTS = "findAspects";
     public static final String COMPUTE_APPROVED_PRECONDITIONS_FINAL_FIELDS = "computeApprovedPreconditionsFinalFields";
@@ -107,10 +106,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
 
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<String, SharedState>()
                 .add(FIND_ASPECTS, iteration -> findAspects())
-                .add(ANALYSE_HC_TYPES, iteration -> {
-                    analyseHiddenContentTypes();
-                    return DONE;
-                })
                 .add(ANALYSE_IMMUTABLE_CAN_BE_INCREASED, iteration -> analyseImmutableDeterminedByTypeParameters());
 
         if (typeInfo.isInterface()) {
@@ -223,10 +218,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
         if (parentClass != null && !parentClass.isJavaLangObject()) {
             parentTypeAnalysis = analyserContext.getTypeAnalysis(parentClass.typeInfo);
         }
-
-        // running this here may save an iteration
-        analyseHiddenContentTypes();
-
         computeTypeImmutable = new ComputeTypeImmutable(analyserContext, typeInfo, typeInspection, typeAnalysis,
                 parentClass == null ? null : parentClass.typeInfo,
                 parentTypeAnalysis, myMethodAnalysers, myConstructors, myFieldAnalysers);
@@ -313,14 +304,6 @@ public class ComputingTypeAnalyser extends TypeAnalyserImpl {
                     }
                 }
             }
-        }
-    }
-
-    private void analyseHiddenContentTypes() {
-        if(typeAnalysis.hiddenContentDelays().isDelayed()) {
-            HiddenContentTypes typeParameters = HiddenContentTypes.compute(analyserContext, typeInspection, false,
-                    true);
-            typeAnalysis.setHiddenContentTypes(typeParameters);
         }
     }
 

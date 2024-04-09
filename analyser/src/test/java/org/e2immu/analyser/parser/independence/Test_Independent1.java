@@ -137,7 +137,7 @@ public class Test_Independent1 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
         };
 
@@ -156,7 +156,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_1".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                 assertNoHc(d);
             }
         };
         testClass("Independent1_2_1", 0, 0, new DebugConfiguration.Builder()
@@ -168,7 +168,7 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_2_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Independent1_2_2".equals(d.typeInfo().simpleName)) {
-                assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
+                 assertNoHc(d);
             }
         };
         testClass("Independent1_2_2", 0, 0, new DebugConfiguration.Builder()
@@ -342,7 +342,7 @@ public class Test_Independent1 extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ImmutableArrayOfTransparentOnes".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                 assertNoHc(d);
             }
         };
         testClass("Independent1_5", 0, 0, new DebugConfiguration.Builder()
@@ -422,7 +422,7 @@ public class Test_Independent1 extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "T");
+                 assertNoHc(d);
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -452,10 +452,10 @@ public class Test_Independent1 extends CommonTestRunner {
     public void test_6_1() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("One".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
             if ("ImmutableArrayOfOnes".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 2, "");
+                 assertNoHc(d);
             }
         };
         testClass("Independent1_6_1", 0, 0, new DebugConfiguration.Builder()
@@ -468,7 +468,7 @@ public class Test_Independent1 extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Data".equals(d.typeInfo().simpleName)) {
                 // new One[size] makes One explicit
-                assertHc(d, 2, "X");
+                assertHc(d, "X");
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

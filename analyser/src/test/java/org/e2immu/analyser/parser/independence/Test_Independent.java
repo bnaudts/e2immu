@@ -47,10 +47,10 @@ public class Test_Independent extends CommonTestRunner {
     public void test_2() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("I".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                 assertNoHc(d);
             }
             if ("ISet".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                 assertNoHc(d);
             }
         };
         testClass("Independent_2", 0, 0, new DebugConfiguration.Builder()
@@ -99,24 +99,24 @@ public class Test_Independent extends CommonTestRunner {
             if ("MethodInfo".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 1, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertHc(d, 0, "");
+                 assertNoHc(d);
             }
             if ("MethodAnalyser".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertHc(d, 0, "");
+                 assertNoHc(d);
             }
             if ("MethodAnalyserImpl".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 7, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
                 assertDv(d, 7, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
-                assertHc(d, 2, "");
+                 assertNoHc(d);
             }
             if ("AnalyserContext".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                 assertNoHc(d);
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("AnalyserContextImpl".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                 assertNoHc(d);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
             }
         };

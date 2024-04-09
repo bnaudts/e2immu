@@ -120,22 +120,6 @@ public class ShallowTypeAnalyser extends TypeAnalyserImpl {
         }
         typeAnalysis.freezeApprovedPreconditionsFinalFields();
         typeAnalysis.freezeApprovedPreconditionsImmutable();
-
-        /*
-        The computation of hidden content types proceeds as follows:
-        1. all unbound type parameters are hidden content
-
-        IMPROVE currently not implementing 2.
-        2. to the hidden content we add all public field types, method return types and method parameter types
-           that are immutable with hidden content.
-
-        This computation does not differentiate between interfaces (which provide a specification only) and classes
-        which provide specification and implementation: we cannot see inside the class anyway in this analyser.
-         */
-        HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(analyserContext, typeInspection,
-                true, true);
-        typeAnalysis.setHiddenContentTypes(hiddenContentTypes);
-
         ensureImmutableAndContainer();
         setFieldsGuardedByContainer();
         List<Message> messages = simpleComputeIndependent(analyserContext, typeAnalysis, this::isAccessible);

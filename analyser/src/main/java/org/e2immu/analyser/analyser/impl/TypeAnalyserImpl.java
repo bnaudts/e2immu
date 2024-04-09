@@ -134,14 +134,9 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
             typeAnalysis.setImmutableDeterminedByTypeParameters(dv.valueIsTrue());
             return DONE;
         }
-        CausesOfDelay hiddenContentStatus = typeAnalysis.hiddenContentDelays();
-        if (hiddenContentStatus.isDelayed()) {
-            typeAnalysis.setImmutableDeterminedByTypeParameters(hiddenContentStatus);
-            return hiddenContentStatus;
-        }
 
         // those hidden content types that are type parameters of the type (not of methods)
-        boolean res = typeAnalysis.getHiddenContentTypes().types().stream()
+        boolean res = typeInfo.typeResolution.get().hiddenContentTypes().types().stream()
                 .anyMatch(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft());
         typeAnalysis.setImmutableDeterminedByTypeParameters(res);
         return DONE;

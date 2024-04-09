@@ -49,7 +49,7 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test8() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Modification_8".equals(d.methodInfo().name) && d.variable() instanceof FieldReference fr
-                    && "set".equals(fr.fieldInfo().name)) {
+                && "set".equals(fr.fieldInfo().name)) {
                 assertEquals("input/*@NotNull*/", d.currentValue().toString());
                 assertEquals(MultiLevel.MUTABLE_DV, d.getProperty(Property.IMMUTABLE));
             }
@@ -75,7 +75,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
                 if (d.variable() instanceof FieldReference fieldReference
-                        && "input".equals(fieldReference.fieldInfo().name)) {
+                    && "input".equals(fieldReference.fieldInfo().name)) {
                     if ("1".equals(d.statementId())) {
                         assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.EXTERNAL_NOT_NULL);
                     }
@@ -233,15 +233,15 @@ public class Test_16_Modification extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("FaultyImplementation".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                assertNoHc(d);
                 assertDv(d, 3, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("ErrorRegistry".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
                 assertDv(d, MultiLevel.DEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("ErrorMessage".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);

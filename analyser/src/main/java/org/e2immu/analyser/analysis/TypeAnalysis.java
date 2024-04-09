@@ -139,19 +139,6 @@ public interface TypeAnalysis extends Analysis {
      */
     DV immutableDeterminedByTypeParameters();
 
-    /**
-     * The hidden content of a type as computed. Contains all the types of the fields
-     * that are immutable, but not recursively immutable.
-     * As a result, this set does not contain any primitives, or java.lang.String, for example.
-     * By convention, neither does it contain the type itself, nor any of the types in its hierarchy.
-     *
-     * @return null when not yet set, use hiddenContentAndExplicitTypeComputationDelays to check
-     */
-    HiddenContentTypes getHiddenContentTypes();
-
-    @NotNull
-    CausesOfDelay hiddenContentDelays();
-
     CausesOfDelay guardedForContainerPropertyDelays();
 
     CausesOfDelay guardedForInheritedContainerPropertyDelays();

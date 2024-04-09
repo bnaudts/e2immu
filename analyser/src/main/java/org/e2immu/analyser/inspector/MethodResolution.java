@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.inspector;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.support.SetOnce;
 
@@ -28,7 +29,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
                                CallStatus callStatus,
                                boolean allowsInterrupts,
                                Set<MethodInfo> callCycle,
-                               boolean ignoreMeBecauseOfPartOfCallCycle) {
+                               boolean ignoreMeBecauseOfPartOfCallCycle,
+                               HiddenContentTypes hiddenContentTypes) {
 
     // useful for debugging
     public String methodsOfOwnClassReachedSorted() {
@@ -64,11 +66,13 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     getPartOfConstruction(),
                     isAllowsInterrupts(),
                     callCycle.getOrDefault(Set.of()),
-                    isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false));
+                    isIgnoreMeBecauseOfPartOfCallCycle.getOrDefault(false),
+                    hiddenContentTypes);
         }
 
         private final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
         private final SetOnce<Set<MethodInfo>> callCycle = new SetOnce<>();
+        private HiddenContentTypes hiddenContentTypes;
 
         public void setCallCycle(Set<MethodInfo> set) {
             callCycle.set(set);
@@ -130,6 +134,11 @@ public record MethodResolution(Set<MethodInfo> overrides,
 
         public boolean allowsInterruptsGetOrDefault(boolean b) {
             return allowsInterrupts.getOrDefault(b);
+        }
+
+        public void setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
+            assert hiddenContentTypes.forMethod();
+            this.hiddenContentTypes = hiddenContentTypes;
         }
 
         // ***************

@@ -124,7 +124,7 @@ public class Test_11_MethodReferences extends CommonTestRunner {
     public void test_4() throws IOException {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("MethodReferences_4".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
         testClass("MethodReferences_4", 0, 0, new DebugConfiguration.Builder()

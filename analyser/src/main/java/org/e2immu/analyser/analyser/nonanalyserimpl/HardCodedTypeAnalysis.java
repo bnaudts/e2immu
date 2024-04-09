@@ -86,17 +86,6 @@ record HardCodedTypeAnalysis(String fullyQualifiedName,
     }
 
     @Override
-    public HiddenContentTypes getHiddenContentTypes() {
-        return hardCoded == TypeInfo.HardCoded.IMMUTABLE_HC ? HiddenContentTypes.OF_OBJECT
-                : HiddenContentTypes.OF_PRIMITIVE;
-    }
-
-    @Override
-    public CausesOfDelay hiddenContentDelays() {
-        return CausesOfDelay.EMPTY;
-    }
-
-    @Override
     public CausesOfDelay guardedForContainerPropertyDelays() {
         return CausesOfDelay.EMPTY;
     }

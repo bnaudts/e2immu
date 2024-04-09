@@ -42,7 +42,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
     @Test
@@ -72,8 +72,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
 
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals("R, T", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
-        assertEquals("R, T, T, V, V", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("R, T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
     @Test
@@ -87,6 +86,19 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
+
+        assertEquals("", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
+    }
+
+
+    @Test
+    public void testFunctionCompose() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Function.class);
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("compose", 1);
+
+        assertEquals("R, T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
+        assertEquals("R, T - V", methodInfo.methodResolution.get().hiddenContentTypes().sortedTypes());
     }
 
     @Test
@@ -98,7 +110,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
 

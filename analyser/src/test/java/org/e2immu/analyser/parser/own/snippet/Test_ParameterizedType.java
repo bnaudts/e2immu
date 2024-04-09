@@ -459,7 +459,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("ParameterizedType_2".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                assertEquals("Logger", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, "Logger");
             }
             if ("ParameterizedType".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
@@ -472,11 +472,7 @@ public class Test_ParameterizedType extends CommonTestRunner {
             }
             if ("Result".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 2, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
-                if (d.iteration() >= 2) {
-                    assertEquals("", d.typeAnalysis().getHiddenContentTypes().toString());
-                } else {
-                    assertTrue(d.typeAnalysis().hiddenContentDelays().isDelayed());
-                }
+                assertNoHc(d);
                 assertDv(d, 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("NamedType".equals(d.typeInfo().simpleName)) {

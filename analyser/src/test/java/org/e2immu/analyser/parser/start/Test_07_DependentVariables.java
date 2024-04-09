@@ -200,7 +200,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
             }
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                assertHc(d, "");
             }
         };
 
@@ -283,10 +283,10 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("X".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("XS".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 1, "");
+                assertHc(d, "");
             }
         };
 

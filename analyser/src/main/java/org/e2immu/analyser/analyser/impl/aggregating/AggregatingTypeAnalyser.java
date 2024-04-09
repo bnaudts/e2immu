@@ -38,7 +38,6 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
     public static final String IMMUTABLE = "immutable";
     public static final String INDEPENDENT = "independent";
     public static final String CONTAINER = "container";
-    public static final String HIDDEN_CONTENT = "hiddenContent";
     public static final String IMMUTABLE_CAN_BE_INCREASED = "immutableCanBeIncreased";
 
     private final SetOnce<List<TypeAnalysis>> implementingAnalyses = new SetOnce<>();
@@ -57,7 +56,6 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
                 .add(IMMUTABLE, iteration -> this.aggregate(Property.IMMUTABLE))
                 .add(INDEPENDENT, iteration -> this.aggregate(Property.INDEPENDENT))
                 .add(CONTAINER, iteration -> this.aggregate(Property.CONTAINER))
-                .add(HIDDEN_CONTENT, iteration -> this.aggregateHiddenContentTypes())
                 .add(IMMUTABLE_CAN_BE_INCREASED, iteration -> super.analyseImmutableDeterminedByTypeParameters());
 
         analyserComponents = builder.build();
@@ -84,7 +82,7 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         }
         TypeInfo generated = typeInfo.typeResolution.get().generatedImplementation();
         assert generated != null : typeInfo.fullyQualifiedName
-                + " is not a sealed class, so it must have a unique generated implementation";
+                                   + " is not a sealed class, so it must have a unique generated implementation";
         return Stream.of(generated);
     }
 
@@ -141,23 +139,6 @@ public class AggregatingTypeAnalyser extends TypeAnalyserImpl {
         }
         return DONE;
     }
-
-    private AnalysisStatus aggregateHiddenContentTypes() {
-        if (typeAnalysis.hiddenContentDelays().isDone()) return DONE;
-        CausesOfDelay delays = implementingAnalyses.get().stream().map(a -> a.hiddenContentDelays().causesOfDelay())
-                .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-        if (delays.isDelayed()) {
-            typeAnalysis.setHiddenContentTypesDelay(delays);
-            return delays;
-        }
-        // FIXME !!!
-        HiddenContentTypes unionHiddenContent = implementingAnalyses.get().stream()
-                .map(TypeAnalysis::getHiddenContentTypes)
-                .reduce(HiddenContentTypes.OF_OBJECT, HiddenContentTypes::union);
-        typeAnalysis.setHiddenContentTypes(unionHiddenContent);
-        return DONE;
-    }
-
 
     @Override
     public boolean ignorePrivateConstructorsForFieldValue() {

@@ -161,7 +161,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             } else if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
                 // not extensible, IMMUTABLE_HC: check hidden content, if empty, return IMMUTABLE
                 Set<ParameterizedType> superTypes = typeInfo.superTypes(analyserContext);
-                Set<ParameterizedType> hiddenContent = typeAnalysis.getHiddenContentTypes().types()
+                Set<ParameterizedType> hiddenContent = typeInfo.typeResolution.get().hiddenContentTypes().types()
                         .stream().filter(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft())
                         .collect(Collectors.toCollection(HashSet::new));
                 hiddenContent.removeAll(superTypes);
@@ -203,11 +203,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     E2Immutable_15_1 is an example where there could be a delay cycle between a (non-static) anonymous type
      */
     private DV parentHasNoHiddenContent() {
-        CausesOfDelay delays = parentTypeAnalysis == null || !parentType().isAbstract()
-                ? CausesOfDelay.EMPTY : parentTypeAnalysis.hiddenContentDelays();
-        if (delays.isDelayed()) return delays;
-        boolean b = parentTypeAnalysis == null || parentTypeAnalysis.getHiddenContentTypes().isEmpty();
-        return DV.fromBoolDv(b);
+        boolean hasNoHiddenContent = !parentType.typeResolution.get().hiddenContentTypes().hasHiddenContent();
+        return DV.fromBoolDv(hasNoHiddenContent);
     }
 
     private AnalysisStatus checkFieldsThatMustBeGuarded(Work w) {

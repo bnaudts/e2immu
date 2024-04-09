@@ -268,9 +268,10 @@ public class PrimitivesImpl implements Primitives {
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
             builder.setImmutableDeterminedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
+            ti.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
+                    .build());
         }
     }
 
@@ -289,9 +290,10 @@ public class PrimitivesImpl implements Primitives {
             builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             builder.freezeApprovedPreconditionsImmutable(); // cannot change these anymore; will never be eventual
             builder.freezeApprovedPreconditionsFinalFields(); // cannot change these anymore; will never be eventual
-            builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
             builder.setImmutableDeterminedByTypeParameters(false);
             ti.typeAnalysis.set(builder.build());
+            ti.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
+                    .build());
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo,
@@ -427,9 +429,9 @@ public class PrimitivesImpl implements Primitives {
     @Override
     public boolean isPreOrPostFixOperator(MethodInfo operator) {
         return operator == postfixDecrementOperatorInt || // i--;
-                operator == postfixIncrementOperatorInt || // i++;
-                operator == prefixDecrementOperatorInt || // --i;
-                operator == prefixIncrementOperatorInt; // ++i;
+               operator == postfixIncrementOperatorInt || // i++;
+               operator == prefixDecrementOperatorInt || // --i;
+               operator == prefixIncrementOperatorInt; // ++i;
     }
 
     @Override

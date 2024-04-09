@@ -40,9 +40,11 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         constructor.setAnalysis(builder.build());
 
+        HiddenContentTypes hcsType = constructor.typeInfo.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hcsType, constructor.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         constructor.methodResolution.set(methodResolution);
 
         ConstructorCall cc = new ConstructorCall(newId(), null, constructor, mutablePt, Diamond.NO,
@@ -152,7 +154,6 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 primitives.stringTypeInfo(), analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
                 .build();
         ParameterInfo param0 = constructor.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl
@@ -170,10 +171,11 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.INDEPENDENT, MultiLevel.DEPENDENT_DV);
         builder.setHiddenContentSelector(constructorHcs);
         constructor.setAnalysis(builder.build());
-
+        HiddenContentTypes hcsType = constructor.typeInfo.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hcsType, constructor.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         constructor.methodResolution.set(methodResolution);
         return constructor;
     }

@@ -183,7 +183,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Fluent_0".equals(d.typeInfo().simpleName)) {
 
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
 
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
             }
@@ -296,8 +296,7 @@ public class Test_56_Fluent extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("IFluent_1".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInfo().typePropertiesAreContracted()); // they are aggregated!
-                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
 
                 assertTrue(d.typeInfo().typeResolution.get().hasOneKnownGeneratedImplementation());
                 assertDv(d, MultiLevel.MUTABLE_DV, Property.IMMUTABLE);
@@ -305,8 +304,7 @@ public class Test_56_Fluent extends CommonTestRunner {
             if ("Fluent_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
                 assertFalse(d.typeInfo().typePropertiesAreContracted());
-                assertEquals("", d.typeAnalysis().hiddenContentDelays().toString());
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
 

@@ -147,8 +147,8 @@ public class LinkHelper {
                                     formalParameterIndependent, hcsSource, pt, formalPt);
                         } else {
                             // object -> parameter (rather than the other way around)
-                            HiddenContentSelector hcsSource = context.evaluationContext().getAnalyserContext()
-                                    .getTypeAnalysis(methodInfo.typeInfo).getHiddenContentTypes().selectAllOfType();
+                            HiddenContentSelector hcsSource = methodInfo.methodResolution.get()
+                                    .hiddenContentTypes().selectAll();
                             lv = linkedVariables(pt, parameterLvs, hcsSource,
                                     formalParameterIndependent, hcsTarget,
                                     concreteParameterType, formalParameterType);
@@ -294,8 +294,7 @@ public class LinkHelper {
         if (fluent.isDelayed()) {
             return linkedVariablesOfObject.changeNonStaticallyAssignedToDelay(fluent.causesOfDelay());
         }
-        HiddenContentSelector hcsSource = context.evaluationContext().getAnalyserContext()
-                .getTypeAnalysis(methodInfo.typeInfo).getHiddenContentTypes().selectAllOfType();
+        HiddenContentSelector hcsSource = methodInfo.methodResolution.get().hiddenContentTypes().selectAll();
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
         return linkedVariables(objectResult.getExpression().returnType(),
                 linkedVariablesOfObject,

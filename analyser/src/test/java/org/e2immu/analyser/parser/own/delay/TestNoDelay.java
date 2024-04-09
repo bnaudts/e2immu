@@ -25,7 +25,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstructorCall;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -114,21 +113,21 @@ public class TestNoDelay extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("$1".equals(d.typeInfo().simpleName) &&  // the anonymous class of EMPTY
                     "CausesOfDelay".equals(d.typeInfo().packageNameOrEnclosingType.getRight().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
                 assertDv(d, 14, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("AbstractDelay".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
                 assertDv(d, 13, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("DV".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("AnalysisStatus".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
         };
 

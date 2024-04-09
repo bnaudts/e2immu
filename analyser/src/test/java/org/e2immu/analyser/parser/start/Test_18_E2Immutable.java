@@ -176,7 +176,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_1".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
             }
         };
@@ -214,7 +214,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_2".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
 
@@ -374,7 +374,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_5".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
         };
 
@@ -456,12 +456,12 @@ public class Test_18_E2Immutable extends CommonTestRunner {
             if ("E2Immutable_7".equals(d.typeInfo().simpleName)) {
                 // because SimpleContainer is mutable
                 assertDv(d, 2, MultiLevel.DEPENDENT_DV, INDEPENDENT);
-                assertHc(d, 1, "");
+                assertHc(d, "");
             }
             if ("SimpleContainer".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.MUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.INDEPENDENT_DV, INDEPENDENT);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
         };
 
@@ -597,7 +597,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_11".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
 
@@ -631,7 +631,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_12".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
         };
 
@@ -650,7 +650,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_13".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
 
@@ -666,7 +666,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_14".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
         };
 
@@ -758,19 +758,19 @@ public class Test_18_E2Immutable extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("E2Immutable_15_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             } else if ("Suffix".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             } else if ("VariableDefinedOutsideLoop".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-                assertHc(d, 0, "E2Immutable_15_1, Suffix");
+                assertHc(d, "E2Immutable_15_1, Suffix");
             } else if ("$1".equals(d.typeInfo().simpleName)) {
                 // new Suffix() {} as return value in suffix() method in VDOL
                 assertFalse(d.typeInspection().isExtensible());
                 // important: this one is not static, because VariableDefinedOutsideLoop is now extensible (class)
                 assertFalse(d.typeInspection().isStatic());
-                assertHc(d, 0, "");
+                assertHc(d, "");
                 assertEquals("VariableDefinedOutsideLoop", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
@@ -779,7 +779,7 @@ public class Test_18_E2Immutable extends CommonTestRunner {
                 // new Suffix() {} on field NO_SUFFIX
                 assertEquals("E2Immutable_15_1", d.typeInfo().packageNameOrEnclosingType.getRight().simpleName);
                 assertFalse(d.typeInspection().isStatic());
-                assertHc(d, 0, "");
+                assertHc(d, "");
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, IMMUTABLE);
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, PARTIAL_IMMUTABLE);
             } else fail("type " + d.typeInfo());

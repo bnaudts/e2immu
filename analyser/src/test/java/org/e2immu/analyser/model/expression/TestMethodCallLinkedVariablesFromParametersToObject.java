@@ -177,9 +177,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         method.setAnalysis(builder.build());
 
+        HiddenContentTypes hctType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, method.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         method.methodResolution.set(methodResolution);
         return method;
     }
@@ -373,8 +375,10 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .setAccess(Inspection.Access.PUBLIC)
                 .setReturnType(primitives.voidParameterizedType())
                 .build(inspectionProvider).getMethodInfo();
+        HiddenContentTypes hctType = implementation.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, sam.methodInspection.get());
         MethodResolution samMr = new MethodResolution(Set.of(abstractSam), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
-                false, Set.of(), false);
+                false, Set.of(), false, hctMethod);
         sam.methodResolution.set(samMr);
         ParameterInfo p0 = sam.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, analysisProvider, p0)
@@ -449,9 +453,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         method.setAnalysis(builder.build());
 
+        HiddenContentTypes hctType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, method.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         method.methodResolution.set(methodResolution);
         return method;
     }
@@ -484,9 +490,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         builder.setHiddenContentSelector(hcs);
         method.setAnalysis(builder.build());
 
+        HiddenContentTypes hctType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, method.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         method.methodResolution.set(methodResolution);
         return method;
     }
@@ -521,7 +529,6 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 primitives.stringTypeInfo(), analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
                 .build();
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(0);
 
@@ -548,9 +555,11 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
 
         method.setAnalysis(builder.build());
 
+        HiddenContentTypes hcsType = owner.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hcsType, method.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         method.methodResolution.set(methodResolution);
         return method;
     }

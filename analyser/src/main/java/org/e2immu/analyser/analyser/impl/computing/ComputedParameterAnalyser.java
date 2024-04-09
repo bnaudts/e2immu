@@ -309,10 +309,6 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     }
 
     private DV independentFromFields(Map<Variable, LV> fields) {
-        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(parameterInfo.getTypeInfo());
-        if (typeAnalysis.hiddenContentDelays().isDelayed()) {
-            return typeAnalysis.hiddenContentDelays().causesOfDelay();
-        }
         DV independent = fields.values().stream().map(LV::toIndependent).reduce(INDEPENDENT_DV, DV::min);
         LOGGER.debug("Assign {} to parameter {}", independent, parameterInfo);
         return independent;

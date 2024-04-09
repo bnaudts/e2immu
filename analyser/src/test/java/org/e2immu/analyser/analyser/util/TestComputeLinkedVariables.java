@@ -99,8 +99,7 @@ public class TestComputeLinkedVariables {
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
-        someTypeWithHC.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                someTypeWithHC, analyserContext)
+        someTypeWithHC.typeResolution.set(new TypeResolution.Builder()
                 .setHiddenContentTypes(HiddenContentTypes.OF_OBJECT)
                 .build());
         location = new LocationImpl(currentMethod, "0-E", newId());

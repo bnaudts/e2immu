@@ -249,7 +249,9 @@ public class TypeMapImpl implements TypeMap {
                         }
                         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
                             if (!methodInfo.methodResolution.isSet()) {
-                                methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(InspectionProvider.DEFAULT, methodInfo));
+                                methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(
+                                        InspectionProvider.DEFAULT, methodInfo,
+                                        typeInfo.typeResolution.get().hiddenContentTypes()));
                             }
                         }
                     }

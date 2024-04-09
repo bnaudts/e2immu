@@ -54,7 +54,7 @@ public class Test_16_Modification_13 extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_13".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
         testClass("Modification_13", 0, 0, new DebugConfiguration.Builder()
@@ -95,7 +95,7 @@ public class Test_16_Modification_13 extends CommonTestRunner {
         };
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_13B".equals(d.typeInfo().simpleName)) {
-                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, "T");
             }
         };
         testClass("Modification_13B", 0, 0, new DebugConfiguration.Builder()

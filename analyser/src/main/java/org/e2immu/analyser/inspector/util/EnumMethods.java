@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.inspector.util;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
@@ -162,7 +163,7 @@ public class EnumMethods {
                     if ("stream".equals(m.name)) {
                         MethodInspection methodInspection = typeContext.getMethodInspection(m);
                         return methodInspection.getParameters().size() == 1 &&
-                                methodInspection.getTypeParameters().size() == 1;
+                               methodInspection.getTypeParameters().size() == 1;
                     }
                     return false;
                 }).findFirst().orElseThrow();
@@ -240,11 +241,13 @@ public class EnumMethods {
         typeContext.typeMapBuilder().registerMethodInspection(predicate);
         typeBuilder.addMethod(predicate.getMethodInfo());
 
+        lambdaType.typeInspection.set(typeBuilder.build(typeContext));
+        var hcs = HiddenContentTypes.compute(lambdaType.typeInspection.get());
         var lambdaTypeResolution = new TypeResolution.Builder()
                 .setSortedType(new SortedType(lambdaType, List.of(lambdaType, predicate.getMethodInfo())))
+                .setHiddenContentTypes(hcs)
                 .build();
         lambdaType.typeResolution.set(lambdaTypeResolution);
-        lambdaType.typeInspection.set(typeBuilder.build(typeContext));
 
         return predicate;
     }

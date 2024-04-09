@@ -191,7 +191,7 @@ public class Test_Support_05_Lazy extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("Lazy".equals(d.typeInfo().simpleName)) {
-            assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertHc(d, "T");
         }
     };
 

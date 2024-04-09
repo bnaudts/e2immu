@@ -101,11 +101,11 @@ public class Test_25_FieldReference extends CommonTestRunner {
             if ("ChangeData".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, Property.IMMUTABLE);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
             if ("FieldReference_1".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertHc(d, 0, "");
+                assertHc(d, "");
             }
         };
         BreakDelayVisitor breakDelayVisitor = d -> assertEquals("-----", d.delaySequence());

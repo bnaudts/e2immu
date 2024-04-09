@@ -64,7 +64,7 @@ public class Test_Util_00_Pair extends CommonTestRunner {
 
         // fields k and v do not link to the constructor's parameters because they are transparent
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            assertEquals("K, V", d.typeAnalysis().getHiddenContentTypes().toString());
+            assertHc(d, "K, V");
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
         };

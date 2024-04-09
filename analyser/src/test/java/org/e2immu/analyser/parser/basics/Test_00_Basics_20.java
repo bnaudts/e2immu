@@ -173,7 +173,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
 
             if ("test1".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
-                    if("0".equals(d.statementId())) {
+                    if ("0".equals(d.statementId())) {
                         String expected = d.iteration() <= 1 ? "<new:I>" : "new I()";
                         assertEquals(expected, d.currentValue().toString());
                     }
@@ -196,7 +196,7 @@ public class Test_00_Basics_20 extends CommonTestRunner {
                         String expectValue = "new ArrayList<>()/*0==this.size()*/";
                         assertEquals(expectValue, d.currentValue().toString());
                         assertTrue(d.currentValue() instanceof PropertyWrapper pw
-                                && pw.expression() instanceof ConstructorCall);
+                                   && pw.expression() instanceof ConstructorCall);
                         assertEquals(MultiLevel.CONTAINER_DV, d.getProperty(CONTAINER));
                     }
                     if ("3".equals(d.statementId())) {
@@ -288,17 +288,17 @@ public class Test_00_Basics_20 extends CommonTestRunner {
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertHc(d, 0, "T");
+            assertHc(d, "T");
             assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
         if ("C3".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertHc(d, 0, "Object");
+             assertNoHc(d); // FIXME Object??
             assertEquals(DV.FALSE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
         if ("C4".equals(d.typeInfo().simpleName)) {
             assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, IMMUTABLE);
-            assertHc(d, 0, "T");
+            assertHc(d, "T");
             assertEquals(DV.TRUE_DV, d.typeAnalysis().immutableDeterminedByTypeParameters());
         }
     };

@@ -228,11 +228,11 @@ public class Test_04_Assert extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AnalysisStatus".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, ""); // no type parameters
+                 assertNoHc(d);
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("CauseOfDelay".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, ""); // no type parameters
+                 assertNoHc(d);
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("CausesOfDelay".equals(d.typeInfo().simpleName)) {
@@ -240,17 +240,17 @@ public class Test_04_Assert extends CommonTestRunner {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertTrue(d.typeInspection().isExtensible());
-                assertHc(d, 0, "");
+                 assertNoHc(d);
             }
             if ("NotDelayed".equals(d.typeInfo().simpleName)) {
                 assertFalse(d.typeInspection().isExtensible());
-                assertHc(d, 0, ""); // no fields
+                 assertNoHc(d);
                 assertDv(d, 5, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertDv(d, 5, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             if ("SimpleSet".equals(d.typeInfo().simpleName)) {
                 assertTrue(d.typeInspection().isExtensible());
-                assertHc(d, 0, "CauseOfDelay");
+                 assertNoHc(d);
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
         };

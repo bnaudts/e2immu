@@ -245,7 +245,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SubTypes_6".equals(d.typeInfo().simpleName)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                assertNoHc(d);
             }
         };
 
@@ -279,7 +279,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
             }
 
             if ("Example8".equals(d.typeInfo().simpleName)) {
-                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, "T");
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }
             // nested in Example8

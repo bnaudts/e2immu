@@ -699,7 +699,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
             }
             if ("Negation".equals(d.typeInfo().simpleName)) {
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
-                assertHc(d, 0, ""); // Expression mutable, cause of 1 delayed iteration
+                assertHc(d, ""); // Expression mutable, cause of 1 delayed iteration
             }
         };
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -1262,7 +1262,7 @@ public class Test_51_InstanceOf extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("InstanceOf".equals(d.typeInfo().simpleName)) {
                 if (d.iteration() > 0) {
-                    assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                    assertNoHc(d);
                 }
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_DV, Property.IMMUTABLE);
             }

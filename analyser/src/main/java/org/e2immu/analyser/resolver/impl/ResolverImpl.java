@@ -16,6 +16,8 @@ package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
+import org.e2immu.analyser.analyser.HiddenContent;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
 import org.e2immu.analyser.inspector.impl.FieldAccessStore;
@@ -173,7 +175,7 @@ public class ResolverImpl implements Resolver {
             LOGGER.info("At end of main resolution loop, took {} seconds", seconds);
             LOGGER.info("Start filling method resolution objects on {} types", typeCounterForDebugging.get());
             synchronized (methodCallGraph) {
-                methodResolution();
+                methodResolution(resolutionBuilders);
             }
             LOGGER.info("Computing analyser sequence from dependency graph, have {} builders",
                     resolutionBuilders.size());
@@ -205,7 +207,11 @@ public class ResolverImpl implements Resolver {
                         "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
             }
             SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
-            return new TypeResolution.Builder().setSortedType(sortedType);
+            TypeInspection typeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);
+            HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
+            return new TypeResolution.Builder()
+                    .setHiddenContentTypes(hiddenContentTypes)
+                    .setSortedType(sortedType);
         } catch (RuntimeException rte) {
             LOGGER.error("Caught exception resolving type {}", entry.getKey().fullyQualifiedName);
             throw rte;
@@ -718,7 +724,7 @@ public class ResolverImpl implements Resolver {
             subContext = expressionContext.newTypeContext("new method dependencies");
         } else {
             subContext = expressionContext.newTypeContext("new method dependencies and type parameters of " +
-                    methodInfo.name);
+                                                          methodInfo.name);
             typeParameters.forEach(subContext.typeContext()::addToContext);
         }
 
@@ -811,9 +817,9 @@ public class ResolverImpl implements Resolver {
                 MethodReference methodReference;
                 MethodInfo methodInfo;
                 if (e instanceof org.e2immu.analyser.model.Expression ex &&
-                        (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
+                    (ve = ex.asInstanceOf(VariableExpression.class)) != null) {
                     if (ve.variable() instanceof FieldReference fieldReference &&
-                            fieldReference.fieldInfo().owner.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
+                        fieldReference.fieldInfo().owner.isEnclosedInStopAtLambdaOrAnonymous(topType)) {
                         methodsAndFields.add(fieldReference.fieldInfo());
                     }
                     methodInfo = null;
@@ -881,6 +887,7 @@ public class ResolverImpl implements Resolver {
                 boolean drillDeeper;
                 if (e instanceof Lambda lambda && !lambda.block.isEmpty()) {
                     drillDeeper = false;
+                    assert lambda.methodInfo != null;
                     new CallGraph(lambda.methodInfo.typeInfo, lambda.methodInfo).visit(lambda.block);
                 } else if (e instanceof ConstructorCall cc && cc.anonymousClass() != null) {
                     drillDeeper = false;
@@ -937,7 +944,7 @@ public class ResolverImpl implements Resolver {
     Because they're shallow, they cannot cause cycles.
      */
 
-    private void methodResolution() {
+    private void methodResolution(Map<TypeInfo, TypeResolution.Builder> typeResolutionBuilders) {
         G<MethodInfo> g = builtMethodCallGraph();
         LOGGER.info("Linearizing method call graph of {} methods, {} edges", g.vertices().size(), g.edgeStream().count());
         Linearize.Result<MethodInfo> result = Linearize.linearize(g, Linearize.LinearizationMode.ALL);
@@ -1002,6 +1009,8 @@ public class ResolverImpl implements Resolver {
                     // two pass, since we have no order
                     Set<MethodInfo> methodsReached = builder.getMethodsOfOwnClassReached();
                     computeAllowsInterrupt(builder, builders, methodInfo, methodsReached, true);
+                    TypeResolution.Builder trBuilder = typeResolutionBuilders.get(methodInfo.typeInfo);
+                    computeHiddenContent(trBuilder, builder, methodInfo);
                     methodInfo.methodResolution.set(builder.build());
 
                 } catch (IllegalStateException ise) {
@@ -1010,6 +1019,13 @@ public class ResolverImpl implements Resolver {
                 }
             } // otherwise: already processed during AnnotatedAPI
         }
+    }
+
+    private void computeHiddenContent(TypeResolution.Builder trBuilder,
+                                      MethodResolution.Builder builder, MethodInfo methodInfo) {
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        HiddenContentTypes hcs = HiddenContentTypes.compute(trBuilder.getHiddenContentTypes(), methodInspection);
+        builder.setHiddenContentTypes(hcs);
     }
 
     /*
@@ -1048,12 +1064,12 @@ public class ResolverImpl implements Resolver {
         if (methodInspection.getParsedModifiers().contains(MethodModifier.PRIVATE)) {
             allowsInterrupt = methodsReached.stream().anyMatch(reached ->
                     !inspectionProvider.getMethodInspection(reached).isPrivate() ||
-                            methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
-                            builders.containsKey(reached) && builders.get(reached).allowsInterruptsGetOrDefault(false));
+                    methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
+                    builders.containsKey(reached) && builders.get(reached).allowsInterruptsGetOrDefault(false));
             delays = !doNotDelay && methodsReached.stream().anyMatch(reached ->
                     !inspectionProvider.getMethodInspection(reached).isPrivate() &&
-                            builders.containsKey(reached) &&
-                            !builders.get(reached).allowsInterruptsIsSet());
+                    builders.containsKey(reached) &&
+                    !builders.get(reached).allowsInterruptsIsSet());
             if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
                 allowsInterrupt = body != null && AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
@@ -1069,9 +1085,9 @@ public class ResolverImpl implements Resolver {
 
     private boolean notPartOfConstruction(MethodInfo methodInfo, MethodInspection methodInspection) {
         return !methodInspection.isPrivate() &&
-                !methodInspection.getMethodInfo().isStatic() &&
-                !methodInspection.getMethodInfo().typeInfo
-                        .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
+               !methodInspection.getMethodInfo().isStatic() &&
+               !methodInspection.getMethodInfo().typeInfo
+                       .recursivelyInConstructionOrStaticWithRespectTo(inspectionProvider, methodInfo.typeInfo);
     }
 
     /**
@@ -1228,7 +1244,7 @@ public class ResolverImpl implements Resolver {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         TypeInfo primaryType = typeInfo.primaryType();
         boolean inSameCompilationUnit = typeInfo == startingPoint ||
-                primaryType == startingPoint.primaryType();
+                                        primaryType == startingPoint.primaryType();
         boolean inSamePackage = !inSameCompilationUnit && primaryType.packageNameOrEnclosingType.getLeft().equals(startingPointPackageName);
 
         Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
@@ -1259,8 +1275,8 @@ public class ResolverImpl implements Resolver {
         if (inSameCompilationUnit) return true;
         TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
         return inspection.isPublic() ||
-                inSamePackage && inspection.isPackagePrivate() ||
-                !inSamePackage && inspection.isProtected();
+               inSamePackage && inspection.isPackagePrivate() ||
+               !inSamePackage && inspection.isProtected();
     }
 
 
@@ -1291,7 +1307,7 @@ public class ResolverImpl implements Resolver {
         // my parent's fields
         Stream<FieldInfo> parentStream;
         boolean haveNonTrivialParent = typeInspection.parentClass() != null
-                && !typeInspection.parentClass().typeInfo.isJavaLangObject();
+                                       && !typeInspection.parentClass().typeInfo.isJavaLangObject();
         if (haveNonTrivialParent) {
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
                     startingPoint, startingPointPackageName, staticFieldsOnly, includeEnclosing);
@@ -1327,9 +1343,9 @@ public class ResolverImpl implements Resolver {
         FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
         if (staticFieldsOnly && !inspection.isStatic()) return false;
         return inspection.isPublic() ||
-                inSamePackage && !inspection.isPrivate() ||
-                !inSamePackage && inspection.isProtected() ||
-                inspection.isPackagePrivate();
+               inSamePackage && !inspection.isPrivate() ||
+               !inSamePackage && inspection.isProtected() ||
+               inspection.isPackagePrivate();
     }
 
     public G<TypeInfo> builtExternalTypeGraph() {

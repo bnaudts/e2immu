@@ -52,7 +52,7 @@ public class Test_Support_06_AddOnceSet extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("AddOnceSet".equals(d.typeInfo().simpleName)) {
-                assertEquals("V", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, "V");
 
                 assertEquals("{frozen=!frozen}", d.typeAnalysis().getApprovedPreconditionsFinalFields().toString());
                 if (d.iteration() >= 2) {

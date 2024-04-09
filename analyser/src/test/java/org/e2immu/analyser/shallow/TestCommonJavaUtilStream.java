@@ -48,7 +48,7 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(DV.TRUE_DV, typeAnalysis.immutableDeterminedByTypeParameters());
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
+        assertEquals("T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
     @Test

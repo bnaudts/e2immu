@@ -118,7 +118,6 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 primitives.stringTypeInfo(), analyserContext)
-                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
                 .build();
 
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(0);
@@ -155,9 +154,12 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         method.setAnalysis(builder.build());
 
+        HiddenContentTypes hcsType = method.typeInfo.typeResolution.get().hiddenContentTypes();
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hcsType, method.methodInspection.get());
+
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
-                false);
+                false, hctMethod);
         method.methodResolution.set(methodResolution);
         return method;
     }

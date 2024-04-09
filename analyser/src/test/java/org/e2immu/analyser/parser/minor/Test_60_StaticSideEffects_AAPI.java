@@ -60,7 +60,7 @@ public class Test_60_StaticSideEffects_AAPI extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("StaticSideEffects_1".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "K");
+                assertHc(d, "K");
             }
         };
 

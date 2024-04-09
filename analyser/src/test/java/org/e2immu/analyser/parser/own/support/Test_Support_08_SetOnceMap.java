@@ -229,7 +229,7 @@ public class Test_Support_08_SetOnceMap extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "K, V");
+                assertHc(d, "K, V");
                 assertDv(d, 3, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 3, MultiLevel.EVENTUALLY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }

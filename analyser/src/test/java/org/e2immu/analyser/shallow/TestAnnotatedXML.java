@@ -129,7 +129,7 @@ public class TestAnnotatedXML {
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
+        assertEquals("T", optional.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
     // not hardcoded

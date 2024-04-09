@@ -323,49 +323,49 @@ public class Test_E2ImmutableComposition extends CommonTestRunner {
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             String clazz = d.typeInfo().simpleName;
             if ("Marker".equals(clazz)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                 assertNoHc(d);
             }
             if ("HasSize".equals(clazz)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                 assertNoHc(d);
             }
             if ("NonEmptyImmutableList".equals(clazz)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("NonEmptyList".equals(clazz)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
             if ("One".equals(clazz)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
             if ("ImmutableOne".equals(clazz)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                assertHc(d, 0, "T");
+                 assertHc(d, "T");
             }
             if ("ConstantOne".equals(clazz)) {
-                assertTrue(d.typeAnalysis().getHiddenContentTypes().isEmpty());
+                 assertNoHc(d);
             }
             if ("Marker".equals(clazz)) {
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, MultiLevel.CONTAINER_DV, Property.CONTAINER);
             }
             if ("ImmutableArrayOfT".equals(clazz)) {
-                assertHc(d, 0, "T");
+                assertHc(d, "T");
             }
             if ("ImmutableArrayOfMarker".equals(clazz)) {
-                assertHc(d, 0, "Marker");
+                assertHc(d, "Marker");
             }
             if ("ImmutableArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 0, "HasSize");
+                assertHc(d, "HasSize");
             }
             if ("ImmutableArrayOfTransparentOnes".equals(clazz)) {
-                assertHc(d, 2, "");
+                 assertNoHc(d);
             }
             if ("EncapsulatedExposedArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 2, "HasSize");
+                assertHc(d, "HasSize");
             }
             if ("EncapsulatedImmutableArrayOfHasSize".equals(clazz)) {
-                assertHc(d, 2, "HasSize");
+                assertHc(d, "HasSize");
             }
         };
 

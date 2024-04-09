@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.resolver.impl.SortedType;
 
 import java.util.HashSet;
@@ -40,7 +41,8 @@ public record TypeResolution(SortedType sortedType,
                              Set<TypeInfo> circularDependencies,
                              Set<TypeInfo> superTypesExcludingJavaLangObject,
                              TypeInfo generatedImplementation,
-                             boolean fieldsAccessedInRestOfPrimaryType) {
+                             boolean fieldsAccessedInRestOfPrimaryType,
+                             HiddenContentTypes hiddenContentTypes) {
 
     public static class Builder {
         private SortedType sortedType;
@@ -50,6 +52,7 @@ public record TypeResolution(SortedType sortedType,
         private int countGeneratedImplementations;
         private TypeInfo implementingType; // valid value only when counts == 1
         private boolean fieldsAccessedInRestOfPrimaryType;
+        private HiddenContentTypes hiddenContentTypes;
 
         public void incrementImplementations(TypeInfo typeInfo, boolean generated) {
             countImplementations++;
@@ -81,7 +84,8 @@ public record TypeResolution(SortedType sortedType,
                     circularDependencies == null ? Set.of() : Set.copyOf(circularDependencies),
                     Set.copyOf(superTypesExcludingJavaLangObject),
                     hasOneKnownGeneratedImplementation() ? Objects.requireNonNull(implementingType) : null,
-                    fieldsAccessedInRestOfPrimaryType);
+                    fieldsAccessedInRestOfPrimaryType,
+                    hiddenContentTypes);
         }
 
         public SortedType getSortedType() {
@@ -94,6 +98,15 @@ public record TypeResolution(SortedType sortedType,
 
         public Set<TypeInfo> getCircularDependencies() {
             return circularDependencies;
+        }
+
+        public Builder setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
+            this.hiddenContentTypes = hiddenContentTypes;
+            return this;
+        }
+
+        public HiddenContentTypes getHiddenContentTypes() {
+            return Objects.requireNonNull(hiddenContentTypes);
         }
     }
 

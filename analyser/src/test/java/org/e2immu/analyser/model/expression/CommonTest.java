@@ -110,8 +110,10 @@ public abstract class CommonTest {
             mab.setProperty(Property.FLUENT, DV.FALSE_DV);
             mab.setHiddenContentSelector(HiddenContentSelector.All.INSTANCE);
             mi.methodAnalysis.set(mab.build());
+            HiddenContentTypes hcsType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
+            HiddenContentTypes hcs = HiddenContentTypes.compute(hcsType, mi.methodInspection.get());
             mi.methodResolution.set(new MethodResolution(Set.of(), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
-                    false, Set.of(), false));
+                    false, Set.of(), false, hcs));
             return mi;
         }
     };
@@ -136,18 +138,6 @@ public abstract class CommonTest {
         @Override
         public ImportantClasses importantClasses() {
             return importantClasses;
-        }
-
-        @Override
-        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-            if(typeInfo.packageNameOrEnclosingType.isLeft()
-               && Primitives.INTERNAL.equals(typeInfo.packageNameOrEnclosingType.getLeft())) {
-                HiddenContentTypes hct = HiddenContentTypes.compute(this, getTypeInspection(typeInfo),
-                        true, false);
-                return new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives, typeInfo, this)
-                        .setHiddenContentTypes(hct).build();
-            }
-            return AnalyserContext.super.getTypeAnalysis(typeInfo);
         }
     };
 
@@ -264,9 +254,8 @@ public abstract class CommonTest {
         TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 string, analyserContext);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
-        builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
         string.typeAnalysis.set(builder.build());
-
+        string.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE).build());
         fill(mutable, MultiLevel.MUTABLE_DV, null);
         fill(mutable2, MultiLevel.MUTABLE_DV, null);
         fill(mutableWithOneTypeParameter, MultiLevel.MUTABLE_DV, tp0);
@@ -288,14 +277,16 @@ public abstract class CommonTest {
                 typeInfo, analyserContext);
         taBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
         taBuilder.setProperty(Property.IMMUTABLE, immutable);
-        if (typeParameter != null) {
-            taBuilder.setHiddenContentTypes(HiddenContentTypes.compute(analyserContext, typeInfo.typeInspection.get()));
-        } else if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
-            taBuilder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
-        } else {
-            taBuilder.setHiddenContentTypes(HiddenContentTypes.OF_OBJECT);
-        }
         typeInfo.typeAnalysis.set(taBuilder.build());
+        TypeResolution.Builder trBuilder = new TypeResolution.Builder();
+        if (typeParameter != null) {
+            trBuilder.setHiddenContentTypes(HiddenContentTypes.compute(typeInfo.typeInspection.get()));
+        } else if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+            trBuilder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
+        } else {
+            trBuilder.setHiddenContentTypes(HiddenContentTypes.OF_OBJECT);
+        }
+        typeInfo.typeResolution.set(trBuilder.build());
     }
 
     protected EvaluationResult context(EvaluationContext evaluationContext) {

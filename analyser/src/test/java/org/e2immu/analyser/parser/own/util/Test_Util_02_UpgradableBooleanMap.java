@@ -295,7 +295,7 @@ public class Test_Util_02_UpgradableBooleanMap extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("UpgradableBooleanMap".equals(d.typeInfo().simpleName)) {
-                assertEquals("T", d.typeAnalysis().getHiddenContentTypes().toString());
+                assertHc(d, "T");
                 assertDv(d, 20, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 assertDv(d, 22, MultiLevel.CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 23, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);

@@ -200,18 +200,6 @@ public abstract class VisitorTestSupport {
         return range;
     }
 
-    protected void assertHc(TypeAnalyserVisitor.Data d, int delayedBefore, String s) {
-        CausesOfDelay causes = d.typeAnalysis().hiddenContentDelays();
-        if (d.iteration() < delayedBefore) {
-            assertTrue(causes.isDelayed(),
-                    "Expected hidden content to be delayed in iteration " + d.iteration() + " < " + delayedBefore);
-        } else {
-            assertTrue(causes.isDone(),
-                    "Expected hidden content to be done in iteration " + d.iteration() + " >= " + delayedBefore);
-            assertEquals(s, d.typeAnalysis().getHiddenContentTypes().toString());
-        }
-    }
-
     public record IterationInfo(int from, int toExcl, String value) {
         public static IterationInfo it0(String value) {
             return new IterationInfo(0, 1, value);
@@ -286,4 +274,13 @@ public abstract class VisitorTestSupport {
     protected void assertSingleLv(EvaluationResultVisitor.Data d, int iteration, int index, String expected) {
         assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), iteration, index, expected);
     }
+
+    protected void assertNoHc(TypeAnalyserVisitor.Data d) {
+        assertTrue(d.typeInfo().typeResolution.get().hiddenContentTypes().isEmpty());
+    }
+
+    protected void assertHc(TypeAnalyserVisitor.Data d, String t) {
+        assertEquals(t, d.typeInfo().typeResolution.get().hiddenContentTypes().sortedTypes());
+    }
+
 }

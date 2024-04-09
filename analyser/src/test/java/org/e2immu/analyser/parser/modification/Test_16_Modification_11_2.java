@@ -213,10 +213,10 @@ public class Test_16_Modification_11_2 extends CommonTestRunner {
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
             if ("Modification_11".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 9, "");
+               assertNoHc(d);
             }
             if ("C1".equals(d.typeInfo().simpleName)) {
-                assertHc(d, 0, "");
+                assertNoHc(d);
                 assertDv(d, 2, MultiLevel.NOT_CONTAINER_DV, Property.CONTAINER);
                 assertDv(d, 9, MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV, IMMUTABLE);
             }
