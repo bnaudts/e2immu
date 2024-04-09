@@ -294,7 +294,9 @@ public class LinkHelper {
         if (fluent.isDelayed()) {
             return linkedVariablesOfObject.changeNonStaticallyAssignedToDelay(fluent.causesOfDelay());
         }
-        HiddenContentSelector hcsSource = methodInfo.methodResolution.get().hiddenContentTypes().selectAll();
+        HiddenContentTypes hct = methodInfo.methodResolution.get().hiddenContentTypes();
+        assert hct != null : "For method " + methodInfo;
+        HiddenContentSelector hcsSource = hct.selectAll();
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
         return linkedVariables(objectResult.getExpression().returnType(),
                 linkedVariablesOfObject,

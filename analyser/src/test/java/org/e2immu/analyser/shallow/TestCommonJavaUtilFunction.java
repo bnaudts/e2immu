@@ -87,7 +87,7 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
 
-        assertEquals("", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
+        assertEquals("R, T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
 

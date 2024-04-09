@@ -169,21 +169,36 @@ public class ResolverImpl implements Resolver {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
+
+        Map<TypeInfo, TypeResolution.Builder> allBuilders;
         if (parent == null) {
+            LOGGER.info("Prepare type resolution");
+            Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> subTypeStream = resolutionBuilders.entrySet().stream()
+                    .flatMap(e -> addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue()));
+            allBuilders = Stream.concat(resolutionBuilders.entrySet().stream(), subTypeStream)
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            allBuilders.forEach((typeInfo, builder) -> {
+                TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+                HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
+                builder.setHiddenContentTypes(hiddenContentTypes);
+            });
+
             Instant endTime = Instant.now();
             long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
             LOGGER.info("At end of main resolution loop, took {} seconds", seconds);
             LOGGER.info("Start filling method resolution objects on {} types", typeCounterForDebugging.get());
             synchronized (methodCallGraph) {
-                methodResolution(resolutionBuilders);
+                methodResolution(allBuilders);
             }
             LOGGER.info("Computing analyser sequence from dependency graph, have {} builders",
                     resolutionBuilders.size());
+        } else {
+            allBuilders = resolutionBuilders;
         }
         if (parent == null) {
             LOGGER.info("Computing type resolution");
         }
-        computeTypeResolution(resolutionBuilders, inspectedTypes);
+        computeTypeResolution(allBuilders, inspectedTypes);
         if (parent == null) {
             LOGGER.info("Linearize");
         }
@@ -207,11 +222,7 @@ public class ResolverImpl implements Resolver {
                         "?? in recursive situation we do not expect a primary type" + typeInfo.fullyQualifiedName;
             }
             SortedType sortedType = addToTypeGraph(stayWithin, typeInfo, expressionContext);
-            TypeInspection typeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);
-            HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
-            return new TypeResolution.Builder()
-                    .setHiddenContentTypes(hiddenContentTypes)
-                    .setSortedType(sortedType);
+            return new TypeResolution.Builder().setSortedType(sortedType);
         } catch (RuntimeException rte) {
             LOGGER.error("Caught exception resolving type {}", entry.getKey().fullyQualifiedName);
             throw rte;
@@ -294,18 +305,12 @@ public class ResolverImpl implements Resolver {
         return new SortedTypes(typeCycles);
     }
 
-    private void computeTypeResolution(Map<TypeInfo, TypeResolution.Builder> resolutionBuilders,
+    private void computeTypeResolution(Map<TypeInfo, TypeResolution.Builder> allBuilders,
                                        Map<TypeInfo, ExpressionContext> inspectedTypes) {
         /*
         The code that computes supertypes and counts implementations runs over all known types and subtypes,
         out of the standard sorting order, exactly because of circular dependencies.
          */
-        if (parent == null) LOGGER.info("Prepare type resolution");
-        Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> subTypeStream = resolutionBuilders.entrySet().stream()
-                .flatMap(e -> addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue()));
-        Map<TypeInfo, TypeResolution.Builder> allBuilders = Stream.concat(resolutionBuilders.entrySet().stream(),
-                subTypeStream).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-
         if (parent == null) LOGGER.info("Computing supertypes, have {} builders", allBuilders.size());
         Set<Map.Entry<TypeInfo, TypeResolution.Builder>> entries = allBuilders.entrySet();
         makeStream(entries)
@@ -1024,7 +1029,16 @@ public class ResolverImpl implements Resolver {
     private void computeHiddenContent(TypeResolution.Builder trBuilder,
                                       MethodResolution.Builder builder, MethodInfo methodInfo) {
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
-        HiddenContentTypes hcs = HiddenContentTypes.compute(trBuilder.getHiddenContentTypes(), methodInspection);
+        HiddenContentTypes hcsTypeInfo;
+        if (trBuilder != null) {
+            hcsTypeInfo = trBuilder.getHiddenContentTypes();
+        } else {
+            // there's a few types not in the builder map...
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+            assert typeInspection != null;
+            hcsTypeInfo = HiddenContentTypes.compute(typeInspection);
+        }
+        HiddenContentTypes hcs = HiddenContentTypes.compute(hcsTypeInfo, methodInspection);
         builder.setHiddenContentTypes(hcs);
     }
 

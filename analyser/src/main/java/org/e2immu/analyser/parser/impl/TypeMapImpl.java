@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.impl;
 
 import com.github.javaparser.ParseException;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.bytecode.TypeData;
 import org.e2immu.analyser.bytecode.TypeDataImpl;
@@ -240,19 +241,25 @@ public class TypeMapImpl implements TypeMap {
                 new HashSet<>(typeInspections.values()).forEach(typeData -> {
                     TypeInfo typeInfo = typeData.getTypeInspectionBuilder().typeInfo();
                     if (typeInfo.typeInspection.isSet()) {
+                        HiddenContentTypes hctType;
                         if (!typeInfo.typeResolution.isSet()) {
                             Set<TypeInfo> superTypes = ResolverImpl.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
+                            hctType = HiddenContentTypes.compute(typeInfo.typeInspection.get());
                             TypeResolution typeResolution = new TypeResolution.Builder()
                                     .setSuperTypesExcludingJavaLangObject(superTypes)
+                                    .setHiddenContentTypes(hctType)
                                     .build();
                             typeInfo.typeResolution.set(typeResolution);
+                        } else {
+                            hctType = typeInfo.typeResolution.get().hiddenContentTypes();
                         }
+                        assert hctType != null : "For " + typeInfo;
                         for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
                             if (!methodInfo.methodResolution.isSet()) {
                                 methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(
-                                        InspectionProvider.DEFAULT, methodInfo,
-                                        typeInfo.typeResolution.get().hiddenContentTypes()));
+                                        InspectionProvider.DEFAULT, methodInfo, hctType));
                             }
+                            assert methodInfo.methodResolution.get().hiddenContentTypes() != null : "For " + methodInfo;
                         }
                     }
                 });

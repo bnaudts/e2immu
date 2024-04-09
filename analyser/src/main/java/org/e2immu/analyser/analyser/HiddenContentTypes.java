@@ -66,7 +66,8 @@ public class HiddenContentTypes {
         this.hcsTypeInfo = hcsTypeInfo;
         this.typeInfo = hcsTypeInfo.typeInfo;
         this.methodInfo = methodInfo;
-        assert typeInfo == methodInfo.typeInfo;
+        assert typeInfo == methodInfo.typeInfo
+                : "HCS typeInfo = " + typeInfo + ", method type info = " + methodInfo.typeInfo;
         this.startOfMethodParameters = hcsTypeInfo.startOfMethodParameters;
         Map<Integer, ParameterizedType> i2t = new HashMap<>();
         Map<ParameterizedType, Integer> t2i = new HashMap<>();
@@ -98,6 +99,7 @@ public class HiddenContentTypes {
     }
 
     public static HiddenContentTypes compute(HiddenContentTypes hcsTypeInfo, MethodInspection methodInspection) {
+        assert hcsTypeInfo != null : "For method " + methodInspection.getMethodInfo();
         Map<ParameterizedType, Integer> typeToIndex = methodInspection.getTypeParameters().stream()
                 .collect(Collectors.toUnmodifiableMap(
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
@@ -107,7 +109,7 @@ public class HiddenContentTypes {
 
     public static HiddenContentTypes compute(TypeInspection typeInspection, boolean shallow) {
         TypeInfo typeInfo = typeInspection.typeInfo();
-        if (typeInfo.isJavaLangObject()) return OF_OBJECT;
+        //if (typeInfo.isJavaLangObject()) return OF_OBJECT;
 
         Set<TypeParameter> typeParametersInFields;
         if (shallow) {

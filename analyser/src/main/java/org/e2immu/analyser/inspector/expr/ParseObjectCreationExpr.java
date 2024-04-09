@@ -15,6 +15,7 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
@@ -110,6 +111,8 @@ public class ParseObjectCreationExpr {
                     typeContext.typeMap().getE2ImmuAnnotationExpressions(), false,
                     expressionContext.resolver().storeComments(),
                     Map.of(anonymousType, expressionContext.newVariableContext("Anonymous subtype")));
+            assert anonymousType.typeResolution.isSet()
+                   && anonymousType.typeResolution.get().hiddenContentTypes() != null;
             return ConstructorCall.withAnonymousClass(id, typeContext, tas.scope, anonymousType, diamond);
         }
 
