@@ -14,10 +14,14 @@
 
 package org.e2immu.analyser.parser.modification;
 
+import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
@@ -45,12 +49,27 @@ public class Test_Linking0M extends CommonTestRunner {
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(),
                             it(0, 1, "m:0,this.listM:-1,this:-1"),
                             it(2, "m:0,this.listM:4,this:4"));
-                    assertSingleLv(d, 2, 1, "*-4-*");
-                    assertSingleLv(d, 2, 2, "*-4-*");
+                    assertSingleLv(d, 2, 1, "*M-4-0M");
+                    assertSingleLv(d, 2, 2, "*M-4-0M");
                     if (d.iteration() >= 2) {
                         assertTrue(d.evaluationResult().changeData().values().stream()
                                 .noneMatch(cd -> cd.linkedVariables().isDelayed()));
                     }
+                }
+            }
+            if ("m2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    String expected = d.iteration() < 2 ? "<m:add>" : "instance 0 type boolean";
+                    assertEquals(expected, d.evaluationResult().value().toString());
+                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, ""));
+                    if (d.iteration() >= 2) {
+                        assertTrue(d.evaluationResult().changeData().values().stream()
+                                .noneMatch(cd -> cd.linkedVariables().isDelayed()));
+                    }
+                    ChangeData cdL = d.findValueChangeByToString("listM");
+                    assertLinked(d, cdL.linkedVariables(), it(0, 1, "m:-1"), it(2, "m:4"));
+                    ChangeData cdM = d.findValueChangeBySubString(":0:m");
+                    assertLinked(d, cdM.linkedVariables(), it(0, ""));
                 }
             }
         };
@@ -60,11 +79,62 @@ public class Test_Linking0M extends CommonTestRunner {
                 if ("m".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
-                                it(2, "this.listM:4,this:4"));
-                        assertSingleLv(d, 2, 0, "*-4-*"); // FIXME this is not a good notation
+                                it(2, "this.listM:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    }
+                }
+            }
+            if ("m2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "m".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
+                                it(2, "this.listM:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "this.listM2:-1,this.listM:-1,this:-1"),
+                                it(2, "this.listM2:4,this.listM:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
                         assertSingleLv(d, 2, 1, "*M-4-0M");
                     }
                 }
+                if (d.variable() instanceof FieldReference fr && "listM".equals(fr.fieldInfo().name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "m:-1,this:-1"),
+                                it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "m:-1,this.listM2:-1,this:-1"),
+                                it(2, "m:4,this.listM2:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                        // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
+                        assertSingleLv(d, 2, 1, "0-4-0");
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "listM2".equals(fr.fieldInfo().name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "m:-1,this:-1"),
+                                it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "m:-1,this.listM:-1,this:-1"),
+                                it(2, "m:4,this.listM:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                        // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
+                        assertSingleLv(d, 2, 1, "0-4-0");
+                    }
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("listM2".equals(d.fieldInfo().name)) {
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it(0, 1, "m:-1,this.listM:-1"), it(2, "m:4,this.listM:4"));
+                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 0, "0M-4-*M");
+                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 1, "0-4-0");
             }
         };
 
@@ -73,6 +143,7 @@ public class Test_Linking0M extends CommonTestRunner {
         testClass("Linking_0M", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

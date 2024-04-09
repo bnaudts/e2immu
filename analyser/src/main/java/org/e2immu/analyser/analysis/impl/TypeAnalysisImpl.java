@@ -501,6 +501,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         public TypeAnalysis build() {
+            assert hiddenContentTypes.isSet() : "No hidden content types for " + typeInfo;
             return new TypeAnalysisImpl(typeInfo,
                     properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(),

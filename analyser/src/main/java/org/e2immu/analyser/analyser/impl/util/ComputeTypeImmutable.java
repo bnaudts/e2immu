@@ -161,7 +161,9 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             } else if (level == MultiLevel.Level.IMMUTABLE_HC.level) {
                 // not extensible, IMMUTABLE_HC: check hidden content, if empty, return IMMUTABLE
                 Set<ParameterizedType> superTypes = typeInfo.superTypes(analyserContext);
-                Set<ParameterizedType> hiddenContent = new HashSet<>(typeAnalysis.getHiddenContentTypes().types());
+                Set<ParameterizedType> hiddenContent = typeAnalysis.getHiddenContentTypes().types()
+                        .stream().filter(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft())
+                        .collect(Collectors.toCollection(HashSet::new));
                 hiddenContent.removeAll(superTypes);
                 if (hiddenContent.isEmpty()) {
                     return MultiLevel.composeImmutable(MultiLevel.effective(immutable), MultiLevel.Level.IMMUTABLE.level);
@@ -408,7 +410,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                     // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
                     ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
                     if (concreteType != null && concreteType.typeInfo != null &&
-                            concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
+                        concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
                         fieldEffectiveImmutable = MultiLevel.Effective.EVENTUAL_AFTER; // must follow rules, but is not eventual
                     } else {
                         LOGGER.debug("Field {} not known yet if of immutable type, delaying immutable on type", fieldInfo);
@@ -443,7 +445,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                                 fieldInfo, typeInfo);
                     } else {
                         LOGGER.debug("For {} to become eventually immutable, modified field {} can only be modified " +
-                                "in methods marked @Mark or @Only(before=)", typeInfo, fieldInfo);
+                                     "in methods marked @Mark or @Only(before=)", typeInfo, fieldInfo);
                         w.fieldsThatMustBeGuarded.add(fieldInfo);
                         // so assume immutable for now, check later
                         fieldImmutable = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
@@ -488,7 +490,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(true);
         if (approvedDelays.isDelayed()) {
             LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
-                    " preconditions to find out if it is eventually level 2 immutable", typeInfo);
+                         " preconditions to find out if it is eventually level 2 immutable", typeInfo);
             return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), w.whenImmutableFails);
         }
 
@@ -511,7 +513,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(false);
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is not effectively level 1 immutable, waiting for" +
-                        " preconditions to find out if it is eventually level 1 immutable", typeInfo);
+                             " preconditions to find out if it is eventually level 1 immutable", typeInfo);
                 return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), MultiLevel.MUTABLE_DV);
             }
             List<FieldReference> nonFinalFields = myFieldAnalysers.stream()
@@ -531,8 +533,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 TypeAnalysis parentTypeAnalysis = analyserContext.getTypeAnalysis(typeInspection.parentClass().typeInfo);
                 Set<FieldInfo> parentFields = parentTypeAnalysis.getEventuallyImmutableFields();
                 assert !parentFields.isEmpty() ||
-                        !parentTypeAnalysis.getApprovedPreconditionsFinalFields().isEmpty() ||
-                        !parentTypeAnalysis.getApprovedPreconditionsImmutable().isEmpty();
+                       !parentTypeAnalysis.getApprovedPreconditionsFinalFields().isEmpty() ||
+                       !parentTypeAnalysis.getApprovedPreconditionsImmutable().isEmpty();
                 parentFields.forEach(fieldInfo -> {
                     if (typeAnalysis.eventuallyImmutableFieldNotYetSet(fieldInfo)) {
                         typeAnalysis.addEventuallyImmutableField(fieldInfo);
@@ -543,7 +545,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
             CausesOfDelay approvedDelays = typeAnalysis.approvedPreconditionsStatus(true);
             if (approvedDelays.isDelayed()) {
                 LOGGER.debug("Type {} is effectively level 1 immutable, waiting for" +
-                        " preconditions to find out if it is eventually level 2 immutable", typeInfo);
+                             " preconditions to find out if it is eventually level 2 immutable", typeInfo);
                 return delayImmutable(approvedDelays, sharedState.breakDelayLevel(), MultiLevel.MUTABLE_DV);
             }
             whenImmutableFails = MultiLevel.EFFECTIVELY_FINAL_FIELDS_DV;
@@ -638,7 +640,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                     // here by requiring the rules, and saying that it is not eventual; see FunctionInterface_0
                     ParameterizedType concreteType = fieldAnalysis.concreteTypeNullWhenDelayed();
                     if (concreteType != null && concreteType.typeInfo != null &&
-                            concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
+                        concreteType.typeInfo.topOfInterdependentClassHierarchy() == typeInfo.topOfInterdependentClassHierarchy()) {
                         fieldEffectiveImmutable = MultiLevel.Effective.EVENTUAL_AFTER; // must follow rules, but is not eventual
                     }
                 }
@@ -654,7 +656,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 if (fieldInfo.type.typeInfo != typeInfo) {
                     if (!fieldInfo.fieldInspection.get().isPrivate() && fieldRequiresRules) {
                         LOGGER.debug("{} is not an immutable class, because field {} is not primitive, " +
-                                "not immutable itself, and also exposed (not private)", typeInfo, fieldInfo);
+                                     "not immutable itself, and also exposed (not private)", typeInfo, fieldInfo);
                         return doneImmutable(w.ALT_IMMUTABLE, w.whenImmutableFails, w.ALT_DONE);
                     }
                 }
@@ -681,7 +683,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
 
     private boolean acceptMethod(MethodInfo methodInfo) {
         return !methodInfo.inConstruction()
-                && !methodInfo.typeInfo.recursivelyInConstructionOrStaticWithRespectTo(analyserContext, typeInfo);
+               && !methodInfo.typeInfo.recursivelyInConstructionOrStaticWithRespectTo(analyserContext, typeInfo);
     }
 
     private AnalysisStatus negativeMethods(Work w) {
@@ -774,7 +776,7 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
     private Set<MethodInfo> methodsOf(FieldInfo fieldInfo) {
         return myMethodAnalysers.stream()
                 .filter(ma -> ma.getFieldAsVariableStream(fieldInfo).anyMatch(ComputeTypeImmutable::isModified) ||
-                        ma.getMethodAnalysis().getPreconditionForEventual().guardsField(analyserContext, fieldInfo))
+                              ma.getMethodAnalysis().getPreconditionForEventual().guardsField(analyserContext, fieldInfo))
                 .map(MethodAnalyser::getMethodInfo)
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -852,8 +854,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
         DV correctedIndependent;
         DV ignoreModification = parameterAnalysis.getProperty(Property.IGNORE_MODIFICATIONS);
         if (ignoreModification.equals(MultiLevel.IGNORE_MODS_DV)
-                && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface()
-                && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
+            && parameterAnalysis.getParameterInfo().parameterizedType.isFunctionalInterface()
+            && !parameterAnalysis.getParameterInfo().getMethod().methodInspection.get().isPrivate()) {
             LOGGER.debug("Incoming functional interface on non-private method");
             correctedIndependent = independent.max(MultiLevel.INDEPENDENT_HC_DV);
         } else {

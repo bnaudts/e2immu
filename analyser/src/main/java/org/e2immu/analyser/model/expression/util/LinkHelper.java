@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
+import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
@@ -399,7 +400,20 @@ public class LinkHelper {
                             }
                             mine = mutable.valueIsTrue() ? HiddenContentSelector.All.MUTABLE_INSTANCE
                                     : HiddenContentSelector.All.INSTANCE;
-                            HiddenContentSelector.CsSet hcsSource = sourceTypeHC.select(formalTargetType);
+                            TypeInfo targetTi = formalTargetType.isTypeParameter()
+                                    ? formalTargetType.typeParameter.getOwner().getLeft()
+                                    : formalTargetType.typeInfo;
+                            TypeAnalysis typeAnalysis = context.getAnalyserContext().getTypeAnalysis(targetTi);
+                            HiddenContentTypes hct = typeAnalysis.getHiddenContentTypes();
+                            int index;
+                            if (formalSourceType.typeInfo.equals(targetTi)) {
+                                index = hct.indexOf(formalTargetType);
+                            } else {
+                                // 0 in ArrayList --> 0 in List, for the computation of theirs
+                                // formalTargetType E in ArrayList ~ E in List (formalSourceType), see Linking_0M
+                                index = hct.relationToParent(formalSourceType.typeInfo).indexOf(formalTargetType);
+                            }
+                            HiddenContentSelector.CsSet hcsSource = new HiddenContentSelector.CsSet(Set.of(index));
                             theirs = hcsSource.ensureMutable(mutable.valueIsTrue());
                         } else {
                             // both are CsSet, we'll set mutable what is mutable, in a common way

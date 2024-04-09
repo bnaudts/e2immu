@@ -100,7 +100,9 @@ public class TestComputeLinkedVariables {
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
         someTypeWithHC.typeAnalysis.set(new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                someTypeWithHC, analyserContext).build());
+                someTypeWithHC, analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.OF_OBJECT)
+                .build());
         location = new LocationImpl(currentMethod, "0-E", newId());
         sa = new StatementAnalysis() {
             @Override

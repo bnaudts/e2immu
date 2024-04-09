@@ -117,7 +117,9 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                 .addParameter(param1Inspection)
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
+                primitives.stringTypeInfo(), analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
+                .build();
 
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl

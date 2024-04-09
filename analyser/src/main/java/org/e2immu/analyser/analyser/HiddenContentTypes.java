@@ -41,11 +41,6 @@ public class HiddenContentTypes {
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(false, Map.of(), Map.of());
     public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(true, Map.of(), Map.of());
 
-    // FIXME
-    public Set<ParameterizedType> types() {
-        return typeToIndex.keySet();
-    }
-
     public record RelationToParent(HiddenContentTypes hcs,
                                    Map<Integer, ParameterizedType> parentHcsToMyType) {
         // E(=0 in List) -> 0 (in ArrayList), follow 0->E(=0 in ArrayList) -> Integer (as in IntList extends ArrayList<Integer>)
@@ -62,6 +57,13 @@ public class HiddenContentTypes {
                 map.put(entry.getKey(), concrete);
             }
             return new RelationToParent(hcs, map);
+        }
+
+        public int indexOf(ParameterizedType targetType) {
+            assert parentHcsToMyType.containsValue(targetType);
+            return parentHcsToMyType.entrySet().stream()
+                    .filter(e -> e.getValue().equals(targetType))
+                    .map(Map.Entry::getKey).findFirst().orElseThrow();
         }
     }
 
@@ -103,15 +105,19 @@ public class HiddenContentTypes {
         }
         Set<TypeParameter> typeParametersInFields;
         if (shallow) {
-            typeParametersInFields = Set.of();
+            typeParametersInFields = typeInspection.typeParameters().stream().collect(Collectors.toUnmodifiableSet());
         } else {
             typeParametersInFields = typeInspection.fields().stream()
                     .flatMap(fi -> typeParameterStream(fi.type))
                     .collect(Collectors.toUnmodifiableSet());
         }
+        Set<TypeParameter> typeParametersOfMethods = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .flatMap(mi -> analyserContext.getMethodInspection(mi).getTypeParameters().stream())
+                .collect(Collectors.toUnmodifiableSet());
+        Stream<TypeParameter> allTypeParameters = Stream.concat(typeParametersInFields.stream(),
+                typeParametersOfMethods.stream());
 
-        Map<ParameterizedType, Integer> typeToIndex = typeInspection.typeParameters().stream()
-                .filter(tp -> shallow || typeParametersInFields.contains(tp))
+        Map<ParameterizedType, Integer> typeToIndex = allTypeParameters
                 .collect(Collectors.toUnmodifiableMap(
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
                         TypeParameter::getIndex));
@@ -255,4 +261,36 @@ public class HiddenContentTypes {
     public int indexOf(ParameterizedType type) {
         return typeToIndex.get(type);
     }
+
+    /*
+     List<E> --> E ~ *, all mentions of E, e.g. List<E>,Collection<E> -> 0
+     Map<K, V> --> K, V ~ *, all mentions of V -> 1, all mentions of K ~ 0
+
+    public HiddenContentSelector selector(ParameterizedType type) {
+        if (type.typeParameter != null) {
+            Integer index = typeToIndex.get(type.copyWithoutWildcard());
+            if (index != null) return HiddenContentSelector.All.INSTANCE;
+            return HiddenContentSelector.None.INSTANCE;
+        }
+        Set<Integer> set = typeParameterStreamAsParameterType(type).map(pt -> typeToIndex.get(pt.copyWithoutWildcard()))
+                .filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
+        if (set.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+        return new HiddenContentSelector.CsSet(set);
+    }
+    private static Stream<ParameterizedType> typeParameterStreamAsParameterType(ParameterizedType type) {
+        if (type.isTypeParameter()) return Stream.of(type);
+        return type.parameters.stream().flatMap(HiddenContentTypes::typeParameterStreamAsParameterType);
+    }
+    */
+
+    public Set<ParameterizedType> types() {
+        return typeToIndex.keySet();
+    }
+
+    public String sortedTypeParameters() {
+        return typeToIndex.keySet().stream()
+                .filter(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft())
+                .map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
+    }
+
 }

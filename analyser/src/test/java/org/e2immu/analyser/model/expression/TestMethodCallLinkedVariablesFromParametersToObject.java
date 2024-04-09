@@ -160,8 +160,6 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .addParameter(param0Inspection)
                 .addParameter(param1Inspection)
                 .build(inspectionProvider).getMethodInfo();
-        TypeAnalysis typeAnalysisOfString = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
 
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         assertEquals("0", select0.toString());
@@ -170,7 +168,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         ParameterAnalysis p1Analysis = parameterAnalysis(1, independentP1, method, select0);
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, method, typeAnalysisOfString,
+                primitives, analysisProvider, inspectionProvider, method, primitives.stringTypeInfo().typeAnalysis.get(),
                 List.of(p0Analysis, p1Analysis));
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
@@ -436,13 +434,12 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .setReturnType(primitives.booleanParameterizedType())
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
-        TypeAnalysis typeAnalysisOfString = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
 
         ParameterAnalysis p0Analysis = parameterAnalysis(0, independentP0, method, p0Hcs);
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, method, typeAnalysisOfString,
+                primitives, analysisProvider, inspectionProvider, method,
+                primitives.stringTypeInfo().typeAnalysis.get(),
                 List.of(p0Analysis));
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
@@ -470,14 +467,13 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .setReturnType(tp0Pt)
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
-        TypeAnalysis typeAnalysisOfString = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
 
         ParameterAnalysis p0Analysis = parameterAnalysis(0, MultiLevel.INDEPENDENT_DV, method,
                 hcs);
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, method, typeAnalysisOfString,
+                primitives, analysisProvider, inspectionProvider,
+                method, primitives.stringTypeInfo().typeAnalysis.get(),
                 List.of(p0Analysis));
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
@@ -524,7 +520,9 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
+                primitives.stringTypeInfo(), analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
+                .build();
         ParameterInfo param0 = method.methodInspection.get().getParameters().get(0);
 
         ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl

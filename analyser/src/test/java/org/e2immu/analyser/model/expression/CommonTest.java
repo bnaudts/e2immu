@@ -252,6 +252,7 @@ public abstract class CommonTest {
         TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                 string, analyserContext);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
+        builder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
         string.typeAnalysis.set(builder.build());
 
         fill(mutable, MultiLevel.MUTABLE_DV, null);
@@ -275,6 +276,13 @@ public abstract class CommonTest {
                 typeInfo, analyserContext);
         taBuilder.setProperty(Property.CONTAINER, DV.TRUE_DV);
         taBuilder.setProperty(Property.IMMUTABLE, immutable);
+        if (typeParameter != null) {
+            taBuilder.setHiddenContentTypes(HiddenContentTypes.compute(analyserContext, typeInfo.typeInspection.get()));
+        } else if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
+            taBuilder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
+        } else {
+            taBuilder.setHiddenContentTypes(HiddenContentTypes.OF_OBJECT);
+        }
         typeInfo.typeAnalysis.set(taBuilder.build());
     }
 

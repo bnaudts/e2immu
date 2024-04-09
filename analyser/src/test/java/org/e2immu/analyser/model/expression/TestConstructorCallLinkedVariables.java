@@ -29,11 +29,10 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
                 MethodInfo.MethodType.CONSTRUCTOR)
                 .setReturnType(primitives.stringParameterizedType())
                 .build(inspectionProvider).getMethodInfo();
-        TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, constructor, typeAnalysis,
+                primitives, analysisProvider, inspectionProvider, constructor,
+                primitives.stringTypeInfo().typeAnalysis.get(),
                 List.of());
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
@@ -152,7 +151,9 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
                 .addParameter(param0Inspection)
                 .build(inspectionProvider).getMethodInfo();
         TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
+                primitives.stringTypeInfo(), analyserContext)
+                .setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE)
+                .build();
         ParameterInfo param0 = constructor.methodInspection.get().getParameters().get(0);
         ParameterAnalysisImpl.Builder p0Builder = new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param0)

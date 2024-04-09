@@ -1475,7 +1475,7 @@ public class ComputingFieldAnalyser extends FieldAnalyserImpl implements FieldAn
                 .filter(vi -> !(vi.variable() instanceof LocalVariableReference)
                               && !(vi.variable() instanceof ReturnVariable)
                               && !(vi.variable() instanceof This))
-                .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me), LV::min));
+                .forEach(vi -> reversePointingToMe.merge(vi.variable(), vi.getLinkedVariables().value(me).reverse(), LV::min));
 
         LinkedVariables linkedVariables;
         if (!reversePointingToMe.isEmpty()) {

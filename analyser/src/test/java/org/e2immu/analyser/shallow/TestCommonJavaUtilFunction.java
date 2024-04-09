@@ -72,7 +72,8 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
 
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
-        assertEquals("R, T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("R, T", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
+        assertEquals("R, T, T, V, V", typeAnalysis.getHiddenContentTypes().toString());
     }
 
     @Test

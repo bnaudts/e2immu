@@ -403,7 +403,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             LinkedVariables lvs = builder.getLinkedVariablesOf(e.getKey());
             map.put(e.getKey(), e.getValue());
             if (lvs != null) {
-                lvs.stream().forEach(e2 -> map.merge(e2.getKey(), e2.getValue().max(e.getValue()), LV::max));
+                lvs.stream().forEach(e2 -> {
+                    boolean skipAllToAll = e2.getValue().isCommonHC() && e.getValue().isCommonHC()
+                                           && !e2.getKey().equals(e.getKey())
+                                           && e.getValue().mine().isAll() && e2.getValue().mine().isAll();
+                    if (!skipAllToAll) {
+                        map.merge(e2.getKey(), e2.getValue().max(e.getValue()), LV::max);
+                    }
+                });
             }
         });
         LinkedVariables lvsResult = LinkedVariables.of(map);

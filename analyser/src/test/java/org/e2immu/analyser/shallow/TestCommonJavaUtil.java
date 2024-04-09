@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtil extends CommonAnnotatedAPI {
 
-
     @Test
     public void testCollection() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
@@ -41,7 +40,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.MUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
-        assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("E", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test
@@ -121,7 +120,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                         .filter(m -> ((LocationImpl) m.location()).info != null)
                         .filter(m -> ((LocationImpl) m.location()).info.getTypeInfo().equals(typeInfo)).toList());
 
-        assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("E", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test
@@ -236,7 +235,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.DEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
 
-        assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("E", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test
@@ -286,7 +285,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals(MultiLevel.NOT_CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
         assertEquals(DV.TRUE_DV, typeAnalysis.getProperty(Property.UTILITY_CLASS));
-        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
+        assertEquals("", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
 
         MethodInfo methodInfo = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
                 .filter(m -> "stream".equals(m.name))
@@ -330,7 +329,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
 
-        assertEquals("E", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("E", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test
@@ -375,7 +374,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_DV, typeAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_DV, typeAnalysis.getProperty(Property.INDEPENDENT)); // no data
 
-        assertTrue(typeAnalysis.getHiddenContentTypes().isEmpty());
+        assertEquals("", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
 
@@ -477,7 +476,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("0", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("1", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -524,7 +523,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, typeAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.CONTAINER_DV, typeAnalysis.getProperty(Property.CONTAINER));
 
-        assertEquals("K, V", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("K, V", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test
@@ -690,7 +689,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Optional.class);
         TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
 
-        assertEquals("T", typeAnalysis.getHiddenContentTypes().toString());
+        assertEquals("T", typeAnalysis.getHiddenContentTypes().sortedTypeParameters());
     }
 
     @Test

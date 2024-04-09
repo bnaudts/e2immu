@@ -212,4 +212,23 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             return new CsSet(newMap);
         }
     }
+/*
+    public static HiddenContentSelector fromConcrete(AnalyserContext analyserContext,
+                                                     ParameterizedType type) {
+        if (type.isTypeParameter()) return All.INSTANCE;
+        if (type.typeInfo == null) return None.INSTANCE;
+        HiddenContentTypes hct;
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysisNullWhenAbsent(type.typeInfo);
+        if (typeAnalysis != null) {
+            hct = typeAnalysis.getHiddenContentTypes();
+        } else {
+            TypeInspection typeInspection = type.typeInfo.typeInspection.isSet() ? type.typeInfo.typeInspection.get(): null;
+            if(typeInspection != null) {
+                hct = HiddenContentTypes.compute(analyserContext, typeInspection, true, true);
+            } else {
+                return None.INSTANCE;
+            }
+        }
+        return hct.selector(type);
+    }*/
 }

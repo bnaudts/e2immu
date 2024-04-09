@@ -205,6 +205,10 @@ public class TestHiddenContentTypes {
         ParameterizedType pt = rtp.parentHcsToMyType().get(0);
         assertNotNull(pt.typeParameter);
         assertEquals("E as #0 in java.util.List", pt.typeParameter.toString());
+
+      //  assertEquals("*", hcs.selector(listEPt).toString());
+      //  ParameterizedType collE = new ParameterizedType(collection, List.of(listEPt));
+      //  assertEquals("0", hcs.selector(collE).toString());
     }
 
 

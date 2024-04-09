@@ -276,7 +276,7 @@ public abstract class VisitorTestSupport {
     }
 
 
-    protected void assertSingleLv(EvaluationResultVisitor.Data d, LinkedVariables lvs, int iteration, int index, String expected) {
+    protected void assertSingleLv(CommonVisitorData d, LinkedVariables lvs, int iteration, int index, String expected) {
         if (d.iteration() >= iteration) {
             LV value = lvs.select(index);
             assertEquals(expected, value.toString());

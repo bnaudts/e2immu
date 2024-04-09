@@ -63,8 +63,6 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
         ParameterInfo param0 = methodInfo.methodInspection.get().getParameters().get(0);
         ParameterInfo param1 = methodInfo.methodInspection.get().getParameters().get(1);
-        TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
-                primitives.stringTypeInfo(), analyserContext).build();
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param0)
                 .setHiddenContentSelector(HiddenContentSelector.None.INSTANCE)
@@ -75,7 +73,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 .build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
-                primitives, analysisProvider, inspectionProvider, methodInfo, typeAnalysis,
+                primitives, analysisProvider, inspectionProvider, methodInfo, primitives.stringTypeInfo().typeAnalysis.get(),
                 List.of(p0Analysis, p1Analysis));
         builder.setProperty(Property.IDENTITY, identity);
         builder.setProperty(Property.FLUENT, fluent);

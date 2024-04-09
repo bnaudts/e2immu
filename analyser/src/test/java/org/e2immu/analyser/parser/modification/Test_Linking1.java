@@ -173,13 +173,13 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "list:4"));
                     }
                     case "m22" -> {
-                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                     }
                     case "m22b" -> {
                         if ("1".equals(d.statementId())) {
                             // "get" is expanded to "list::get"
-                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(list::get)");
+                            assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(list::get)");
                             assertLinked(d, it(0, 1, "get:-1,list:-1"), it(2, "get:4,list:4"));
                         }
                     }
@@ -378,7 +378,7 @@ public class Test_Linking1 extends CommonTestRunner {
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("list:-1"),
                         it(1, "list:4"));
-                assertSingleLv(d, 1, 0, "0-4-*");
+                assertSingleLv(d, 1, 0, "0-4-0");
             }
             if ("m23b".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
@@ -393,7 +393,7 @@ public class Test_Linking1 extends CommonTestRunner {
                             : "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:4,intStream:2"));
-                    assertSingleLv(d, 0, 0, "0-4-*"); // FIXME should be 0-4-0
+                    assertSingleLv(d, 0, 0, "0-4-0");
                 }
             }
         };
