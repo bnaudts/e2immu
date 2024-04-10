@@ -16,7 +16,6 @@ package org.e2immu.analyser.resolver.impl;
 
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
-import org.e2immu.analyser.analyser.HiddenContent;
 import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.inspector.impl.ExpressionContextImpl;
