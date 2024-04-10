@@ -64,13 +64,13 @@ public class Linking_2 {
         };
         List<X> selection = new ArrayList<>();
         for (X x : xs) {
-            if (independentSelector.test(x)) {
+            if (independentSelector.test(x)) { // 2.0.0
                 selection.add(x);
             }
         }
         return selection;
-    }
-*/
+    }*/
+
     static List<M> m3(@Modified List<M> ms, Predicate<M> selector) {
         List<M> selection = new ArrayList<>();
         for (M m : ms) {

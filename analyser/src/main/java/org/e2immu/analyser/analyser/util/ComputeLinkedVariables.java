@@ -73,6 +73,7 @@ public class ComputeLinkedVariables {
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
     private final Map<Variable, Set<Variable>> reachableInModification;
+    private final HiddenContentTypes hiddenContentTypes;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
@@ -87,7 +88,8 @@ public class ComputeLinkedVariables {
                                    BreakDelayLevel breakDelayLevel,
                                    boolean oneBranchHasBecomeUnreachable,
                                    Set<Variable> linkingNotYetSet,
-                                   Map<Variable, Set<Variable>> reachableInModification) {
+                                   Map<Variable, Set<Variable>> reachableInModification,
+                                   HiddenContentTypes hiddenContentTypes) {
         this.clusters = clusters;
         this.returnValueCluster = returnValueCluster;
         this.returnVariable = returnVariable;
@@ -101,6 +103,7 @@ public class ComputeLinkedVariables {
         this.variablesInClusters = variablesInClusters;
         this.weightedGraph = weightedGraph;
         this.reachableInModification = reachableInModification;
+        this.hiddenContentTypes = hiddenContentTypes;
     }
 
     public static ComputeLinkedVariables create(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis,
@@ -111,6 +114,8 @@ public class ComputeLinkedVariables {
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 Cache weightedGraphCache,
                                                 BreakDelayLevel breakDelayLevel) {
+        HiddenContentTypes hiddenContentTypes = statementAnalysis.methodAnalysis().getMethodInfo().methodResolution.get()
+                .hiddenContentTypes();
         WeightedGraph weightedGraph = new WeightedGraphImpl(weightedGraphCache);
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> done = new HashSet<>();
@@ -129,7 +134,7 @@ public class ComputeLinkedVariables {
                     done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     VariableInfo viE = vic.best(EVALUATION);
-                    AddResult ar = add(evaluationContext, statementAnalysis, ignore, reassigned,
+                    AddResult ar = add(evaluationContext, hiddenContentTypes, statementAnalysis, ignore, reassigned,
                             externalLinkedVariables, weightedGraph, vi1, viE, variable, stage.equals(Stage.MERGE));
                     for (Map.Entry<Variable, LV> e : ar.linkedVariables) {
                         Variable v = e.getKey();
@@ -159,7 +164,7 @@ public class ComputeLinkedVariables {
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, shortestPath,
                 shortestPathModification, cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
                 cr.rv(), breakDelayLevel, oneBranchHasBecomeUnreachable,
-                linkingNotYetSet, reachableInModification);
+                linkingNotYetSet, reachableInModification, hiddenContentTypes);
     }
 
     private static Map<Variable, LV> mergeMaps(Map<Variable, LV> m1, Map<Variable, LV> m2) {
@@ -185,6 +190,7 @@ public class ComputeLinkedVariables {
     }
 
     private static AddResult add(EvaluationContext context,
+                                 HiddenContentTypes hiddenContentTypes,
                                  StatementAnalysis statementAnalysis,
                                  BiPredicate<VariableInfoContainer, Variable> ignore,
                                  Set<Variable> reassigned,
@@ -234,7 +240,7 @@ public class ComputeLinkedVariables {
         }
         Map<Variable, LV> variables = afterChangeToDelay.stream()
                 .map(e -> new Pair<>(e.getKey(), e.getValue().isCommonHC()
-                        ? computeMineTheirs(context, variable, e.getKey(), true)
+                        ? computeMineTheirs(context, hiddenContentTypes, variable, e.getKey(), true)
                         : e.getValue())).filter(p -> p.v != null)
                 .collect(Collectors.toUnmodifiableMap(p -> p.k, p -> p.v));
         weightedGraph.addNode(variable, variables);
@@ -553,7 +559,7 @@ public class ComputeLinkedVariables {
             Variable target = entry.getKey();
             if (entry.getValue().isCommonHC()) {
                 boolean correctForMutable = reachableFromVariableInMutable.contains(target);
-                newLv = computeMineTheirs(evaluationContext, variable, target, correctForMutable);
+                newLv = computeMineTheirs(evaluationContext, hiddenContentTypes, variable, target, correctForMutable);
             } else {
                 newLv = entry.getValue();
             }
@@ -565,17 +571,18 @@ public class ComputeLinkedVariables {
     }
 
     private static LV computeMineTheirs(EvaluationContext evaluationContext,
+                                        HiddenContentTypes hiddenContentTypes,
                                         Variable variable,
                                         Variable target,
                                         boolean correctForMutable) {
         LV newLv;
-        HiddenContentSelector mine = HiddenContentSelector.selectAllCorrectForMutable(evaluationContext,
-                variable.parameterizedType(), correctForMutable);
-        HiddenContentSelector theirs = HiddenContentSelector.selectAllCorrectForMutable(evaluationContext,
-                target.parameterizedType(), correctForMutable);
+        HiddenContentSelector mine = HiddenContentSelector.selectAllCorrectForMutable(hiddenContentTypes,
+                evaluationContext, variable.parameterizedType(), correctForMutable);
+        HiddenContentSelector theirs = HiddenContentSelector.selectAllCorrectForMutable(hiddenContentTypes,
+                evaluationContext, target.parameterizedType(), correctForMutable);
         if (mine.isDelayed() || theirs.isDelayed()) {
             newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
-        } else if(mine.isAll() && theirs.isAll()) {
+        } else if (mine.isAll() && theirs.isAll()) {
             return null;
         } else {
             newLv = theirs.isNone() || mine.isNone() ? null : LV.createHC(mine, theirs);

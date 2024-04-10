@@ -17,8 +17,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.support.Either;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,8 +29,6 @@ parameter. It definitely has hidden content. At the same time, some of its insta
 or without hidden content), e.g. List.of(...), List.copyOf(...).
  */
 public class HiddenContentTypes {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HiddenContentTypes.class);
-
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of());
     public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of());
 
@@ -104,8 +100,17 @@ public class HiddenContentTypes {
                 .collect(Collectors.toUnmodifiableMap(
                         tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
                         TypeParameter::getIndex));
+    /*    List<ParameterizedType> typesInParameters = methodInspection.getParameters().stream()
+                .flatMap(pi -> expand(pi.parameterizedType))
+                .filter(pt -> )
+                .sorted()
+                .toList();*/
         return new HiddenContentTypes(hcsTypeInfo, methodInspection.getMethodInfo(), typeToIndex);
     }
+
+    // private static Stream<ParameterizedType> expand(ParameterizedType pt) {
+
+    //  }
 
     public static HiddenContentTypes compute(TypeInspection typeInspection, boolean shallow) {
         TypeInfo typeInfo = typeInspection.typeInfo();
@@ -193,6 +198,17 @@ public class HiddenContentTypes {
     }
 
     public int indexOf(ParameterizedType type) {
+        return indexOfOrNull(type);
+    }
+
+    public int indexOf(TypeParameter typeParameter) {
+        return typeParameter.getIndex();
+    }
+
+    public Integer indexOfOrNull(ParameterizedType type) {
+        if (type.typeParameter != null) {
+            return type.typeParameter.getIndex();
+        }
         return typeToIndex.get(type);
     }
 

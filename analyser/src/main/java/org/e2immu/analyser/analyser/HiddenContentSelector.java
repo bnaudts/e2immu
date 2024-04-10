@@ -1,9 +1,7 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
@@ -217,7 +215,8 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
     }
 
-    public static HiddenContentSelector selectAllCorrectForMutable(EvaluationContext evaluationContext,
+    public static HiddenContentSelector selectAllCorrectForMutable(HiddenContentTypes hiddenContentTypes,
+                                                                   EvaluationContext evaluationContext,
                                                                    ParameterizedType type,
                                                                    boolean correct) {
         if (type.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
@@ -257,34 +256,51 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
     }
 
     /*
-    What to do with Set<Map.Entry<K, V>> ??
-    Currently, we return 0,1, but that's inconsistent with returning 0 for Collection<V>
-    yet we should return 0 ~ first type parameter of Set; but then, we lose the fact that both K, V are present.
-
-    Alt: return always WRT the owning type/method, but that's a completely different concept?
+     Take in a type, and return the hidden content components of this type, with respect to the hidden content types
+     of the current type or method.
+     Set<Map.Entry<K, V>> will return the indices of K and V, likely 0, 1.
      */
-    public static HiddenContentSelector positionBased(ParameterizedType type) {
+    public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes, ParameterizedType typeIn) {
+        assert hiddenContentTypes != null;
+        boolean haveArrays = typeIn.arrays > 0;
+        ParameterizedType type = typeIn.copyWithoutArrays();
+        Integer index = hiddenContentTypes.indexOfOrNull(type);
+
         if (type.isTypeParameter()) {
-            if (type.arrays > 0) return new CsSet(Map.of(0, false));
+            if (haveArrays) {
+                assert index != null;
+                return new CsSet(Map.of(index, false));
+            }
             return All.INSTANCE;
         }
-        if (type.typeInfo == null) return None.INSTANCE;
+        if (type.typeInfo == null) {
+            // ?, equivalent to ? extends Object
+            return All.INSTANCE;
+        }
         if (type.arrays > 0) {
             // assert type.parameters.isEmpty(); // not doing the combination
             return None.INSTANCE;
         }
         Set<Integer> set = new HashSet<>();
-        recursivelyCollectTypeParameterIndices(type, set);
-        if (set.isEmpty()) return None.INSTANCE;
+        recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, set);
+        if (set.isEmpty()) {
+            if (index != null) {
+                return new CsSet(Map.of(index, false));
+            }
+            return None.INSTANCE;
+        }
         return new CsSet(set);
     }
 
-    private static void recursivelyCollectTypeParameterIndices(ParameterizedType type, Set<Integer> set) {
-        if (type.typeParameter != null) {
-            set.add(type.typeParameter.getIndex());
+    private static void recursivelyCollectHiddenContentParameters(HiddenContentTypes hiddenContentTypes,
+                                                                  ParameterizedType type,
+                                                                  Set<Integer> set) {
+        Integer index = hiddenContentTypes.indexOfOrNull(type.copyWithoutArrays());
+        if (index != null && type.parameters.isEmpty()) {
+            set.add(index);
         } else {
             for (ParameterizedType parameter : type.parameters) {
-                recursivelyCollectTypeParameterIndices(parameter, set);
+                recursivelyCollectHiddenContentParameters(hiddenContentTypes, parameter, set);
             }
         }
     }

@@ -37,8 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterAnalysisImpl.class);
@@ -222,10 +220,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private LinkedVariables hcLinkToParameters(int[] linkParameters) {
             Map<Variable, LV> map = new HashMap<>();
             TypeInfo typeInfo = parameterInfo.getMethodInfo().typeInfo;
-            int n = (int) typeInfo.typeInspection.get().typeParameters().stream()
-                    .filter(TypeParameter::isUnbound).count();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
-            HiddenContentSelector mine = bestHiddenContentSelector(n, false, parameterInfo.parameterizedType);
+            HiddenContentSelector mine = bestHiddenContentSelector(false, parameterInfo.parameterizedType);
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
                     LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
@@ -233,8 +229,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    HiddenContentSelector theirs = bestHiddenContentSelector(n,
-                            pi.parameterInspection.get().isVarArgs(), pi.parameterizedType);
+                    HiddenContentSelector theirs = bestHiddenContentSelector(pi.parameterInspection.get().isVarArgs(),
+                            pi.parameterizedType);
                     // System.arrayCopy... what we mean is: 0-0
                     if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
                         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
@@ -248,12 +244,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         /*
-        situations that we want to address...
-        Type parameters of the method vs type parameters of the type
+        Called to create 'mine' and 'theirs' of contracted HC links
          */
-        private HiddenContentSelector bestHiddenContentSelector(int numHiddenContentTypesOfType,
-                                                                boolean isVarargs,
-                                                                ParameterizedType parameterType) {
+        private HiddenContentSelector bestHiddenContentSelector(boolean isVarargs, ParameterizedType parameterType) {
             ParameterizedType pt;
             if (isVarargs) {
                 assert parameterType.arrays > 0;
@@ -261,13 +254,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             } else {
                 pt = parameterType;
             }
-            if (pt.isTypeParameter() && pt.typeParameter.isUnbound()) return HiddenContentSelector.All.INSTANCE;
-            // TODO: what to do with arrays?
-            Set<Integer> set = pt.extractTypeParameters().stream()
-                    .map(tp -> tp.isMethodTypeParameter() ? numHiddenContentTypesOfType + tp.getIndex()
-                            : tp.getIndex()).collect(Collectors.toUnmodifiableSet());
-            if (set.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            return new HiddenContentSelector.CsSet(set);
+            HiddenContentTypes hiddenContentTypes = parameterInfo.getMethod().methodResolution.get().hiddenContentTypes();
+            return HiddenContentSelector.selectAll(hiddenContentTypes, pt);
         }
 
 

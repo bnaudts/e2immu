@@ -38,6 +38,8 @@ public class LinkHelper {
     private final EvaluationResult context;
     private final MethodAnalysis methodAnalysis;
     private final MethodInfo methodInfo;
+    private final HiddenContentTypes hiddenContentTypes;
+    private final HiddenContentSelector hcsSource;
 
     public LinkHelper(EvaluationResult context, MethodInfo methodInfo) {
         this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo));
@@ -47,6 +49,9 @@ public class LinkHelper {
         this.context = context;
         this.methodInfo = methodInfo;
         this.methodAnalysis = methodAnalysis;
+        hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
+        assert hiddenContentTypes != null : "For method " + methodInfo;
+        hcsSource = hiddenContentTypes.selectAll();
     }
 
     private static LinkedVariables linkedVariablesOfParameter(EvaluationResult parameterResult) {
@@ -147,8 +152,6 @@ public class LinkHelper {
                                     formalParameterIndependent, hcsSource, pt, formalPt);
                         } else {
                             // object -> parameter (rather than the other way around)
-                            HiddenContentSelector hcsSource = methodInfo.methodResolution.get()
-                                    .hiddenContentTypes().selectAll();
                             lv = linkedVariables(pt, parameterLvs, hcsSource,
                                     formalParameterIndependent, hcsTarget,
                                     concreteParameterType, formalParameterType);
@@ -189,10 +192,8 @@ public class LinkHelper {
                 }
                 LV level = e.getValue();
                 LinkedVariables sourceLvs = parameterLvs.get(pi.index);
-                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, concreteTargetType,
-                        target.parameterizedType, level,
-                        pi.parameterizedType, pi.parameterizedType,
-                        sourceLvs, parameterLvs);
+                tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, concreteTargetType, level,
+                        pi.parameterizedType, pi.parameterizedType, sourceLvs, parameterLvs);
             } // else: no value... empty varargs
         }));
     }
@@ -206,7 +207,6 @@ public class LinkHelper {
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           ParameterizedType targetType,
-                                          ParameterizedType formalTargetType,
                                           LV level,
                                           ParameterizedType sourceType,
                                           ParameterizedType formalSourceType,
@@ -294,9 +294,6 @@ public class LinkHelper {
         if (fluent.isDelayed()) {
             return linkedVariablesOfObject.changeNonStaticallyAssignedToDelay(fluent.causesOfDelay());
         }
-        HiddenContentTypes hct = methodInfo.methodResolution.get().hiddenContentTypes();
-        assert hct != null : "For method " + methodInfo;
-        HiddenContentSelector hcsSource = hct.selectAll();
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
         return linkedVariables(objectResult.getExpression().returnType(),
                 linkedVariablesOfObject,
@@ -446,9 +443,14 @@ public class LinkHelper {
         int i = 0;
         for (ParameterizedType parameter : formalTargetTypeInContext.parameters) {
             if (parameter.isTypeParameter() && targetType.parameters.size() > i) {
-                map.put(parameter.typeParameter.getIndex(), targetType.parameters.get(i));
+                int index = hiddenContentTypes.indexOf(parameter);
+                map.put(index, targetType.parameters.get(i));
             }
             i++;
+        }
+        Integer typeItself = hiddenContentTypes.indexOfOrNull(formalTargetTypeInContext);
+        if (typeItself != null) {
+            map.put(typeItself, formalTargetTypeInContext);
         }
         return map;
     }

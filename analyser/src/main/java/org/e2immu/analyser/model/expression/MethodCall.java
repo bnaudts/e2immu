@@ -324,11 +324,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else modified = modifiedBeforeCorrection;
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
-        DV notNullForward = notNullRequirementOnScope(concreteMethod,
+        DV notNullForward = notNullRequirementOnScope(concreteMethod, methodAndDelay.causesOfDelay,
                 forwardEvaluationInfo.getProperty(Property.CONTEXT_NOT_NULL));
 
         ImmutableData immutableData = firstInCallCycle ? NOT_EVENTUAL :
-                computeContextImmutable(context, concreteMethod);
+                computeContextImmutable(context, methodAndDelay.causesOfDelay, concreteMethod);
 
         // modification on a type expression -> make sure that this gets modified too!
         if (object instanceof TypeExpression) {
@@ -645,7 +645,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     private static final ImmutableData NOT_EVENTUAL = new ImmutableData(MultiLevel.NOT_INVOLVED_DV, MultiLevel.NOT_INVOLVED_DV);
 
     // delays travel to EXTERNAL_IMMUTABLE via variableOccursInEventuallyImmutableContext
-    private ImmutableData computeContextImmutable(EvaluationResult evaluationContext, MethodInfo concreteMethod) {
+    private ImmutableData computeContextImmutable(EvaluationResult evaluationContext,
+                                                  CausesOfDelay concreteMethodDelay,
+                                                  MethodInfo concreteMethod) {
         DV formalTypeImmutable = evaluationContext.getAnalyserContext().getTypeAnalysis(concreteMethod.typeInfo)
                 .getProperty(Property.IMMUTABLE);
         if (formalTypeImmutable.isDelayed()) {
@@ -673,10 +675,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return NOT_EVENTUAL;
     }
 
-    private static DV notNullRequirementOnScope(MethodInfo concreteMethod, DV notNullRequirement) {
+    private static DV notNullRequirementOnScope(MethodInfo concreteMethod,
+                                                CausesOfDelay concreteMethodDelay,
+                                                DV notNullRequirement) {
         if (concreteMethod.typeInfo.typeInspection.get(concreteMethod.typeInfo.fullyQualifiedName).isFunctionalInterface()
             && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
-            return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
+            return concreteMethodDelay.isDelayed() ? concreteMethodDelay.causesOfDelay()
+                    : MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL_DV;
     }

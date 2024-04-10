@@ -96,12 +96,20 @@ public class Test_Linking2 extends CommonTestRunner {
                     }
                     if ("2.0.0".equals(d.statementId())) {
                         if ("x".equals(d.variableName())) {
-                          /*  assertLinked(d, it0("independentSelector:-1,selection:-1,selector:-1,xs:-1"),
-                                    it1("independentSelector:-1,selection:-1,xs:-1"),
+                            assertLinked(d, it0("independentSelector:-1,selection:-1,selector:-1,xs:-1"),
+                                    it1("selection:-1,xs:-1"),
                                     it(2, "selection:4,selector:4,xs:4"));
                             assertSingleLv(d, 2, 0, "*-4-0");
                             assertSingleLv(d, 2, 1, "*-4-0"); // selector is not @Independent!
-                            assertSingleLv(d, 2, 2, "*-4-0");*/
+                            assertSingleLv(d, 2, 2, "*-4-0");
+                        }
+                        if (d.variable() instanceof ParameterInfo pi && "xs".equals(pi.name)) {
+                            assertLinked(d, it0("independentSelector:-1,selection:-1,selector:-1,x:-1"),
+                                    it1("selection:-1,x:-1"),
+                                    it(2, "selection:4,selector:4,xs:4"));
+                            assertSingleLv(d, 2, 0, "*-4-0");
+                            assertSingleLv(d, 2, 1, "*-4-0"); // selector is not @Independent!
+                            assertSingleLv(d, 2, 2, "*-4-0");
                         }
                     }
                     if ("independentSelector".equals(d.variableName())) {
@@ -118,27 +126,32 @@ public class Test_Linking2 extends CommonTestRunner {
                             assertTrue(d.variableInfoContainer().hasEvaluation());
                             assertDv(d, 0, DV.FALSE_DV, cme);
                             assertTrue(d.variableInfoContainer().hasMerge());
-                            assertDv(d, 1, DV.TRUE_DV, cmm);
+                            assertDv(d, 2, DV.TRUE_DV, cmm);
                         }
                         if ("2.0.0".equals(d.statementId())) {
                             assertEquals(DV.FALSE_DV, cmi);
-                            assertEquals("<vl:independentSelector>", vii.getValue().toString());
+                            assertEquals("<vl:independentSelector:Type org.e2immu.analyser.parser.modification.testexample.Linking_2.$1>", vii.getValue().toString());
+                            DV cnnVii = vii.getProperty(Property.CONTEXT_NOT_NULL);
+                            assertEquals(MultiLevel.NULLABLE_DV, cnnVii);
+
                             assertTrue(d.variableInfoContainer().hasEvaluation());
-                            assertEquals("<vl:independentSelector>", vie.getValue().toString());
-                            assertDv(d, 1, DV.TRUE_DV, cme);
+                            assertEquals("<vl:independentSelector:Type org.e2immu.analyser.parser.modification.testexample.Linking_2.$1>", vie.getValue().toString());
+                            assertDv(d, 1, DV.FALSE_DV, cme);
+                            assertDv(d, 1, MultiLevel.EFFECTIVELY_NOT_NULL_DV, Property.CONTEXT_NOT_NULL);
+
                             assertTrue(d.variableInfoContainer().hasMerge());
-                            assertDv(d, 1, DV.TRUE_DV, cmm);
+                            assertDv(d, 2, DV.TRUE_DV, cmm); // FIXME delay?? wait_for_modification
                         }
                         if ("2.0.0.0.0".equals(d.statementId())) {
-                            assertDv(d, 1, DV.TRUE_DV, cmi);
+                            assertDv(d, 1, DV.FALSE_DV, cmi);
                             assertTrue(d.variableInfoContainer().hasEvaluation());
-                            assertDv(d, 1, DV.TRUE_DV, cme);
+                            assertDv(d, 1, DV.FALSE_DV, cme);
                             assertFalse(d.variableInfoContainer().hasMerge());
                         }
                     }
                     if ("3".equals(d.statementId()) && d.variable() instanceof ReturnVariable) {
                         assertLinked(d, it0("independentSelector:-1,selection:0,selector:-1,xs:-1"),
-                                it1("independentSelector:-1,selection:0,xs:-1"),
+                                it1("selection:0,xs:-1"),
                                 it(2, "selection:0,selector:4,xs:4"));
                     }
                 }

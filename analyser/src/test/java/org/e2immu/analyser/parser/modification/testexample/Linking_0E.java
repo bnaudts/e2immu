@@ -2,10 +2,10 @@ package org.e2immu.analyser.parser.modification.testexample;
 
 import java.util.*;
 
-public class Linking_0 {
+public class Linking_0E {
 
-    // the archetypal modifiable type, not extensible
-    final static class M {
+    // the archetypal modifiable type, extensible
+    static class M {
         private int i;
 
         public int getI() {
@@ -36,7 +36,7 @@ public class Linking_0 {
     }
 
     // common HC
-    static <X> X m2(List<X> list) {
+    static <X extends M> X m2(List<X> list) {
         return list.get(0);
     }
 
@@ -51,7 +51,7 @@ public class Linking_0 {
     }
 
     // dependent, regardless of X
-    static <X> List<X> m5(List<X> list) {
+    static <X extends M> List<X> m5(List<X> list) {
         return list.subList(0, 1);
     }
 
@@ -66,22 +66,22 @@ public class Linking_0 {
     }
 
     // independent HC, because of X
-    static <X> List<X> m8(List<X> list) {
+    static <X extends M> List<X> m8(List<X> list) {
         return new ArrayList<>(list);
     }
 
     // independent HC
-    static <X> Map<Long, X> m9(Map<Long, X> map) {
+    static <X extends M> Map<Long, X> m9(Map<Long, X> map) {
         return new HashMap<>(map);
     }
 
     // independent HC
-    static <X> Map<X, String> m10(Map<X, String> map) {
+    static <X extends M> Map<X, String> m10(Map<X, String> map) {
         return new HashMap<>(map);
     }
 
     // independent HC
-    static <X, Y> Map<X, Y> m11(Map<X, Y> map) {
+    static <X extends M, Y> Map<X, Y> m11(Map<X, Y> map) {
         return new HashMap<>(map);
     }
 
@@ -91,7 +91,7 @@ public class Linking_0 {
     }
 
     // dependent -> downgrade removed; independent HC
-    static <X> Map<X, M> m13(Map<X, M> map) {
+    static <X extends M> Map<X, M> m13(Map<X, M> map) {
         return new HashMap<>(map);
     }
 
@@ -101,27 +101,27 @@ public class Linking_0 {
     }
 
     // dependent
-    static <X> List<X> m15(List<X> list) {
+    static <X extends M> List<X> m15(List<X> list) {
         return list.subList(0, 1).subList(0, 1);
     }
 
     // independent HC
-    static <X> List<X> m16(List<X> list) {
+    static <X extends M> List<X> m16(List<X> list) {
         return new ArrayList<>(list.subList(0, 1).subList(0, 1));
     }
 
     // independent HC
-    static <X> List<X> m17(List<X> list) {
+    static <X extends M> List<X> m17(List<X> list) {
         return new ArrayList<>(list.subList(0, 1)).subList(0, 1);
     }
 
 
-    static <X> List<X> m18(X x, List<X> list) {
+    static <X extends M> List<X> m18(X x, List<X> list) {
         Collections.addAll(list, x);
         return list;
     }
 
-    static <X> List<X> m19(X x0, X x1, List<X> list) {
+    static <X extends M> List<X> m19(X x0, X x1, List<X> list) {
         Collections.addAll(list, x0, x1);
         return list;
     }

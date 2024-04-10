@@ -120,8 +120,9 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
          the hidden content selector of methodAnalysis and parameterAnalysis needs to be set before calling
          parameterAnalysis.fromAnnotationsIntoProperties
          */
+        HiddenContentTypes hct = methodInfo.methodResolution.get().hiddenContentTypes();
         if (!methodAnalysis.hiddenContentSelectorIsSet()) {
-            HiddenContentSelector hcs = HiddenContentSelector.positionBased(methodInspection.getReturnType());
+            HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, methodInspection.getReturnType());
             methodAnalysis.setHiddenContentSelector(hcs);
         }
 
@@ -129,7 +130,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             if (!builder.hiddenContentSelectorIsSet()) {
                 ParameterizedType parameterType = builder.getParameterInfo().parameterizedType;
-                HiddenContentSelector hcs = HiddenContentSelector.positionBased(parameterType);
+                HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, parameterType);
                 builder.setHiddenContentSelector(hcs);
             }
             List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
