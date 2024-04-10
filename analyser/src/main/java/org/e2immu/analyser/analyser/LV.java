@@ -193,4 +193,11 @@ public class LV implements Comparable<LV> {
         if (value != HC) return false;
         return mine.containsMutable() || theirs.containsMutable();
     }
+
+    public String minimal() {
+        if(mine != null) {
+            return label;
+        }
+        return Integer.toString(value);
+    }
 }

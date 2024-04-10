@@ -225,16 +225,13 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
     }
 
-    public static HiddenContentSelector selectAllCorrectForMutable(HiddenContentTypes hiddenContentTypes,
+    public static HiddenContentSelector selectAllCorrectForMutable(HiddenContentSelector hcs,
                                                                    EvaluationContext evaluationContext,
                                                                    ParameterizedType type,
                                                                    boolean correct) {
-        if (type.isTypeParameter()) return HiddenContentSelector.All.INSTANCE;
-        if (type.typeInfo == null) return None.INSTANCE;
-        ParameterizedType formal = type.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
-        if (formal.parameters.isEmpty()) {
-            // the formal type has no type parameters. Given that we're in the context of a ->4-> link,
-            // we must be dealing with the "All" side, and a type without type parameters
+        if (hcs.isDelayed()) return hcs;
+        if (hcs.isNone()) throw new UnsupportedOperationException();
+        if (hcs.isAll()) {
             DV immutableOfParameterizedType = evaluationContext.immutable(type);
             if (immutableOfParameterizedType.isDelayed()) {
                 return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
@@ -244,25 +241,30 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             boolean mutable = correct && MultiLevel.isMutable(immutableOfParameterizedType);
             return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
         }
-        CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-        Map<Integer, Boolean> res = new HashMap<>();
-        int index = 0;
-        for (ParameterizedType parameter : type.parameters) {
-            DV immutableDv = evaluationContext.immutable(parameter);
-            if (immutableDv.isDelayed()) {
-                causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
-            } else {
-                boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
-                if (!immutable) {
-                    boolean mutable = correct && MultiLevel.isMutable(immutableDv);
-                    res.put(index, mutable);
+        if (hcs instanceof CsSet csSet) {
+            ParameterizedType formal = type.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
+            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
+            Map<Integer, Boolean> res = new HashMap<>();
+            int index = 0;
+            for (int hcIndex : csSet.set()) {
+                ParameterizedType parameter = type.parameters.get(hcIndex);
+                DV immutableDv = evaluationContext.immutable(parameter);
+                if (immutableDv.isDelayed()) {
+                    causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
+                } else {
+                    boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
+                    if (!immutable) {
+                        boolean mutable = correct && MultiLevel.isMutable(immutableDv);
+                        res.put(index, mutable);
+                    }
                 }
+                index++;
             }
-            index++;
+            if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
+            if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
+            return new HiddenContentSelector.CsSet(res);
         }
-        if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
-        if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-        return new HiddenContentSelector.CsSet(res);
+        throw new UnsupportedOperationException();
     }
 
     /*

@@ -240,14 +240,14 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     long dHigh = ShortestPathImpl.toDistanceComponentHigh(correctedLv);
                     edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, mine, theirs));
 
-                    String cacheCode = correctedLv.isDelayed() ? "D" : Integer.toString(correctedLv.value());
+                    String cacheCode = dv.isDelayed() ? "D" : dv.minimal();
                     unsorted.add(d2 + ":" + cacheCode);
                 }
                 sb.append("(");
                 sb.append(unsorted.stream().sorted().collect(Collectors.joining(";")));
                 sb.append(")");
             } else {
-                sb.append("*");
+                sb.append("/");
             }
         }
         String cacheKey = sb.toString();
