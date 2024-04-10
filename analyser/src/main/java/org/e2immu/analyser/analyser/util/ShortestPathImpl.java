@@ -156,7 +156,10 @@ public class ShortestPathImpl implements ShortestPath {
 
     @Override
     public Map<Variable, LV> links(Variable v, LV maxWeight) {
-        int startVertex = variableIndex.get(v);
+        Integer startVertex = variableIndex.get(v);
+        if (startVertex == null) {
+            return Map.of(v, LINK_STATICALLY_ASSIGNED);
+        }
         long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
         Key key = new Key(startVertex, maxWeightLong);
         long[] inMap = linkMap.map.get(key);

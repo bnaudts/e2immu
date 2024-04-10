@@ -101,7 +101,7 @@ public class Test_Linking1 extends CommonTestRunner {
                         if ("$8".equals(d.methodInfo().typeInfo.simpleName)) {
                             assertEquals("m10", d.enclosingMethod().name);
                             assertCurrentValue(d, 0, "predicate.test(x)");
-                            assertLinked(d, it0("NOT_YET_SET"), it(1, "")); // important! should not become predicate:4
+                            assertLinked(d, it(0, "")); // important! should not become predicate:4
                         }
                         if ("$21".equals(d.methodInfo().typeInfo.simpleName)) {
                             assertEquals("m25", d.enclosingMethod().name);
@@ -151,8 +151,8 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m17" -> {
-                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
-                        assertLinked(d, it0("supplier:-1"), it(1, "supplier:4"));
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
+                        assertLinked(d, it(0, "supplier:4"));
                     }
                     case "m18" -> {
                         assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/supplier.get()/*{L supplier:4}*/)");
@@ -160,8 +160,8 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertSingleLv(d, 2, 0, "0M-4-0M");
                     }
                     case "m19" -> {
-                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
-                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
+                        assertLinked(d, it(0, "list:4"));
                     }
                     case "m20" -> {
                         assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(/*inline apply*/list.get(i)/*{L list:4}*/)");
@@ -184,13 +184,13 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m23" -> {
-                        assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})");
-                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})");
+                        assertLinked(d, it(0, "list:4"));
                     }
                     case "m23b" -> {
                         if ("2".equals(d.statementId())) {
-                            assertCurrentValue(d, 1, "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})");
-                            assertLinked(d, it0("f:-1,intStream:-1,list:-1"), it(1, "f:4,intStream:2,list:4"));
+                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})");
+                            assertLinked(d, it(0, "f:4,intStream:2,list:4"));
                         }
                     }
                     case "m24" -> {
@@ -219,7 +219,7 @@ public class Test_Linking1 extends CommonTestRunner {
                     if ("m10".equals(d.enclosingMethod().name)) {
                         assertEquals("$8", d.methodInfo().typeInfo.simpleName);
                         if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
-                            assertLinked(d, it0("NOT_YET_SET"), it(1, "predicate:4"));
+                            assertLinked(d, it(0, "predicate:4"));
                         }
                     }
                 }
@@ -243,7 +243,7 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
                 case "m17b" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
-                        assertLinked(d, it0("supplier:-1"), it(1, "supplier:4"));
+                        assertLinked(d, it(0, "supplier:4"));
                     }
                 }
                 case "m22b" -> {
@@ -254,8 +254,8 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
                 case "m23b" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
-                        assertLinked(d, it0("list:-1"), it(1, "list:4"));
-                        assertSingleLv(d, 1, 0, "0-4-0");
+                        assertLinked(d, it(0, "list:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0");
                     }
                 }
                 case "m25" -> {
@@ -299,8 +299,8 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // here we differ from m25
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertLinked(d, it(0, 1, "xx:-1"), it(2, ""));
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it0("xx:-1"), it(1, ""));
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
@@ -309,8 +309,8 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, ""));
                     }
                     if ("1".equals(d.statementId())) {
-                        assertLinked(d, it(0, 1, "independentSelector:-1"), it(2, ""));
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it0("independentSelector:-1"), it(1, ""));
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -324,10 +324,8 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         // here we differ from m25
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
-                        assertLinked(d, it0("xx:-1"),
-                                it1("selector:-1,xx:-1"),
-                                it(2, ""));
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                        assertLinked(d, it0("xx:-1"), it(1, ""));
                     }
                 }
                 if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
@@ -338,9 +336,8 @@ public class Test_Linking1 extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d,
                                 it0("independentSelector:-1"),
-                                it1("independentSelector:-1,selector:-1"),
-                                it(2, "selector:4"));
-                        assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                                it(1, "selector:4"));
+                        assertDv(d, 1, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                     }
                 }
             }
@@ -373,24 +370,20 @@ public class Test_Linking1 extends CommonTestRunner {
                 testPredicateTestCall(d, "test");
             }
             if ("m23".equals(d.methodInfo().name)) {
-                String expected = d.iteration() == 0 ? "<m:mapToObj>"
-                        : "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})";
+                String expected = "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})";
                 assertEquals(expected, d.evaluationResult().value().toString());
-                assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("list:-1"),
-                        it(1, "list:4"));
-                assertSingleLv(d, 1, 0, "0-4-0");
+                assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "list:4"));
+                assertSingleLv(d, 0, 0, "0-4-0");
             }
             if ("m23b".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     assertEquals("new $18(){public X apply(int value){return list.get(value);}}",
                             d.evaluationResult().value().toString());
-                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it0("f:0,list:-1"),
-                            it(1, "f:0,list:4"));
-                    assertSingleLv(d, 1, 1, "*-4-0");
+                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:0,list:4"));
+                    assertSingleLv(d, 0, 1, "*-4-0");
                 }
                 if ("2".equals(d.statementId())) {
-                    String expected = d.iteration() == 0 ? "<m:mapToObj>"
-                            : "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
+                    String expected = "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:4,intStream:2"));
                     assertSingleLv(d, 0, 0, "0-4-0");
@@ -415,7 +408,7 @@ public class Test_Linking1 extends CommonTestRunner {
                 assertEquals("selector.test(x)", d.methodAnalysis().getSingleReturnValue().toString());
                 assertFalse(d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
 
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("test".equals(d.methodInfo().name) && "m27".equals(d.enclosingMethod().name)) {
                 assertEquals("$23", d.methodInfo().typeInfo.name());
@@ -425,7 +418,7 @@ public class Test_Linking1 extends CommonTestRunner {
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 assertEquals(d.iteration() > 0, d.methodAnalysis().getSingleReturnValue() instanceof InlinedMethod);
 
-                assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
         };
 

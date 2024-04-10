@@ -179,7 +179,7 @@ public class Test_Linking2 extends CommonTestRunner {
                             assertSingleLv(d, 2, 1, "0-4-0");
                         }
                         if ("2".equals(d.statementId())) {
-                            assertDv(d, 2, DV.TRUE_DV, Property.CONTEXT_MODIFIED);
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it(0, 1, "ms:-1,selection:-1"),
                                     it(2, "ms:4,selection:4"));
 
@@ -196,6 +196,15 @@ public class Test_Linking2 extends CommonTestRunner {
                             // without M, not to be followed in ShortestPath for modification
                             assertSingleLv(d, 2, 0, "0M-4-*M");
                             assertSingleLv(d, 2, 1, "0-4-0");
+                        }
+                        if ("1.0.1.0.0".equals(d.statementId())) {
+                            assertLinked(d, it0("b:-1,m:-1,selection:-1,selector:-1"),
+                                    it1("m:-1,selection:-1,selector:-1"),
+                                    it(2, "m:4,selection:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "0M-4-*M");
+                            assertSingleLv(d, 2, 1, "0-4-0");
+                            assertSingleLv(d, 2, 2, "0-4-0"); // !!
+                            assertFalse(d.variableInfoContainer().hasMerge());
                         }
                         if ("2".equals(d.statementId())) {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
@@ -223,7 +232,7 @@ public class Test_Linking2 extends CommonTestRunner {
                                     it1("m:-1,ms:-1,selector:-1"),
                                     it(2, "m:4,ms:4,selector:4"));
                             assertSingleLv(d, 2, 0, "0M-4-*M");
-                            assertSingleLv(d, 2, 1, "0-4-0"); // FIXME
+                            assertSingleLv(d, 2, 1, "0-4-0");
                             assertSingleLv(d, 2, 2, "0-4-0");
                         }
                         if ("2".equals(d.statementId())) {

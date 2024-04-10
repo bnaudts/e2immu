@@ -20,8 +20,8 @@ public class Linking_2 {
             this.i = i;
         }
     }
-/*
-    static List<String> m1(List<String> strings, Predicate<String> selector) {
+
+    static List<String> m1(@NotModified List<String> strings, Predicate<String> selector) {
         List<String> selection = new ArrayList<>();
         for (String string : strings) {
             if (selector.test(string)) {
@@ -31,7 +31,7 @@ public class Linking_2 {
         return selection;
     }
 
-    static <X> List<X> m2(List<X> xs, Predicate<X> selector) {
+    static <X> List<X> m2(@NotModified List<X> xs, Predicate<X> selector) {
         List<X> selection = new ArrayList<>();
         for (X x : xs) {
             if (selector.test(x)) {
@@ -43,7 +43,7 @@ public class Linking_2 {
 
     // @Container has no effect: it makes selector's test's parameter @NotModified,
     // but the property that would make a difference is @Independent
-    static <X> List<X> m2b(List<X> xs, @Container(contract = true) Predicate<X> selector) {
+    static <X> List<X> m2b(@NotModified List<X> xs, @Container(contract = true) Predicate<X> selector) {
         List<X> selection = new ArrayList<>();
         for (X x : xs) {
             if (selector.test(x)) {
@@ -52,7 +52,7 @@ public class Linking_2 {
         }
         return selection;
     }
-
+/*
     // See Linking_1, but now in the context of a for-loop
     static <X> List<X> m2c(List<X> xs, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
@@ -85,9 +85,9 @@ public class Linking_2 {
     static List<M> m4(@NotModified List<M> ms, @Container(contract = true) Predicate<M> selector) {
         List<M> selection = new ArrayList<>();
         for (M m : ms) {
-            boolean b = selector.test(m);
-            if (b) {
-                selection.add(m);
+            boolean b = selector.test(m); // 1.0.0
+            if (b) {                      // 1.0.1
+                selection.add(m);         // 1.0.1.0.0
             }
         }
         return selection;

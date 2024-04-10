@@ -1,6 +1,5 @@
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.HiddenContent;
 import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
