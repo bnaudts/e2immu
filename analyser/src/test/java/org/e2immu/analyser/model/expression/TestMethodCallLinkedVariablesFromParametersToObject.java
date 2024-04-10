@@ -375,11 +375,6 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .setAccess(Inspection.Access.PUBLIC)
                 .setReturnType(primitives.voidParameterizedType())
                 .build(inspectionProvider).getMethodInfo();
-        HiddenContentTypes hctType = implementation.typeResolution.get().hiddenContentTypes();
-        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, sam.methodInspection.get());
-        MethodResolution samMr = new MethodResolution(Set.of(abstractSam), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
-                false, Set.of(), false, hctMethod);
-        sam.methodResolution.set(samMr);
         ParameterInfo p0 = sam.methodInspection.get().getParameters().get(0);
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl.Builder(primitives, analysisProvider, p0)
                 .setHiddenContentSelector(HiddenContentSelector.CsSet.selectTypeParameter(0))
@@ -425,6 +420,14 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .addTypeParameter(tp0)
                 .addMethod(sam)
                 .build(inspectionProvider));
+
+        HiddenContentTypes hctType = HiddenContentTypes.compute(implementation.typeInspection.get());
+        implementation.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(hctType).build());
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, sam.methodInspection.get());
+        MethodResolution samMr = new MethodResolution(Set.of(abstractSam), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
+                false, Set.of(), false, hctMethod);
+        sam.methodResolution.set(samMr);
+
         return implementation.asParameterizedType(inspectionProvider);
     }
 

@@ -42,7 +42,7 @@ public class TestAssignment extends CommonTest {
     @Test
     @DisplayName("int i=0; i+=1;")
     public void test1() {
-        LocalVariable lvi = makeLocalVariableInt("i");
+        LocalVariable lvi = makeLocalVariable(primitives.intParameterizedType(), "i");
         IntConstant zero = IntConstant.zero(primitives);
         LocalVariableCreation i = new LocalVariableCreation(newId(), newId(),
                 new LocalVariableReference(lvi, zero));

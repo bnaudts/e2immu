@@ -56,8 +56,9 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
                 .addParameter(param1Inspection)
                 .setReturnType(methodReturnType)
                 .build(inspectionProvider).getMethodInfo();
-        HiddenContentTypes hcsType = methodOwner.typeResolution.get().hiddenContentTypes();
-        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hcsType, methodInfo.methodInspection.get());
+        HiddenContentTypes hctType = methodOwner.typeResolution.get().hiddenContentTypes();
+        assertNotNull(hctType, "Need hct for " + methodOwner);
+        HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, methodInfo.methodInspection.get());
         MethodResolution methodResolution = new MethodResolution(Set.of(), Set.of(),
                 MethodResolution.CallStatus.NON_PRIVATE, true, Set.of(),
                 false, hctMethod);

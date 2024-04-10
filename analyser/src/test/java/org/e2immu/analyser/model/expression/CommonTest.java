@@ -20,7 +20,6 @@ import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.util.ConditionManagerImpl;
 import org.e2immu.analyser.analysis.Analysis;
-import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
@@ -35,7 +34,6 @@ import org.e2immu.analyser.parser.ImportantClasses;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMap;
-import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.e2immu.analyser.parser.impl.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class CommonTest {
     protected final TypeMapImpl.Builder typeMapBuilder = new TypeMapImpl.Builder(new Resources(), false);
@@ -194,11 +190,6 @@ public abstract class CommonTest {
             }
 
             @Override
-            public int getDepth() {
-                return 0;
-            }
-
-            @Override
             public Expression currentValue(Variable variable) {
                 return Objects.requireNonNull(variableValues.get(variable.simpleName()),
                         "Have no value for " + variable.simpleName());
@@ -255,7 +246,8 @@ public abstract class CommonTest {
                 string, analyserContext);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
         string.typeAnalysis.set(builder.build());
-        string.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE).build());
+        HiddenContentTypes hctString = HiddenContentTypes.compute(string.typeInspection.get());
+        string.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(hctString).build());
         fill(mutable, MultiLevel.MUTABLE_DV, null);
         fill(mutable2, MultiLevel.MUTABLE_DV, null);
         fill(mutableWithOneTypeParameter, MultiLevel.MUTABLE_DV, tp0);
@@ -279,22 +271,12 @@ public abstract class CommonTest {
         taBuilder.setProperty(Property.IMMUTABLE, immutable);
         typeInfo.typeAnalysis.set(taBuilder.build());
         TypeResolution.Builder trBuilder = new TypeResolution.Builder();
-        if (typeParameter != null) {
-            trBuilder.setHiddenContentTypes(HiddenContentTypes.compute(typeInfo.typeInspection.get()));
-        } else if (MultiLevel.EFFECTIVELY_IMMUTABLE_DV.equals(immutable)) {
-            trBuilder.setHiddenContentTypes(HiddenContentTypes.OF_PRIMITIVE);
-        } else {
-            trBuilder.setHiddenContentTypes(HiddenContentTypes.OF_OBJECT);
-        }
+        trBuilder.setHiddenContentTypes(HiddenContentTypes.compute(typeInfo.typeInspection.get()));
         typeInfo.typeResolution.set(trBuilder.build());
     }
 
     protected EvaluationResult context(EvaluationContext evaluationContext) {
         return new EvaluationResultImpl.Builder(evaluationContext).build();
-    }
-
-    protected LocalVariable makeLocalVariableInt(String name) {
-        return makeLocalVariable(primitives.intParameterizedType(), name);
     }
 
     protected LocalVariable makeLocalVariable(ParameterizedType pt, String name) {
