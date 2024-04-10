@@ -170,19 +170,18 @@ public class ResolverImpl implements Resolver {
                         entry -> resolveTypeAndCreateBuilder(entry, stayWithin)));
         // only at the top level, because we have only one call graph
 
-        Map<TypeInfo, TypeResolution.Builder> allBuilders;
-        if (parent == null) {
-            LOGGER.info("Prepare type resolution");
-            Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> subTypeStream = resolutionBuilders.entrySet().stream()
-                    .flatMap(e -> addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue()));
-            allBuilders = Stream.concat(resolutionBuilders.entrySet().stream(), subTypeStream)
-                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-            allBuilders.forEach((typeInfo, builder) -> {
-                TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-                HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
-                builder.setHiddenContentTypes(hiddenContentTypes);
-            });
+        LOGGER.info("Prepare type resolution");
+        Stream<Map.Entry<TypeInfo, TypeResolution.Builder>> subTypeStream = resolutionBuilders.entrySet().stream()
+                .flatMap(e -> addSubtypeResolutionBuilders(inspectionProvider, e.getKey(), e.getValue()));
 
+        Map<TypeInfo, TypeResolution.Builder> allBuilders = Stream.concat(resolutionBuilders.entrySet().stream(),
+                subTypeStream).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        allBuilders.forEach((typeInfo, builder) -> {
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+            HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
+            builder.setHiddenContentTypes(hiddenContentTypes);
+        });
+        if (parent == null) {
             Instant endTime = Instant.now();
             long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
             LOGGER.info("At end of main resolution loop, took {} seconds", seconds);
@@ -192,11 +191,6 @@ public class ResolverImpl implements Resolver {
             }
             LOGGER.info("Computing analyser sequence from dependency graph, have {} builders",
                     resolutionBuilders.size());
-        } else {
-            allBuilders = resolutionBuilders;
-        }
-        if (parent == null) {
-            LOGGER.info("Computing type resolution");
         }
         computeTypeResolution(allBuilders, inspectedTypes);
         if (parent == null) {
