@@ -17,7 +17,7 @@ public class DijkstraShortestPath {
         boolean isDisjointFrom(Connection required);
     }
 
-    public record DC(long dist, Connection connection) implements Comparable<DC> {
+    public record DC(long dist, Connection initialConnection, Connection connection) implements Comparable<DC> {
         @Override
         public int compareTo(DC o) {
             return Long.compare(dist, o.dist);
@@ -49,11 +49,6 @@ public class DijkstraShortestPath {
         public DCPEntry(Map.Entry<Integer, Long> e) {
             variable = e.getKey();
             dcp = new DCP(e.getValue(), null, null);
-        }
-
-        public DCPEntry(int variable, DCP distanceAndConnectionPattern) {
-            this.variable = variable;
-            this.dcp = distanceAndConnectionPattern;
         }
 
         @Override
@@ -107,7 +102,7 @@ public class DijkstraShortestPath {
      */
 
 
-    private static final DC NO_PATH = new DC(Long.MAX_VALUE, null);
+    private static final DC NO_PATH = new DC(Long.MAX_VALUE, null, null);
 
 
     public DijkstraShortestPath(Connection initialConnection) {
@@ -139,7 +134,7 @@ public class DijkstraShortestPath {
             if (i != sourceVertex) {
                 dc = NO_PATH;
             } else {
-                dc = new DC(0, initialConnection);
+                dc = new DC(0, null, initialConnection);
             }
             dist[i] = dc;
             handles.add(priorityQueue.insert(dc, i));
@@ -160,7 +155,8 @@ public class DijkstraShortestPath {
                     if (next == null) {
                         alt = NO_PATH;
                     } else {
-                        alt = new DC(d.dist + edgeValue.dist, next);
+                        Connection initial = d.initialConnection == null ? edge.getValue().mine() : d.initialConnection;
+                        alt = new DC(d.dist + edgeValue.dist, initial, next);
                     }
                 }
                 if (alt.dist < dist[v].dist) {

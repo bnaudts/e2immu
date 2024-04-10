@@ -40,6 +40,10 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         return false;
     }
 
+    public HiddenContentSelector ensureMutable(boolean mutable) {
+        return this;
+    }
+
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
@@ -104,6 +108,11 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         @Override
         public boolean containsMutable() {
             return mutable;
+        }
+
+        @Override
+        public HiddenContentSelector ensureMutable(boolean mutable) {
+            return mutable ? MUTABLE_INSTANCE : INSTANCE;
         }
     }
 
@@ -208,6 +217,7 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             return map.values().stream().anyMatch(v -> v);
         }
 
+        @Override
         public HiddenContentSelector ensureMutable(boolean addMutable) {
             Map<Integer, Boolean> newMap = map.keySet().stream()
                     .collect(Collectors.toUnmodifiableMap(i -> i, i -> addMutable));

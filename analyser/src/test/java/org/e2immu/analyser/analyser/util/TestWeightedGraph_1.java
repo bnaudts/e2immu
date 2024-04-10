@@ -87,10 +87,10 @@ public class TestWeightedGraph_1 extends CommonWG {
         Map<Variable, LV> startAtToDo = shortestPath.links(toDo, null);
         assertEquals(6, startAtToDo.size());
         assertEquals(v0, startAtToDo.get(toDo));
-        assertEquals(LINK_COMMON_HC, startAtToDo.get(cycle));
-        assertEquals(LINK_COMMON_HC, startAtToDo.get(nodeMap));
-        assertEquals(LINK_COMMON_HC, startAtToDo.get(smallerCycle));
-        assertEquals(LINK_COMMON_HC, startAtToDo.get(thisVar));
+        assertEquals("0-4-0", startAtToDo.get(cycle).toString());
+        assertEquals("0-4-0", startAtToDo.get(nodeMap).toString());
+        assertEquals("0-4-0", startAtToDo.get(smallerCycle).toString());
+        assertEquals("0-4-0", startAtToDo.get(thisVar).toString());
         assertEquals(delay, startAtToDo.get(removed));
     }
 

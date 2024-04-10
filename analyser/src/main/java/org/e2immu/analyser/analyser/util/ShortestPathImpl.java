@@ -108,14 +108,24 @@ public class ShortestPathImpl implements ShortestPath {
         return DELAYED_H;
     }
 
-    static long fromHighToLow(long l) {
-        if (l == Long.MAX_VALUE) return Long.MAX_VALUE;
-        if (l < ASSIGNED_H) return l; // STATICALLY_ASSIGNED stays the same
-        if (l < DEPENDENT_H) return (l >> BITS) << (2 * BITS); // shift up
-        if (l < HC_MUTABLE_H) return (l >> (2 * BITS)) << (3 * BITS);
-        if (l < INDEPENDENT_HC_H) return (l >> (3 * BITS)) << (4 * BITS);
-        if (l < DELAYED_H) return (l >> (4 * BITS)) << (5 * BITS);
-        return (l >> (5 * BITS)) << BITS;
+    static LV fromHighToLow(DijkstraShortestPath.DC lowDc, CausesOfDelay someDelay) {
+        long l = lowDc.dist();
+        if (l == Long.MAX_VALUE) return null;
+        if (l < ASSIGNED_H) return LINK_STATICALLY_ASSIGNED;
+        if (l < DEPENDENT_H) return LINK_ASSIGNED;
+        if (l < HC_MUTABLE_H) return LINK_DEPENDENT;
+        if (l < DELAYED_H) {
+            HiddenContentSelector mine = (HiddenContentSelector) lowDc.initialConnection();
+            HiddenContentSelector theirs = (HiddenContentSelector) lowDc.connection();
+            if (mine.isAll() && theirs.isAll()) {
+                return null;
+            }
+            if (l < INDEPENDENT_HC_H) {
+                return LV.createHC(mine.ensureMutable(true), theirs.ensureMutable(true));
+            }
+            return LV.createHC(mine.ensureMutable(false), theirs.ensureMutable(false));
+        }
+        return LV.delay(someDelay);
     }
 
     public static LV fromDistanceSumHigh(long l, CausesOfDelay someDelay) {
@@ -146,7 +156,7 @@ public class ShortestPathImpl implements ShortestPath {
     record Key(int start, long maxWeight) {
     }
 
-    record LinkMap(Map<Key, long[]> map, AtomicInteger savingsCount, String cacheKey) implements Cache.CacheElement {
+    record LinkMap(Map<Key, LV[]> map, AtomicInteger savingsCount, String cacheKey) implements Cache.CacheElement {
         @Override
         public int savings() {
             return savingsCount.get();
@@ -162,8 +172,8 @@ public class ShortestPathImpl implements ShortestPath {
         }
         long maxWeightLong = maxWeight == null ? 0L : toDistanceComponent(maxWeight);
         Key key = new Key(startVertex, maxWeightLong);
-        long[] inMap = linkMap.map.get(key);
-        long[] shortest;
+        LV[] inMap = linkMap.map.get(key);
+        LV[] shortest;
         if (inMap != null) {
             shortest = inMap;
             linkMap.savingsCount.incrementAndGet();
@@ -174,16 +184,16 @@ public class ShortestPathImpl implements ShortestPath {
         }
         Map<Variable, LV> result = new HashMap<>();
         for (int j = 0; j < shortest.length; j++) {
-            long d = shortest[j];
-            if (d != Long.MAX_VALUE) {
-                LV dv = fromDistanceSum(d, someDelay);
-                result.put(variables[j], dv);
+            LV d = shortest[j];
+            if (d != null) {
+                result.put(variables[j], d);
             }
         }
         return result;
     }
 
-    private long[] computeDijkstra(int startVertex, LV maxWeight, long maxWeightLong) {
+    //      LV dv = fromDistanceSum(d, someDelay);
+    private LV[] computeDijkstra(int startVertex, LV maxWeight, long maxWeightLong) {
         DijkstraShortestPath.EdgeProvider edgeProvider = i -> {
             Map<Integer, DijkstraShortestPath.DCP> edgeMap = edges.get(i);
             if (edgeMap == null) return Stream.of();
@@ -205,16 +215,17 @@ public class ShortestPathImpl implements ShortestPath {
                 startVertex);
         debug("delay high", shortestH, ShortestPathImpl::fromDistanceSumHigh);
 
-        long[] shortest = new long[shortestL.length];
+        LV[] shortest = new LV[shortestL.length];
         assert shortestL.length == shortestH.length;
         for (int i = 0; i < shortest.length; i++) {
-            long v;
+            LV v;
             long l = shortestL[i].dist();
-            if (isDelay(l) || l == Long.MAX_VALUE) {
-                v = l;
+            if (isDelay(l)) {
+                v = LV.delay(someDelay);
+            } else if (l == Long.MAX_VALUE) {
+                v = null;
             } else {
-                long h = shortestH[i].dist();
-                v = fromHighToLow(h);
+                v = fromHighToLow(shortestH[i], someDelay);
             }
             shortest[i] = v;
         }

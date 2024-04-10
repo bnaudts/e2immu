@@ -254,7 +254,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             } else {
                 pt = parameterType;
             }
-            HiddenContentTypes hiddenContentTypes = parameterInfo.getMethod().methodResolution.get().hiddenContentTypes();
+            MethodInfo methodInfo = parameterInfo.getMethod();
+            assert methodInfo.methodResolution.isSet() : "For method " + methodInfo;
+            HiddenContentTypes hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
             return HiddenContentSelector.selectAll(hiddenContentTypes, pt);
         }
 

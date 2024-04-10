@@ -114,8 +114,7 @@ public class ComputeLinkedVariables {
                                                 Function<Variable, LinkedVariables> externalLinkedVariables,
                                                 Cache weightedGraphCache,
                                                 BreakDelayLevel breakDelayLevel) {
-        HiddenContentTypes hiddenContentTypes = statementAnalysis.methodAnalysis().getMethodInfo().methodResolution.get()
-                .hiddenContentTypes();
+        HiddenContentTypes hiddenContentTypes = null;// FIXME
         WeightedGraph weightedGraph = new WeightedGraphImpl(weightedGraphCache);
         // we keep track of all variables at the level, PLUS variables linked to, which are not at the level
         Set<Variable> done = new HashSet<>();

@@ -14,8 +14,6 @@ public class TestShortestPathImpl extends CommonWG {
         long l = ShortestPathImpl.toDistanceComponent(delay);
         long h = ShortestPathImpl.toDistanceComponentHigh(delay);
         assertTrue(l < h);
-        long lh = ShortestPathImpl.fromHighToLow(h);
-        assertEquals(l, lh);
     }
 
     @Test
@@ -24,8 +22,6 @@ public class TestShortestPathImpl extends CommonWG {
         assertEquals(ShortestPathImpl.ASSIGNED, l);
         long h = ShortestPathImpl.toDistanceComponentHigh(LV.LINK_ASSIGNED);
         assertEquals(ShortestPathImpl.ASSIGNED_H, h);
-        long lh = ShortestPathImpl.fromHighToLow(h);
-        assertEquals(l, lh);
     }
 
     @Test
@@ -35,8 +31,6 @@ public class TestShortestPathImpl extends CommonWG {
         assertEquals(ShortestPathImpl.INDEPENDENT_HC, l);
         long h = ShortestPathImpl.toDistanceComponentHigh(commonHC);
         assertEquals(ShortestPathImpl.INDEPENDENT_HC_H, h);
-        long lh = ShortestPathImpl.fromHighToLow(h);
-        assertEquals(l, lh);
     }
 
     @Test
@@ -45,7 +39,5 @@ public class TestShortestPathImpl extends CommonWG {
         assertEquals(ShortestPathImpl.HC_MUTABLE, m);
         long mh = ShortestPathImpl.toDistanceComponentHigh(LV.LINK_HC_MUTABLE);
         assertEquals(ShortestPathImpl.HC_MUTABLE_H, mh);
-        long mhl = ShortestPathImpl.fromHighToLow(mh);
-        assertEquals(m, mhl);
     }
 }

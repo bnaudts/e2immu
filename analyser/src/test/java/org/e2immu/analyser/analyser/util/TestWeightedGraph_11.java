@@ -55,15 +55,17 @@ public class TestWeightedGraph_11 extends CommonWG {
     @DisplayName("start in m")
     public void testM() {
         Map<Variable, LV> startAt = shortestPath.links(m, null);
-        assertEquals(3, startAt.size());
+        assertEquals(2, startAt.size());
         assertEquals(v0, startAt.get(m));
         assertTrue(startAt.get(ms).isCommonHC());
-        assertTrue(startAt.get(n).isCommonHC());
+        assertEquals("*M-4-0M", startAt.get(ms).toString());
+        assertNull(startAt.get(n));
 
         Map<Variable, LV> startAtM = shortestPathM.links(m, null);
         assertEquals(2, startAtM.size());
         assertEquals(v0, startAtM.get(m));
         assertTrue(startAtM.get(ms).isCommonHC());
+        assertEquals("*M-4-0M", startAtM.get(ms).toString());
         assertNull(startAtM.get(n));
     }
 
@@ -72,10 +74,10 @@ public class TestWeightedGraph_11 extends CommonWG {
     @DisplayName("start in n")
     public void testN() {
         Map<Variable, LV> startAt = shortestPath.links(n, null);
-        assertEquals(3, startAt.size());
+        assertEquals(2, startAt.size());
         assertEquals(v0, startAt.get(n));
         assertTrue(startAt.get(ms).isCommonHC());
-        assertTrue(startAt.get(m).isCommonHC());
+        assertNull(startAt.get(m));
 
         Map<Variable, LV> startAtM = shortestPathM.links(n, null);
         assertEquals(2, startAtM.size());
