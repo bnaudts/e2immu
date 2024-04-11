@@ -51,7 +51,7 @@ public interface InspectionProvider {
 
             @Override
             public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-                return typeInfo.typeInspection.get();
+                return typeInfo.typeInspection.get(typeInfo.fullyQualifiedName);
             }
 
             @Override

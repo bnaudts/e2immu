@@ -240,7 +240,7 @@ public class HiddenContentTypes {
     public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
                                                                ParameterizedType concreteType,
                                                                ParameterizedType typeInContextOfHCT) {
-        Map<Integer, ParameterizedType> res = new HashMap<>();
+        Map<Integer, ParameterizedType> res = new LinkedHashMap<>(); // keep order, for testing
         mapTypesRecursively(inspectionProvider, concreteType, typeInContextOfHCT, res);
         return res;
     }
@@ -254,17 +254,21 @@ public class HiddenContentTypes {
             res.put(typeItself, concrete);
             return;
         }
+        ParameterizedType c2;
         if (formal.typeInfo != null && concrete.typeInfo == formal.typeInfo) {
-            assert formal.parameters.size() == concrete.parameters.size() || concrete.parameters.isEmpty();
-            int i = 0;
-            for (ParameterizedType fp : formal.parameters) {
-                ParameterizedType cp = i >= concrete.parameters.size()
-                        ? inspectionProvider.getPrimitives().objectParameterizedType()
-                        : concrete.parameters.get(i);
-                mapTypesRecursively(inspectionProvider, cp, fp, res);
-                i++;
-            }
-        } else throw new UnsupportedOperationException("NYI");
+            c2 = concrete;
+        } else {
+            c2 = concrete.concreteSuperType(inspectionProvider, formal);
+        }
+        assert formal.parameters.size() == concrete.parameters.size() || concrete.parameters.isEmpty();
+        int i = 0;
+        for (ParameterizedType fp : formal.parameters) {
+            ParameterizedType cp = i >= c2.parameters.size()
+                    ? inspectionProvider.getPrimitives().objectParameterizedType()
+                    : c2.parameters.get(i);
+            mapTypesRecursively(inspectionProvider, cp, fp, res);
+            i++;
+        }
     }
 
     public HiddenContentTypes getHcsTypeInfo() {

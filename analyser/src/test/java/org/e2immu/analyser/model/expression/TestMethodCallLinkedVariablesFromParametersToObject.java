@@ -238,7 +238,8 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         assertEquals(1, er.changeData().size());
         ChangeData cb = er.findChangeData("b");
         assertEquals("a:4", cb.linkedVariables().toString());
-        assertEquals("0-4-0", cb.linkedVariables().stream().map(Map.Entry::getValue).findFirst().orElseThrow().toString());
+        LV lv = cb.linkedVariables().stream().map(Map.Entry::getValue).findFirst().orElseThrow();
+        assertEquals("0M-4-0M", lv.toString());
         assertTrue(cb.linkedVariables().causesOfDelay().isDone());
     }
 
