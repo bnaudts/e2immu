@@ -271,14 +271,14 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
             || statementAnalysis.statement() instanceof AssertStatement) {
             return SAHelper.scopeVariablesForPatternVariables(evaluationResult1, index());
         }
-        if (statementAnalysis.statement() instanceof ForEachStatement) {
+        if (statementAnalysis.statement() instanceof ForEachStatement forEach) {
            /*
             The loop variable has been created in the initialisation phase. Evaluation has to wait until
             the expression of the forEach statement has been evaluated. For this reason, we need to handle
             this separately.
             */
             Variable loopVar = statementAnalysis.obtainLoopVar();
-            return statementAnalysis.evaluationOfForEachVariable(loopVar,
+            return statementAnalysis.evaluationOfForEachVariable(loopVar, forEach.expression.returnType(),
                     evaluationResultIn, evaluationResultIn.causesOfDelay(), evaluationResult1);
         }
         return evaluationResult1;

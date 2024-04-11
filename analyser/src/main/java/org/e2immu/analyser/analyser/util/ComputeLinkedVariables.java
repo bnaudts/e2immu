@@ -571,10 +571,10 @@ public class ComputeLinkedVariables {
                                         boolean correctForMutable) {
         assert commonHc.isCommonHC() && commonHc.mine() != null && commonHc.theirs() != null;
         LV newLv;
-        HiddenContentSelector mine = HiddenContentSelector.selectAllCorrectForMutable(commonHc.mine(),
-                evaluationContext, variable.parameterizedType(), correctForMutable);
-        HiddenContentSelector theirs = HiddenContentSelector.selectAllCorrectForMutable(commonHc.theirs(),
-                evaluationContext, target.parameterizedType(), correctForMutable);
+        HiddenContentSelector mine = commonHc.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
+                correctForMutable);
+        HiddenContentSelector theirs = commonHc.theirs().correctForMutable(evaluationContext,
+                target.parameterizedType(), correctForMutable);
         if (mine.isDelayed() || theirs.isDelayed()) {
             newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
         } else if (mine.isAll() && theirs.isAll()) {

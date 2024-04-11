@@ -379,7 +379,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
         LinkHelper linkHelper = new LinkHelper(context, methodInfo, methodAnalysis);
         LinkHelper.FromParameters fp = linkHelper.linksInvolvingParameters(objectType, concreteReturnType,
-                res.evaluationResults());
+                parameterExpressions, res.evaluationResults());
         LinkedVariables linkedVariablesOfObjectFromParams = fp.intoObject().linkedVariablesOfExpression();
         builder.compose(fp.intoObject());
 
@@ -392,7 +392,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // links, 2nd: object -> result; this will be the result of the expression
         // copy the link result from the parameters into the lvs of the object. There can be a result when
         // a parameter is a functional interface returning a value
-        LinkedVariables lvsResult1 = linkHelper.linkedVariablesMethodCallObjectToReturnType(objectResult,
+        LinkedVariables lvsResult1 = objectType == null ? LinkedVariables.EMPTY
+                : linkHelper.linkedVariablesMethodCallObjectToReturnType(objectType, objectResult,
                 res.evaluationResults(), concreteReturnType);
         LinkedVariables lvsResult2 = fp.intoResult() == null ? lvsResult1
                 : lvsResult1.merge(fp.intoResult().linkedVariablesOfExpression());

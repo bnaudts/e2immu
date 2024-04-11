@@ -172,6 +172,7 @@ public class TestHiddenContentTypes {
         assertEquals("{1=Type String}", map3.toString());
 
         ParameterizedType someType1 = new ParameterizedType(someTypeWithHC, List.of(mapMap2.toParameterizedType()));
+        assertEquals("Type com.foo.HC<T2>", someType1.toString());
         Map<Integer, ParameterizedType> map4 = mapMapHct.mapTypesRecursively(inspectionProvider,
                 someTypeOfString.asSimpleParameterizedType(), someType1);
         assertEquals("{2=Type String}", map4.toString());

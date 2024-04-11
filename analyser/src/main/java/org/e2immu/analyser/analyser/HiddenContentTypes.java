@@ -238,6 +238,12 @@ public class HiddenContentTypes {
     }
 
     public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
+                                                               ParameterizedType concreteType) {
+        ParameterizedType formalType = concreteType.typeInfo.asParameterizedType(inspectionProvider);
+        return mapTypesRecursively(inspectionProvider, concreteType, formalType);
+    }
+
+    public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
                                                                ParameterizedType concreteType,
                                                                ParameterizedType typeInContextOfHCT) {
         Map<Integer, ParameterizedType> res = new LinkedHashMap<>(); // keep order, for testing
@@ -269,6 +275,34 @@ public class HiddenContentTypes {
             mapTypesRecursively(inspectionProvider, cp, fp, res);
             i++;
         }
+    }
+
+    /*
+     Translate hidden content indices with respect to 'this' to indices with respect to another type,
+     based on shared hidden content types.
+    */
+    public Map<Integer, Integer> translateHcs(InspectionProvider inspectionProvider,
+                                              Collection<Integer> indices,
+                                              ParameterizedType type) {
+        ParameterizedType formal = type.typeInfo.asParameterizedType(inspectionProvider);
+        Map<Integer, ParameterizedType> methodHctIndexToConcrete = mapTypesRecursively(inspectionProvider, type, formal);
+        HiddenContentTypes typeHct = type.typeInfo.typeResolution.get().hiddenContentTypes();
+        return translateHcs(methodHctIndexToConcrete, typeHct, indices, type);
+    }
+
+    public Map<Integer, Integer> translateHcs(Map<Integer, ParameterizedType> methodHctIndexToConcrete,
+                                              HiddenContentTypes typeHct,
+                                              Collection<Integer> indices,
+                                              ParameterizedType type) {
+        Map<Integer, Integer> res = new HashMap<>();
+        for (int i : indices) {
+            ParameterizedType atI = methodHctIndexToConcrete.get(i);
+            assert atI != null;
+            Integer iHct = typeHct.indexOfOrNull(type);
+            assert iHct != null : "Cannot find " + type + " in " + typeHct;
+            res.put(i, iHct);
+        }
+        return res;
     }
 
     public HiddenContentTypes getHcsTypeInfo() {

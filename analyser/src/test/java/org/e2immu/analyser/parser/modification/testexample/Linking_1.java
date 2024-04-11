@@ -85,7 +85,7 @@ public class Linking_1 {
         //noinspection ALL
         return stream.map(x -> function.apply(x));
     }
-
+/*
     static <X, Y> Stream<Y> m12b(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         Function<X, Y> f = x -> function.apply(x);
@@ -197,11 +197,11 @@ public class Linking_1 {
         });
     }
 
-    /*
-    We're contracting the anonymous type's method (the SAM) to be @NotModified.
-    As a consequence, we'll prevent creating an inlined method, because that
-    inlined method will link xx to selector (see m27).
-     */
+
+   // We're contracting the anonymous type's method (the SAM) to be @NotModified.
+   // As a consequence, we'll prevent creating an inlined method, because that
+   // inlined method will link xx to selector (see m27).
+
     static <X> boolean m25(@Independent X xx, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
             @NotModified(contract = true)
@@ -226,11 +226,9 @@ public class Linking_1 {
         return independentSelector.test(xx);
     }
 
-    /*
-    Here, xx -4- selector in statement 1.
-    xx is still @Independent, because that is wrt the fields (that are absent).
-    The cross-link from xx to selector is not computed (only contracted as of now, 202404)
-     */
+    //Here, xx -4- selector in statement 1.
+    //xx is still @Independent, because that is wrt the fields (that are absent).
+    //The cross-link from xx to selector is not computed (only contracted as of now, 202404)
     static <X> boolean m27(@Independent X xx, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
             @Override
@@ -241,10 +239,9 @@ public class Linking_1 {
         return independentSelector.test(xx);
     }
 
-    /*
-    Corresponds to Linking_2.m4
-     */
+
+    //Corresponds to Linking_2.m4
     static boolean m28(@NotModified M m, @Container(contract = true) Predicate<M> selector) {
         return selector.test(m);
-    }
+    }*/
 }

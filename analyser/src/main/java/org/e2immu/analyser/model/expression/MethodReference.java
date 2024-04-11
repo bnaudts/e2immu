@@ -169,16 +169,16 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 link the result to the scope's linked variables, with values of the parameters
                  */
                 LinkHelper.FromParameters from = linkHelper.linksInvolvingParameters(scope.returnType(),
-                        null, parameterResults);
+                        null, parameterExpressions, parameterResults);
                 LV maxOfParameters = from.intoObject().linkedVariablesOfExpression().stream().filter(e -> e.getKey() instanceof ParameterInfo)
                         .map(Map.Entry::getValue).max(LV::compareTo).orElse(null);
                 if (maxOfParameters == null) {
                     lvsResult = LinkedVariables.EMPTY;
                 } else {
-                    lvsResult =scopeResult.linkedVariablesOfExpression().maximum(maxOfParameters);
+                    lvsResult = scopeResult.linkedVariablesOfExpression().maximum(maxOfParameters);
                 }
             } else {
-                lvsResult = linkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult,
+                lvsResult = linkHelper.linkedVariablesMethodCallObjectToReturnType(scope.returnType(), scopeResult,
                         parameterResults, concreteReturnType);
             }
             builder.setExpression(this);

@@ -140,7 +140,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         int d = dependentLink ? 2 : 4;
         assertEquals("p1:" + d, p0Analysis.getLinksToOtherParameters().toString());
         if (!dependentLink && p1Varargs) {
-            assertEquals("0-4-*", p0Analysis.getLinksToOtherParameters().stream().findFirst()
+            assertEquals("0-4-0", p0Analysis.getLinksToOtherParameters().stream().findFirst()
                     .orElseThrow().getValue().toString());
         }
 

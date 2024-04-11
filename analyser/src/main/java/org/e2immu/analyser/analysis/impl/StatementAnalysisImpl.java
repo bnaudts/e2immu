@@ -1508,6 +1508,7 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
 
     @Override
     public EvaluationResult evaluationOfForEachVariable(Variable loopVar,
+                                                        ParameterizedType iterableType,
                                                         EvaluationResult evaluatedIterableResult,
                                                         CausesOfDelay someValueWasDelayed,
                                                         EvaluationResult evaluationResult) {
@@ -1537,8 +1538,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         // equivalent to a List.get() or Array.get(i) call, with the iterable being the source, and the loop var the target
         MethodInfo arrayFieldAccess = evaluationContext.getAnalyserContext().importantClasses().arrayFieldAccess();
         LinkHelper linkHelper = new LinkHelper(evaluationResult, arrayFieldAccess);
-        LinkedVariables linksOfLoopVar = linkHelper.linkedVariablesMethodCallObjectToReturnType(evaluatedIterableResult,
-                List.of(), loopVar.parameterizedType());
+        LinkedVariables linksOfLoopVar = linkHelper.linkedVariablesMethodCallObjectToReturnType(iterableType,
+                evaluatedIterableResult, List.of(), loopVar.parameterizedType());
         return new EvaluationResultImpl.Builder(evaluationResult)
                 .setLinkedVariablesOfExpression(linksOfLoopVar)
                 .assignment(loopVar, value)

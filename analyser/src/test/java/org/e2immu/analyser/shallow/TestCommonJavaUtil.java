@@ -15,6 +15,7 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -389,6 +390,24 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals("", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
+    @Test
+    public void testCollectionsAddAll() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(Collections.class);
+        MethodInfo addAll = typeInfo.findUniqueMethod("addAll", 2);
+        HiddenContentTypes hctMethod = addAll.methodResolution.get().hiddenContentTypes();
+        assertEquals("Collections: - addAll:T", hctMethod.toString());
+        assertTrue(addAll.methodAnalysis.get().getHiddenContentSelector().isNone());
+        ParameterAnalysis p0Ana = addAll.methodAnalysis.get().getParameterAnalyses().get(0);
+        assertEquals("0", p0Ana.getHiddenContentSelector().toString());
+        assertEquals("elements:4", p0Ana.getLinksToOtherParameters().toString());
+        assertEquals("0-4-0", p0Ana.getLinksToOtherParameters().stream()
+                .map(Map.Entry::getValue).findFirst().orElseThrow().toString());
+
+        // this is 0 because it is an array type E[], rather than * for a concrete E instance
+        ParameterAnalysis p1Ana = addAll.methodAnalysis.get().getParameterAnalyses().get(1);
+        assertEquals("0", p1Ana.getHiddenContentSelector().toString());
+        assertEquals("", p1Ana.getLinksToOtherParameters().toString());
+    }
 
     @Test
     public void testMapPut() {

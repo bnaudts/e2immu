@@ -308,8 +308,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             // a.b (FieldReference) or a[b] (DependentVariable) are linking-wise equivalent to a.get("b")
             MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
             LinkHelper linkHelper = new LinkHelper(context, methodInfo);
-            linkedVariables = linkHelper.linkedVariablesMethodCallObjectToReturnType(scopeResult, List.of(),
-                    variable.parameterizedType()).merge(linkedVariables1);
+            linkedVariables = linkHelper.linkedVariablesMethodCallObjectToReturnType(scopeValue.returnType(), scopeResult,
+                    List.of(), variable.parameterizedType()).merge(linkedVariables1);
         }
         builder.setLinkedVariablesOfExpression(linkedVariables);
 

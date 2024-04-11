@@ -225,13 +225,12 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
     }
 
-    public static HiddenContentSelector selectAllCorrectForMutable(HiddenContentSelector hcs,
-                                                                   EvaluationContext evaluationContext,
-                                                                   ParameterizedType type,
-                                                                   boolean correct) {
-        if (hcs.isDelayed()) return hcs;
-        if (hcs.isNone()) throw new UnsupportedOperationException();
-        if (hcs.isAll()) {
+    public HiddenContentSelector correctForMutable(EvaluationContext evaluationContext,
+                                                   ParameterizedType type,
+                                                   boolean correct) {
+        if (isDelayed()) return this;
+        if (isNone()) throw new UnsupportedOperationException();
+        if (isAll()) {
             DV immutableOfParameterizedType = evaluationContext.immutable(type);
             if (immutableOfParameterizedType.isDelayed()) {
                 return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
@@ -241,24 +240,26 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             boolean mutable = correct && MultiLevel.isMutable(immutableOfParameterizedType);
             return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
         }
-        if (hcs instanceof CsSet csSet) {
-            ParameterizedType formal = type.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
+        if (this instanceof CsSet csSet) {
+            assert type.typeInfo != null;
+            HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
+            Map<Integer, ParameterizedType> typeMap = hct.mapTypesRecursively(evaluationContext.getAnalyserContext(),
+                    type);
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             Map<Integer, Boolean> res = new HashMap<>();
-            int index = 0;
             for (int hcIndex : csSet.set()) {
-                ParameterizedType parameter = type.parameters.get(hcIndex);
-                DV immutableDv = evaluationContext.immutable(parameter);
+                ParameterizedType hcType = typeMap.get(hcIndex);
+                assert hcType != null;
+                DV immutableDv = evaluationContext.immutable(hcType);
                 if (immutableDv.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
                 } else {
                     boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
                     if (!immutable) {
                         boolean mutable = correct && MultiLevel.isMutable(immutableDv);
-                        res.put(index, mutable);
+                        res.put(hcIndex, mutable);
                     }
                 }
-                index++;
             }
             if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
             if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;

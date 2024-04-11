@@ -218,10 +218,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         private LinkedVariables hcLinkToParameters(int[] linkParameters) {
+            MethodInfo methodInfo = parameterInfo.getMethod();
+            assert methodInfo.methodResolution.isSet() : "For method " + methodInfo;
+            HiddenContentTypes hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
+
             Map<Variable, LV> map = new HashMap<>();
             TypeInfo typeInfo = parameterInfo.getMethodInfo().typeInfo;
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
-            HiddenContentSelector mine = bestHiddenContentSelector(false, parameterInfo.parameterizedType);
+            HiddenContentSelector mine = HiddenContentSelector.selectAll(hiddenContentTypes, parameterInfo.parameterizedType);
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
                     LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
@@ -229,8 +233,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    HiddenContentSelector theirs = bestHiddenContentSelector(pi.parameterInspection.get().isVarArgs(),
-                            pi.parameterizedType);
+                    HiddenContentSelector theirs = HiddenContentSelector.selectAll(hiddenContentTypes, pi.parameterizedType);
                     // System.arrayCopy... what we mean is: 0-0
                     if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
                         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
@@ -242,24 +245,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             }
             return LinkedVariables.of(map);
         }
-
-        /*
-        Called to create 'mine' and 'theirs' of contracted HC links
-         */
-        private HiddenContentSelector bestHiddenContentSelector(boolean isVarargs, ParameterizedType parameterType) {
-            ParameterizedType pt;
-            if (isVarargs) {
-                assert parameterType.arrays > 0;
-                pt = parameterType.copyWithOneFewerArrays();
-            } else {
-                pt = parameterType;
-            }
-            MethodInfo methodInfo = parameterInfo.getMethod();
-            assert methodInfo.methodResolution.isSet() : "For method " + methodInfo;
-            HiddenContentTypes hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
-            return HiddenContentSelector.selectAll(hiddenContentTypes, pt);
-        }
-
 
         @Override
         public HiddenContentSelector getHiddenContentSelector() {

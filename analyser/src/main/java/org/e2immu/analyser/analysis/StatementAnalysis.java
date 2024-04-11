@@ -332,6 +332,7 @@ public interface StatementAnalysis extends Analysis,
     }
 
     default EvaluationResult evaluationOfForEachVariable(Variable loopVar,
+                                                         ParameterizedType iterableType,
                                                          EvaluationResult evaluatedIterable,
                                                          CausesOfDelay someValueWasDelayed,
                                                          EvaluationResult evaluationResult) {
