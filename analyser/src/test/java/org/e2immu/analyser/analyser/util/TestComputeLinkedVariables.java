@@ -93,14 +93,16 @@ public class TestComputeLinkedVariables {
                 .addMethod(currentMethod)
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
-
+        currentType.typeResolution.set(new TypeResolution.Builder()
+                .setHiddenContentTypes(HiddenContentTypes.compute(currentType.typeInspection.get()))
+                .build());
         someTypeWithHC.typeInspection.set(new TypeInspectionImpl.Builder(someTypeWithHC, Inspector.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType())
                 .setTypeNature(TypeNature.CLASS)
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
         someTypeWithHC.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.OF_OBJECT)
+                .setHiddenContentTypes(HiddenContentTypes.compute(someTypeWithHC.typeInspection.get()))
                 .build());
         location = new LocationImpl(currentMethod, "0-E", newId());
         sa = new StatementAnalysis() {

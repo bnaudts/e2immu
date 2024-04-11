@@ -364,9 +364,11 @@ public class LinkHelper {
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
-        ParameterizedType formal = targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
-        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = hiddenContentTypes.mapTypesRecursively(
-                context.getAnalyserContext(), targetType, formal);
+        boolean targetIsTypeParameter = targetType.isTypeParameter();
+        ParameterizedType formal = targetIsTypeParameter ? null
+                : targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
+        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = targetIsTypeParameter ? null :
+                hiddenContentTypes.mapTypesRecursively(context.getAnalyserContext(), targetType, formal);
 
         DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                 typesCorrespondingToHCOfTarget, hiddenContentSelectorOfTarget);
@@ -382,9 +384,16 @@ public class LinkHelper {
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
 
-        Map<Integer, Integer> hctMethodToHctSource = hiddenContentTypes.translateHcs(context.getAnalyserContext(),
-                hiddenContentSelectorOfSource.set(), sourceType);
-        HiddenContentTypes typeHct = formal.typeInfo.typeResolution.get().hiddenContentTypes();
+        Map<Integer, Integer> hctMethodToHctSource;
+        if (sourceType.arrays > 0) {
+            hctMethodToHctSource = Map.of(0, 0);// array access
+        } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet set && sourceType.typeInfo != null) {
+            hctMethodToHctSource = hiddenContentTypes.translateHcs(context.getAnalyserContext(), set.set(), sourceType);
+        } else {
+            hctMethodToHctSource = null;
+        }
+        HiddenContentTypes typeHct = targetIsTypeParameter
+                ? null : formal.typeInfo.typeResolution.get().hiddenContentTypes();
 
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
@@ -419,7 +428,9 @@ public class LinkHelper {
                             if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet csSet) {
                                 Map<Integer, Boolean> theirsMap = new HashMap<>();
                                 for (int i : csSet.set()) {
-                                    int iInHctSource = hctMethodToHctSource.get(i);
+                                    assert hctMethodToHctSource != null;
+                                    Integer iInHctSource = hctMethodToHctSource.get(i);
+                                    assert iInHctSource != null;
                                     theirsMap.put(iInHctSource, mutable);
                                 }
                                 theirs = new HiddenContentSelector.CsSet(theirsMap);

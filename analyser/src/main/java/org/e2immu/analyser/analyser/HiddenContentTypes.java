@@ -298,8 +298,8 @@ public class HiddenContentTypes {
         for (int i : indices) {
             ParameterizedType atI = methodHctIndexToConcrete.get(i);
             assert atI != null;
-            Integer iHct = typeHct.indexOfOrNull(type);
-            assert iHct != null : "Cannot find " + type + " in " + typeHct;
+            Integer iHct = typeHct.indexOfOrNull(atI);
+            assert iHct != null : "Cannot find " + atI + " in " + typeHct + "; start off " + type;
             res.put(i, iHct);
         }
         return res;

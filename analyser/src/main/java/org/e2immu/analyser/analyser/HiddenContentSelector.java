@@ -242,6 +242,7 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
         if (this instanceof CsSet csSet) {
             assert type.typeInfo != null;
+            assert type.typeInfo.typeResolution.isSet();
             HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
             Map<Integer, ParameterizedType> typeMap = hct.mapTypesRecursively(evaluationContext.getAnalyserContext(),
                     type);

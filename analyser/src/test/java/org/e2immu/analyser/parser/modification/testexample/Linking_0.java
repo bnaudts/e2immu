@@ -34,7 +34,7 @@ public class Linking_0 {
     static M m1b(List<M> list) {
         return new ArrayList<>(list).get(0);
     }
-
+/*
     // common HC
     static <X> X m2(List<X> list) {
         return list.get(0);
@@ -152,5 +152,5 @@ public class Linking_0 {
     public Collection<String> m24(Collection<String> collection) {
         collection.add(string);
         return collection;
-    }
+    }*/
 }
