@@ -368,8 +368,7 @@ public class MethodInspectorImpl implements MethodInspector {
     private ExpressionContext addTypeParameters(CallableDeclaration<?> md,
                                                 ExpressionContext expressionContext,
                                                 MethodInspection.Builder tempBuilder) {
-        TypeInspection typeInspection = expressionContext.typeContext().getTypeInspection(typeInfo);
-        int tpIndex = typeInspection.typeParameters().size();
+        int tpIndex = 0;
         ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
                 expressionContext.newTypeContext("Method type parameters");
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {

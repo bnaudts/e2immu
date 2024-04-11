@@ -162,7 +162,8 @@ public record ComputeTypeImmutable(AnalyserContext analyserContext,
                 // not extensible, IMMUTABLE_HC: check hidden content, if empty, return IMMUTABLE
                 Set<ParameterizedType> superTypes = typeInfo.superTypes(analyserContext);
                 Set<ParameterizedType> hiddenContent = typeInfo.typeResolution.get().hiddenContentTypes().types()
-                        .stream().filter(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft())
+                        .stream().filter(namedType -> namedType instanceof TypeParameter tp && tp.getOwner().isLeft())
+                        .map(namedType -> ((TypeParameter) namedType).toParameterizedType())
                         .collect(Collectors.toCollection(HashSet::new));
                 hiddenContent.removeAll(superTypes);
                 if (hiddenContent.isEmpty()) {

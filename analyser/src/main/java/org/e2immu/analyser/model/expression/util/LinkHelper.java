@@ -328,7 +328,7 @@ public class LinkHelper {
                                             DV transferIndependent,
                                             HiddenContentSelector hiddenContentSelectorOfTarget,
                                             ParameterizedType targetType,
-                                            ParameterizedType formalTargetTypeInContext) {
+                                            ParameterizedType formalTargetTypeInContextOfHCT) {
         assert targetType != null;
 
         // RULE 1: no linking when the source is not linked or there is no transfer
@@ -360,7 +360,8 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
 
-        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = mapTypes(targetType, formalTargetTypeInContext);
+        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = hiddenContentTypes.mapTypesRecursively(
+                context.getAnalyserContext(), targetType, formalTargetTypeInContextOfHCT);
         DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                 typesCorrespondingToHCOfTarget, hiddenContentSelectorOfTarget);
         if (correctedIndependent.isDelayed()) {
@@ -435,24 +436,6 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
         }
         return LinkedVariables.of(newLinked);
-    }
-
-    private Map<Integer, ParameterizedType> mapTypes(ParameterizedType targetType,
-                                                     ParameterizedType formalTargetTypeInContext) {
-        Map<Integer, ParameterizedType> map = new HashMap<>();
-        int i = 0;
-        for (ParameterizedType parameter : formalTargetTypeInContext.parameters) {
-            if (parameter.isTypeParameter() && targetType.parameters.size() > i) {
-                int index = hiddenContentTypes.indexOf(parameter);
-                map.put(index, targetType.parameters.get(i));
-            }
-            i++;
-        }
-        Integer typeItself = hiddenContentTypes.indexOfOrNull(formalTargetTypeInContext);
-        if (typeItself != null) {
-            map.put(typeItself, formalTargetTypeInContext);
-        }
-        return map;
     }
 
     private DV isMutable(EvaluationResult context, ParameterizedType targetType) {

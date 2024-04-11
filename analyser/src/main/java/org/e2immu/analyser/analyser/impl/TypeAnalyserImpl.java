@@ -137,7 +137,7 @@ public abstract class TypeAnalyserImpl extends AbstractAnalyser implements TypeA
 
         // those hidden content types that are type parameters of the type (not of methods)
         boolean res = typeInfo.typeResolution.get().hiddenContentTypes().types().stream()
-                .anyMatch(pt -> pt.typeParameter != null && pt.typeParameter.getOwner().isLeft());
+                .anyMatch(namedType -> namedType instanceof TypeParameter tp && tp.getOwner().isLeft());
         typeAnalysis.setImmutableDeterminedByTypeParameters(res);
         return DONE;
     }

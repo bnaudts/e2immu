@@ -45,10 +45,11 @@ public class TestWeightedGraph_11 extends CommonWG {
         wg.addNode(m, Map.of(ms, link));
         wg.addNode(n, Map.of(ms, link));
         shortestPath = wg.shortestPath();
-        assertEquals("0(2:3)1(2:3)2(0:3;1:3)", ((ShortestPathImpl) shortestPath).getCacheKey());
+        assertEquals("0(2:*M-4-0M)1(2:*M-4-0M)2(0:0M-4-*M;1:0M-4-*M)",
+                ((ShortestPathImpl) shortestPath).getCacheKey());
 
         shortestPathM = wg.shortestPath(true);
-        assertEquals("0(2:3)1(2:3)2()", ((ShortestPathImpl) shortestPathM).getCacheKey());
+        assertEquals("0(2:*M-4-0M)1(2:*M-4-0M)2()", ((ShortestPathImpl) shortestPathM).getCacheKey());
     }
 
     @Test

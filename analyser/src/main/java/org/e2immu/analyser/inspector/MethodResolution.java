@@ -136,9 +136,10 @@ public record MethodResolution(Set<MethodInfo> overrides,
             return allowsInterrupts.getOrDefault(b);
         }
 
-        public void setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
+        public Builder setHiddenContentTypes(HiddenContentTypes hiddenContentTypes) {
             assert hiddenContentTypes.forMethod();
             this.hiddenContentTypes = hiddenContentTypes;
+            return this;
         }
 
         // ***************

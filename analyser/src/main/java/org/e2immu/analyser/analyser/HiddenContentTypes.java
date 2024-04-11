@@ -39,12 +39,12 @@ public class HiddenContentTypes {
     private final HiddenContentTypes hcsTypeInfo;
     private final MethodInfo methodInfo;
 
-    private final Map<ParameterizedType, Integer> typeToIndex;
-    private final Map<Integer, ParameterizedType> indexToType;
+    private final Map<NamedType, Integer> typeToIndex;
+    private final Map<Integer, NamedType> indexToType;
 
     private HiddenContentTypes(TypeInfo typeInfo,
                                boolean typeIsExtensible,
-                               Map<ParameterizedType, Integer> typeToIndex) {
+                               Map<NamedType, Integer> typeToIndex) {
         this.typeInfo = typeInfo;
         this.typeIsExtensible = typeIsExtensible;
         this.typeToIndex = typeToIndex;
@@ -57,7 +57,7 @@ public class HiddenContentTypes {
 
     private HiddenContentTypes(HiddenContentTypes hcsTypeInfo,
                                MethodInfo methodInfo,
-                               Map<ParameterizedType, Integer> typeToIndexIn) {
+                               Map<NamedType, Integer> typeToIndexIn) {
         this.typeIsExtensible = hcsTypeInfo.typeIsExtensible;
         this.hcsTypeInfo = hcsTypeInfo;
         this.typeInfo = hcsTypeInfo.typeInfo;
@@ -65,14 +65,14 @@ public class HiddenContentTypes {
         assert typeInfo == methodInfo.typeInfo
                 : "HCS typeInfo = " + typeInfo + ", method type info = " + methodInfo.typeInfo;
         this.startOfMethodParameters = hcsTypeInfo.startOfMethodParameters;
-        Map<Integer, ParameterizedType> i2t = new HashMap<>();
-        Map<ParameterizedType, Integer> t2i = new HashMap<>();
-        for (Map.Entry<ParameterizedType, Integer> entry : typeToIndexIn.entrySet()) {
-            ParameterizedType pt = entry.getKey().copyWithoutWildcard();
-            if (!hcsTypeInfo.typeToIndex.containsKey(pt)) {
+        Map<Integer, NamedType> i2t = new HashMap<>();
+        Map<NamedType, Integer> t2i = new HashMap<>();
+        for (Map.Entry<NamedType, Integer> entry : typeToIndexIn.entrySet()) {
+            NamedType nt = entry.getKey();
+            if (!hcsTypeInfo.typeToIndex.containsKey(nt)) {
                 int i = startOfMethodParameters + entry.getValue();
-                i2t.put(i, pt);
-                t2i.put(pt, i);
+                i2t.put(i, nt);
+                t2i.put(nt, i);
             }
         }
         indexToType = Map.copyOf(i2t);
@@ -96,10 +96,8 @@ public class HiddenContentTypes {
 
     public static HiddenContentTypes compute(HiddenContentTypes hcsTypeInfo, MethodInspection methodInspection) {
         assert hcsTypeInfo != null : "For method " + methodInspection.getMethodInfo();
-        Map<ParameterizedType, Integer> typeToIndex = methodInspection.getTypeParameters().stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
-                        TypeParameter::getIndex));
+        Map<NamedType, Integer> typeToIndex = methodInspection.getTypeParameters().stream()
+                .collect(Collectors.toUnmodifiableMap(tp -> tp, TypeParameter::getIndex));
     /*    List<ParameterizedType> typesInParameters = methodInspection.getParameters().stream()
                 .flatMap(pi -> expand(pi.parameterizedType))
                 .filter(pt -> )
@@ -114,7 +112,6 @@ public class HiddenContentTypes {
 
     public static HiddenContentTypes compute(TypeInspection typeInspection, boolean shallow) {
         TypeInfo typeInfo = typeInspection.typeInfo();
-        //if (typeInfo.isJavaLangObject()) return OF_OBJECT;
 
         Set<TypeParameter> typeParametersInFields;
         if (shallow) {
@@ -124,10 +121,8 @@ public class HiddenContentTypes {
                     .flatMap(fi -> typeParameterStream(fi.type))
                     .collect(Collectors.toUnmodifiableSet());
         }
-        Map<ParameterizedType, Integer> typeToIndex = typeParametersInFields.stream()
-                .collect(Collectors.toUnmodifiableMap(
-                        tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE),
-                        TypeParameter::getIndex));
+        Map<NamedType, Integer> typeToIndex = typeParametersInFields.stream()
+                .collect(Collectors.toUnmodifiableMap(tp -> tp, TypeParameter::getIndex));
         return new HiddenContentTypes(typeInfo, typeInspection.isExtensible(), typeToIndex);
     }
 
@@ -142,15 +137,18 @@ public class HiddenContentTypes {
 
     // if T is hidden, then ? extends T is hidden as well! all wildcards have been stripped.
     public boolean contains(ParameterizedType parameterizedType) {
-        if (typeToIndex.containsKey(parameterizedType)) return true;
-        if (parameterizedType.typeParameter != null) {
-            if (parameterizedType.wildCard != ParameterizedType.WildCard.NONE) {
-                ParameterizedType withoutWildcard = parameterizedType.copyWithoutWildcard();
-                if (typeToIndex.containsKey(withoutWildcard)) return true;
-            }
+        NamedType namedType = namedType(parameterizedType);
+        if (namedType != null) {
+            if (typeToIndex.containsKey(namedType)) return true;
+            if (hcsTypeInfo != null) return hcsTypeInfo.contains(parameterizedType);
         }
-        if (hcsTypeInfo != null) return hcsTypeInfo.contains(parameterizedType);
         return false;
+    }
+
+    private static NamedType namedType(ParameterizedType type) {
+        if (type.typeParameter != null) return type.typeParameter;
+        if (type.typeInfo != null) return type.typeInfo;
+        return null;
     }
 
     public boolean isEmpty() {
@@ -159,9 +157,10 @@ public class HiddenContentTypes {
 
     @Override
     public String toString() {
-        String s = hcsTypeInfo == null ? "" : hcsTypeInfo.toString() + " - ";
+        String s = hcsTypeInfo == null ? "" : hcsTypeInfo + " - ";
         String l = hcsTypeInfo == null ? typeInfo.simpleName : methodInfo.name;
-        return s + l + ":" + sortedTypes();
+        return s + l + ":" + typeToIndex.keySet().stream()
+                .map(NamedType::simpleName).sorted().collect(Collectors.joining(", "));
     }
 
     public int size() {
@@ -186,40 +185,43 @@ public class HiddenContentTypes {
     private ParameterizedType translate(InspectionProvider inspectionProvider,
                                         ParameterizedType pt,
                                         Map<NamedType, ParameterizedType> map,
-                                        ParameterizedType t) {
-        if (map.isEmpty() && t.isTypeParameter() && t.isAssignableFrom(inspectionProvider, pt)) {
+                                        NamedType t) {
+        if (map.isEmpty() && t instanceof TypeParameter tp && tp.toParameterizedType()
+                .isAssignableFrom(inspectionProvider, pt)) {
             return pt;
         }
-        return t.applyTranslation(inspectionProvider.getPrimitives(), map);
-    }
-
-    public ParameterizedType typeByIndex(int i) {
-        return indexToType.get(i);
+        //  return t.applyTranslation(inspectionProvider.getPrimitives(), map);
+        throw new UnsupportedOperationException();
     }
 
     public int indexOf(ParameterizedType type) {
         return indexOfOrNull(type);
     }
 
-    public int indexOf(TypeParameter typeParameter) {
-        return typeParameter.getIndex();
+    public int indexOf(NamedType namedType) {
+        Integer here = typeToIndex.get(namedType);
+        if (here != null) return here;
+        if (hcsTypeInfo != null) return hcsTypeInfo.typeToIndex.get(namedType);
+        throw new UnsupportedOperationException("Expected " + namedType + " to be known");
     }
 
     public Integer indexOfOrNull(ParameterizedType type) {
-        if (type.typeParameter != null) {
-            return type.typeParameter.getIndex();
-        }
-        return typeToIndex.get(type);
+        NamedType namedType = namedType(type);
+        if (namedType == null) return null;
+        Integer here = typeToIndex.get(namedType);
+        if (here != null) return here;
+        if (hcsTypeInfo != null) return hcsTypeInfo.typeToIndex.get(namedType);
+        return null;
     }
 
-    public Set<ParameterizedType> types() {
+    public Set<NamedType> types() {
         return typeToIndex.keySet();
     }
 
     public String sortedTypes() {
         String s = forMethod() ? hcsTypeInfo.sortedTypes() + " - " : "";
         return s + typeToIndex.keySet().stream()
-                .map(ParameterizedType::printSimple).sorted().collect(Collectors.joining(", "));
+                .map(NamedType::simpleName).sorted().collect(Collectors.joining(", "));
     }
 
     public static HiddenContentTypes from(ParameterizedType formalTargetType) {
@@ -233,5 +235,43 @@ public class HiddenContentTypes {
             return OF_OBJECT;
         }
         return targetTi.typeResolution.get().hiddenContentTypes();
+    }
+
+    public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
+                                                               ParameterizedType concreteType,
+                                                               ParameterizedType typeInContextOfHCT) {
+        Map<Integer, ParameterizedType> res = new HashMap<>();
+        mapTypesRecursively(inspectionProvider, concreteType, typeInContextOfHCT, res);
+        return res;
+    }
+
+    private void mapTypesRecursively(InspectionProvider inspectionProvider,
+                                     ParameterizedType concrete,
+                                     ParameterizedType formal,
+                                     Map<Integer, ParameterizedType> res) {
+        Integer typeItself = indexOfOrNull(formal);
+        if (typeItself != null) {
+            res.put(typeItself, concrete);
+            return;
+        }
+        if (formal.typeInfo != null && concrete.typeInfo == formal.typeInfo) {
+            assert formal.parameters.size() == concrete.parameters.size() || concrete.parameters.isEmpty();
+            int i = 0;
+            for (ParameterizedType fp : formal.parameters) {
+                ParameterizedType cp = i >= concrete.parameters.size()
+                        ? inspectionProvider.getPrimitives().objectParameterizedType()
+                        : concrete.parameters.get(i);
+                mapTypesRecursively(inspectionProvider, cp, fp, res);
+                i++;
+            }
+        } else throw new UnsupportedOperationException("NYI");
+    }
+
+    public HiddenContentTypes getHcsTypeInfo() {
+        return hcsTypeInfo;
+    }
+
+    public Map<Integer, NamedType> getIndexToType() {
+        return indexToType;
     }
 }

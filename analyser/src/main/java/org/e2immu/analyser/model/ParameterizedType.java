@@ -710,15 +710,15 @@ public class ParameterizedType {
                 return parameters.get(0).bestTypeInfo();
             }
             TypeParameter definition;
-            if (typeParameter.getOwner() != null) {
-                if (typeParameter.getOwner().isLeft()) {
-                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeParameter.getOwner().getLeft());
+            Either<TypeInfo, MethodInfo> owner = typeParameter.getOwner();
+            if (owner != null) {
+                if (owner.isLeft()) {
+                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(owner.getLeft());
                     definition = typeInspection.typeParameters().get(typeParameter.getIndex());
                 } else {
-                    MethodInspection methodInspection = inspectionProvider.getMethodInspection(typeParameter.getOwner().getRight());
-                    TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInspection.getMethodInfo().typeInfo);
-                    int index = typeParameter.getIndex() - typeInspection.typeParameters().size();
-                    assert index >= 0 : "For type parameter owner " + typeParameter.getOwner();
+                    int index = typeParameter.getIndex();
+                    assert index >= 0 : "For type parameter owner " + owner;
+                    MethodInspection methodInspection = inspectionProvider.getMethodInspection(owner.getRight());
                     definition = methodInspection.getTypeParameters().get(index);
                 }
                 if (!definition.getTypeBounds().isEmpty()) {

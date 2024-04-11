@@ -45,10 +45,11 @@ public class TestWeightedGraph_10 extends CommonWG {
         wg = new WeightedGraphImpl();
         wg.addNode(m, Map.of(ms, link, selection, link));
         shortestPathM = wg.shortestPath(true);
-        String cacheKeyModification = "0(1:3;2:3)1()2()";
+        String cacheKeyModification = "0(1:*M-4-0M;2:*M-4-0M)1()2()";
         assertEquals(cacheKeyModification, ((ShortestPathImpl) shortestPathM).getCacheKey());
         shortestPath = wg.shortestPath(false);
-        assertEquals("0(1:3;2:3)1(0:3)2(0:3)", ((ShortestPathImpl) shortestPath).getCacheKey());
+        assertEquals("0(1:*M-4-0M;2:*M-4-0M)1(0:0M-4-*M)2(0:0M-4-*M)",
+                ((ShortestPathImpl) shortestPath).getCacheKey());
 
 
         // an extra edge, 0-4-0
@@ -58,7 +59,8 @@ public class TestWeightedGraph_10 extends CommonWG {
         shortestPathWg2M = wg2.shortestPath(true);
         assertEquals(cacheKeyModification, ((ShortestPathImpl) shortestPathWg2M).getCacheKey());
         shortestPathWg2 = wg2.shortestPath(false);
-        assertEquals("0(1:3;2:3)1(0:3;2:4)2(0:3;1:4)", ((ShortestPathImpl) shortestPathWg2).getCacheKey());
+        assertEquals("0(1:*M-4-0M;2:*M-4-0M)1(0:0M-4-*M;2:0-4-0)2(0:0M-4-*M;1:0-4-0)",
+                ((ShortestPathImpl) shortestPathWg2).getCacheKey());
     }
 
     @Test

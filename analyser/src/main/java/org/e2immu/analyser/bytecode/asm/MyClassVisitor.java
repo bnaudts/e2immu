@@ -313,9 +313,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
-            int baseForTypeParameters = typeInspectionBuilder.typeParameters().size();
-            int end = parseGenerics.parseMethodGenerics(baseForTypeParameters, signatureOrDescription,
-                    methodInspectionBuilder, methodContext);
+            int end = parseGenerics.parseMethodGenerics(signatureOrDescription, methodInspectionBuilder, methodContext);
             if (end < 0) {
                 // error state
                 errorStateForType(signatureOrDescription);
