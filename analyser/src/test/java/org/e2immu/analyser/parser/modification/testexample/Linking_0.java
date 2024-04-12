@@ -120,7 +120,7 @@ public class Linking_0 {
         Collections.addAll(list, x);
         return list;
     }
-/*
+
     static <X> List<X> m19(X x0, X x1, List<X> list) {
         Collections.addAll(list, x0, x1);
         return list;
@@ -152,5 +152,5 @@ public class Linking_0 {
     public Collection<String> m24(Collection<String> collection) {
         collection.add(string);
         return collection;
-    }*/
+    }
 }

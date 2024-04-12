@@ -193,7 +193,7 @@ public class LinkHelper {
 
                 for (int i = target.index; i < parameterResults.size(); i++) {
                     ParameterizedType targetType = parameterExpressions.get(target.index).returnType();
-                    tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, targetType,
+                    tryLinkBetweenParameters(builder, i, targetIsVarArgs, targetType,
                             target.parameterizedType, level, sourceType, pi.parameterizedType, sourceLvs, parameterLvs);
                 }
             } // else: no value... empty varargs
@@ -405,7 +405,8 @@ public class LinkHelper {
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
 
         Map<Integer, Integer> hctMethodToHctSource;
-        if (sourceType.arrays > 0) {
+        if (sourceType.arrays > 0 || sourceIsVarArgs) {
+            // e.g. Linking_0,m18: sourceType X, methodSourceType T[], sourceIsVarArgs true
             hctMethodToHctSource = Map.of(0, 0);// array access
         } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet set && sourceType.typeInfo != null) {
             hctMethodToHctSource = hiddenContentTypes.translateHcs(inspectionProvider, set.set(),
@@ -498,7 +499,9 @@ public class LinkHelper {
                                 } else {
                                     mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
                                 }
-                                theirs = theirsMap.isEmpty() ? null : correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
+                                theirs = theirsMap.isEmpty() ? null
+                                        : sourceIsVarArgs ? new HiddenContentSelector.CsSet(theirsMap)
+                                        : correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
