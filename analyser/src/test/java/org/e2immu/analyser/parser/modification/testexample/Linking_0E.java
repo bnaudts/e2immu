@@ -17,6 +17,19 @@ public class Linking_0E {
         }
     }
 
+    // extensible, immutable HC
+    static class I {
+        private final int i;
+
+        public I(int i) {
+            this.i = i;
+        }
+
+        public int getI() {
+            return i;
+        }
+    }
+
     // Note: List, ArrayList are mutable; subList is dependent, because it
     // returns a list backed by the original one.
 
@@ -36,7 +49,7 @@ public class Linking_0E {
     }
 
     // common HC
-    static <X extends M> X m2(List<X> list) {
+    static <X extends I> X m2(List<X> list) {
         return list.get(0);
     }
 
@@ -52,6 +65,11 @@ public class Linking_0E {
 
     // dependent, regardless of X
     static <X extends M> List<X> m5(List<X> list) {
+        return list.subList(0, 1);
+    }
+
+    // dependent, regardless of X
+    static <X extends I> List<X> m5b(List<X> list) {
         return list.subList(0, 1);
     }
 
@@ -75,8 +93,13 @@ public class Linking_0E {
         return new HashMap<>(map);
     }
 
-    // independent HC
+    // independent HC, 0M-4-0M
     static <X extends M> Map<X, String> m10(Map<X, String> map) {
+        return new HashMap<>(map);
+    }
+
+    // independent HC, 1-4-1
+    static <X extends I> Map<String, I> m10b(Map<String, I> map) {
         return new HashMap<>(map);
     }
 
@@ -105,8 +128,13 @@ public class Linking_0E {
         return list.subList(0, 1).subList(0, 1);
     }
 
-    // independent HC
+    // dependent
     static <X extends M> List<X> m16(List<X> list) {
+        return new ArrayList<>(list.subList(0, 1).subList(0, 1));
+    }
+
+    // independent HC
+    static <X extends I> List<X> m16b(List<X> list) {
         return new ArrayList<>(list.subList(0, 1).subList(0, 1));
     }
 
@@ -115,8 +143,16 @@ public class Linking_0E {
         return new ArrayList<>(list.subList(0, 1)).subList(0, 1);
     }
 
+    static <X extends I> List<X> m17b(List<X> list) {
+        return new ArrayList<>(list.subList(0, 1)).subList(0, 1);
+    }
 
     static <X extends M> List<X> m18(X x, List<X> list) {
+        Collections.addAll(list, x);
+        return list;
+    }
+
+    static <X extends I> List<X> m18b(X x, List<X> list) {
         Collections.addAll(list, x);
         return list;
     }
@@ -132,6 +168,16 @@ public class Linking_0E {
     }
 
     static List<M> m21(M m, List<M> list) {
+        Collections.addAll(list, m);
+        return list;
+    }
+
+    static <X extends M> List<X> m21b(X m, List<X> list) {
+        Collections.addAll(list, m);
+        return list;
+    }
+
+    static <X extends I> List<X> m21c(X m, List<X> list) {
         Collections.addAll(list, m);
         return list;
     }

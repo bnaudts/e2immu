@@ -1085,5 +1085,9 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             ChangeData cd = valueChanges.get(key);
             return cd == null ? null : cd.linkedVariables();
         }
+
+        public Set<Variable> variables() {
+            return valueChanges.keySet();
+        }
     }
 }

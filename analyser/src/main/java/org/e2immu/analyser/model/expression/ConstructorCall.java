@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.impl.BaseExpression;
 import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.Keyword;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
@@ -502,7 +503,7 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                 constructor, false, null, false);
         CausesOfDelay parameterDelays = res.builder().causesOfDelay();
         if (parameterDelays.isDelayed()) {
-            return delayedConstructorCall(context, res.builder(), parameterDelays);
+            return delayedConstructorCall(context, res.builder(), res.builder().variables(), parameterDelays);
         }
 
         EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
@@ -584,9 +585,13 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
 
     private EvaluationResult delayedConstructorCall(EvaluationResult context,
                                                     EvaluationResultImpl.Builder builder,
+                                                    Set<Variable> variables,
                                                     CausesOfDelay causesOfDelay) {
         assert causesOfDelay.isDelayed();
         builder.setExpression(createDelayedValue(identifier, context, causesOfDelay));
+        LV delayedLv = LV.delay(causesOfDelay);
+        Map<Variable, LV> map = variables.stream().collect(Collectors.toUnmodifiableMap(v -> v, v -> delayedLv));
+        builder.setLinkedVariablesOfExpression(LinkedVariables.of(map));
         // set scope delay
         return builder.build();
     }

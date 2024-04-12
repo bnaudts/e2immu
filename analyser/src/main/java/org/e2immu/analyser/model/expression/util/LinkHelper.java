@@ -456,6 +456,7 @@ public class LinkHelper {
                                     assert iInHctSource != null;
                                     theirsMap.put(iInHctSource, mutable);
                                 }
+                                assert hctSource != null;
                                 theirs = correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
@@ -499,9 +500,15 @@ public class LinkHelper {
                                 } else {
                                     mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
                                 }
-                                theirs = theirsMap.isEmpty() ? null
-                                        : sourceIsVarArgs ? new HiddenContentSelector.CsSet(theirsMap)
-                                        : correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
+                                if (theirsMap.isEmpty()) {
+                                    theirs = null;
+                                } else if (sourceIsVarArgs) {
+                                    // no need for a correction, '0' is correct
+                                    theirs = new HiddenContentSelector.CsSet(theirsMap);
+                                } else {
+                                    assert hctSource != null;
+                                    theirs = correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
+                                }
                             } else {
                                 throw new UnsupportedOperationException();
                             }
