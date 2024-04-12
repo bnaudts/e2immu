@@ -573,7 +573,9 @@ public class ComputeLinkedVariables {
         LV newLv;
         HiddenContentSelector mine = commonHc.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
                 correctForMutable);
-        HiddenContentSelector theirs = commonHc.theirs().correctForMutable(evaluationContext,
+        HiddenContentSelector theirs = target instanceof This
+                ? new HiddenContentSelector.CsSet(Map.of(0, mine.containsMutable()))
+                : commonHc.theirs().correctForMutable(evaluationContext,
                 target.parameterizedType(), correctForMutable);
         if (mine.isDelayed() || theirs.isDelayed()) {
             newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));

@@ -22,6 +22,7 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
@@ -457,7 +458,7 @@ public class LinkHelper {
                                     theirsMap.put(iInHctSource, mutable);
                                 }
                                 assert hctSource != null;
-                                theirs = correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
+                                theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
@@ -507,7 +508,8 @@ public class LinkHelper {
                                     theirs = new HiddenContentSelector.CsSet(theirsMap);
                                 } else {
                                     assert hctSource != null;
-                                    theirs = correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
+                                    theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This,
+                                            pt, hctSource, theirsMap);
                                 }
                             } else {
                                 throw new UnsupportedOperationException();
@@ -530,9 +532,14 @@ public class LinkHelper {
     }
 
     private HiddenContentSelector.CsSet correctWithRespectTo(InspectionProvider inspectionProvider,
+                                                             boolean variableIsThis,
                                                              ParameterizedType pt,
                                                              HiddenContentTypes hctSource,
                                                              Map<Integer, Boolean> theirsMap) {
+        if (variableIsThis) {
+            boolean mutable = theirsMap.values().stream().anyMatch(v -> v);
+            return new HiddenContentSelector.CsSet(Map.of(0, mutable));
+        }
         Map<Integer, Boolean> correctedMap = new HashMap<>();
         ParameterizedType ptFormal = pt.typeInfo.asParameterizedType(inspectionProvider);
         ParameterizedType sourceType = hctSource.getTypeInfo().asParameterizedType(inspectionProvider);
