@@ -140,19 +140,25 @@ public class LinkHelper {
                         parameterLvs = linkedVariablesOfParameter(parameterResults.get(pi.index));
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
+                    ParameterizedType methodPt;
+                    if (inResult) {
+                        methodPt = methodInspection.getReturnType();
+                    } else {
+                        methodPt = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
+                    }
                     HiddenContentSelector hcsTarget = parameterAnalysis.getHiddenContentSelector();
                     if (pt != null) {
                         LinkedVariables lv;
                         if (inResult) {
                             // parameter -> result
                             HiddenContentSelector hcsSource = methodAnalysis.getHiddenContentSelector();
-                            lv = linkedVariables(parameterType, parameterLvs, hcsTarget, false,
-                                    formalParameterIndependent, hcsSource, pt, false);
+                            lv = linkedVariables(parameterType, pi.parameterizedType, hcsTarget, parameterLvs, false,
+                                    formalParameterIndependent, pt, methodPt, hcsSource, false);
                         } else {
                             // object -> parameter (rather than the other way around)
-                            lv = linkedVariables(pt, parameterLvs, hcsSource, false,
-                                    formalParameterIndependent, hcsTarget,
-                                    parameterType, true);
+                            lv = linkedVariables(pt, methodPt, hcsSource, parameterLvs, false,
+                                    formalParameterIndependent, parameterType, pi.parameterizedType, hcsTarget,
+                                    true);
                         }
                         EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
                         builder.mergeLinkedVariablesOfExpression(lv);
@@ -186,41 +192,29 @@ public class LinkHelper {
 
                 for (int i = target.index; i < parameterResults.size(); i++) {
                     ParameterizedType targetType = parameterExpressions.get(target.index).returnType();
-                    tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, targetType, level,
-                            sourceType, sourceLvs, parameterLvs);
+                    tryLinkBetweenParameters(builder, target.index, targetIsVarArgs, targetType,
+                            target.parameterizedType, level, sourceType, pi.parameterizedType, sourceLvs, parameterLvs);
                 }
             } // else: no value... empty varargs
         }));
     }
 
-    /*
-         mergedLvs = LinkedVariables.EMPTY;
-                for (int i = targetIndex; i < parameterLvs.size(); i++) {
-                    LinkedVariables lvs = parameterLvs.get(i);
-                    LinkedVariables lv = linkedVariables(targetType, lvs, hcsSource, true, independentDv,
-                            hcsTarget, sourceType, false);
-                    mergedLvs = mergedLvs.merge(lv);
-                }
-     */
-    //
-    //example Independent1_2_1
-    //target = ts, index 0, not varargs, linked 4=common_hc to generator, index 1;
-    //target ts is modified; values are new String[4] and generator, linked variables are this.ts:2 and generator:2
-    //
     private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
                                           ParameterizedType targetType,
+                                          ParameterizedType methodTargetType,
                                           LV level,
                                           ParameterizedType sourceType,
+                                          ParameterizedType methodSourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
         HiddenContentSelector hcsTarget = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
         HiddenContentSelector hcsSource = level.isCommonHC() ? level.theirs() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
-        LinkedVariables mergedLvs = linkedVariables(targetType, targetLinkedVariables, hcsSource, targetIsVarArgs,
-                independentDv, hcsTarget, sourceType, targetIsVarArgs);
+        LinkedVariables mergedLvs = linkedVariables(targetType, methodTargetType, hcsSource, targetLinkedVariables,
+                targetIsVarArgs, independentDv, sourceType, methodSourceType, hcsTarget, targetIsVarArgs);
         sourceLinkedVariables.stream().forEach(e ->
                 mergedLvs.stream().forEach(e2 ->
                         builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
@@ -287,11 +281,13 @@ public class LinkHelper {
             return linkedVariablesOfObject.changeNonStaticallyAssignedToDelay(fluent.causesOfDelay());
         }
         DV independent = methodAnalysis.getProperty(Property.INDEPENDENT);
+        ParameterizedType methodType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
+        ParameterizedType methodReturnType = context.getAnalyserContext().getMethodInspection(methodInfo).getReturnType();
+
         return linkedVariables(objectType,
-                linkedVariablesOfObject,
-                hcsSource, false,
-                independent, methodAnalysis.getHiddenContentSelector(),
-                returnType,
+                methodType, hcsSource, linkedVariablesOfObject,
+                false,
+                independent, returnType, methodReturnType, methodAnalysis.getHiddenContentSelector(),
                 false);
     }
 
@@ -316,23 +312,27 @@ public class LinkHelper {
 
     /**
      * @param sourceType                    must be type of object or parameterExpression, return type, non-evaluated
+     * @param methodSourceType              the formal method's type of the source
+     * @param hiddenContentSelectorOfSource with respect to the method's HCT and methodSourceType
      * @param sourceLvs                     linked variables of the source
-     * @param hiddenContentSelectorOfSource with respect to the method's HCT (taken from method HCS or parameter HCS)
      * @param sourceIsVarArgs               allow for a correction of array -> element
      * @param transferIndependent           the transfer more (dependent, independent HC, independent)
-     * @param hiddenContentSelectorOfTarget with respect to the method's HCT (taken from method HCS or parameter HCS)
      * @param targetType                    must be type of object or parameterExpression, return type, non-evaluated
+     * @param methodTargetType              the formal method's type of the target
+     * @param hiddenContentSelectorOfTarget with respect to the method's HCT and methodTargetType
      * @param reverse                       reverse the link, because we're reversing source and target, because we
      *                                      only deal with *->0, not 0->* in this method.
      * @return the linked values of the target
      */
     private LinkedVariables linkedVariables(ParameterizedType sourceType,
-                                            LinkedVariables sourceLvs,
+                                            ParameterizedType methodSourceType,
                                             HiddenContentSelector hiddenContentSelectorOfSource,
+                                            LinkedVariables sourceLvs,
                                             boolean sourceIsVarArgs,
                                             DV transferIndependent,
-                                            HiddenContentSelector hiddenContentSelectorOfTarget,
                                             ParameterizedType targetType,
+                                            ParameterizedType methodTargetType,
+                                            HiddenContentSelector hiddenContentSelectorOfTarget,
                                             boolean reverse) {
         assert targetType != null;
 
@@ -365,10 +365,10 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
         boolean targetIsTypeParameter = targetType.isTypeParameter();
-        ParameterizedType formal = targetIsTypeParameter ? null
+        ParameterizedType targetTypeFormal = targetIsTypeParameter ? null
                 : targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
         Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = targetIsTypeParameter ? null :
-                hiddenContentTypes.mapTypesRecursively(context.getAnalyserContext(), targetType, formal);
+                hiddenContentTypes.mapTypesRecursively(context.getAnalyserContext(), targetType, targetTypeFormal);
 
         DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
                 typesCorrespondingToHCOfTarget, hiddenContentSelectorOfTarget);
@@ -388,12 +388,16 @@ public class LinkHelper {
         if (sourceType.arrays > 0) {
             hctMethodToHctSource = Map.of(0, 0);// array access
         } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet set && sourceType.typeInfo != null) {
-            hctMethodToHctSource = hiddenContentTypes.translateHcs(context.getAnalyserContext(), set.set(), sourceType);
+            hctMethodToHctSource = hiddenContentTypes.translateHcs(context.getAnalyserContext(), set.set(),
+                    methodSourceType, sourceType);
         } else {
             hctMethodToHctSource = null;
         }
-        HiddenContentTypes typeHct = targetIsTypeParameter
-                ? null : formal.typeInfo.typeResolution.get().hiddenContentTypes();
+
+        HiddenContentTypes targetHct = targetIsTypeParameter
+                ? null : targetTypeFormal.typeInfo.typeResolution.get().hiddenContentTypes();
+        Map<NamedType, ParameterizedType> targetMethodToType = methodTargetType.translateMap(context.getAnalyserContext(),
+                targetTypeFormal, true);
 
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
@@ -444,8 +448,11 @@ public class LinkHelper {
                                 Map<Integer, Boolean> mineMap = new HashMap<>();
                                 Map<Integer, Boolean> theirsMap = new HashMap<>();
 
-                                Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes
-                                        .translateHcs(typesCorrespondingToHCOfTarget, typeHct, mineCsSet.set(), formal);
+                                assert targetHct != null;
+                                assert hctMethodToHctSource != null;
+
+                                Map<Integer, Integer> hcsMethodToHctTarget = targetHct.translateHcs(mineCsSet.set(),
+                                        typesCorrespondingToHCOfTarget, targetMethodToType);
 
                                 for (int i : mineCsSet.set()) {
                                     ParameterizedType type = typesCorrespondingToHCOfTarget.get(i);
@@ -506,29 +513,6 @@ public class LinkHelper {
                 MultiLevel.DEPENDENT_DV.equals(transferIndependent)
                 && !lv.isCommonHC()
                 && !MultiLevel.isAtLeastImmutableHC(immutableOfSource);
-    }
-
-    /*
-    Example: Map<K,V>.entrySet() has HCS <0,1>: we keep both type parameters. But Map<Long,V> must have
-    only <1>, because type parameter 0 cannot be hidden content in this particular instantiation.
-    Map<StringBuilder, V> is not relevant here, because then the type would be mutable, the corrected independent
-    would be "dependent", and we'll not return a commonHC object.
-    So we'll only remove those type parameters that have a recursively immutable instantiation in the concrete type.
-     */
-    private HiddenContentSelector correctSelector(HiddenContentSelector hiddenContentSelectorOfTarget,
-                                                  Set<Integer> typesCorrespondingToHCKeySet) {
-        if (hiddenContentSelectorOfTarget.isNone() || hiddenContentSelectorOfTarget.isAll()) {
-            return hiddenContentSelectorOfTarget;
-        }
-        // find the types corresponding to the hidden content indices
-        Set<Integer> selectorSet = hiddenContentSelectorOfTarget.set();
-        Set<Integer> remaining = typesCorrespondingToHCKeySet.stream()
-                .filter(selectorSet::contains)
-                .collect(Collectors.toUnmodifiableSet());
-        if (remaining.isEmpty()) {
-            return HiddenContentSelector.None.INSTANCE;
-        }
-        return new HiddenContentSelector.CsSet(remaining);
     }
 
     private DV correctIndependent(DV immutableOfSource,

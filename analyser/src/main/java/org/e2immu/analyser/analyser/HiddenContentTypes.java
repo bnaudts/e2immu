@@ -255,9 +255,9 @@ public class HiddenContentTypes {
                                      ParameterizedType concrete,
                                      ParameterizedType formal,
                                      Map<Integer, ParameterizedType> res) {
-        Integer typeItself = indexOfOrNull(formal);
+        Integer typeItself = indexOfOrNull(concrete);
         if (typeItself != null) {
-            res.put(typeItself, concrete);
+            res.put(typeItself, formal);
             return;
         }
         ParameterizedType c2;
@@ -278,31 +278,46 @@ public class HiddenContentTypes {
     }
 
     /*
-     Translate hidden content indices with respect to 'this' to indices with respect to another type,
-     based on shared hidden content types.
+     The 'indices' are expressed with respect to 'this'.
+     'to' is a concrete type for 'from', whose hidden content types are in 'this'.
+     the resulting indices are wrt the formal type of 'to'.
+
+     E.g. method context is the type ArrayList<EA>.new ArrayList<>(Collection<? extends EA>)
+     concrete constructor call is new ArrayList<>(List<M>)
+
+     'this' is with respect to ArrayList<EA> and the constructor, mapping EA=0
+     'from' is Collection<? extends EA>, formal type Collection<EC>.
+     'to' is List<M>, with formal type List<EL>. The concrete type doesn't matter here, the formal does.
+     The end result is 0 -> 0: the index of EA goes to the index of EL, via the mapping
+
+     STEP 1: compute 0=EC based on 'this', formal 'from'.
+     STEP 2: compute the map EL to EC
+     STEP 3: find where EL sits in 'to''s hidden content
     */
     public Map<Integer, Integer> translateHcs(InspectionProvider inspectionProvider,
                                               Collection<Integer> indices,
-                                              ParameterizedType type) {
-        ParameterizedType formal = type.typeInfo.asParameterizedType(inspectionProvider);
-        Map<Integer, ParameterizedType> methodHctIndexToConcrete = mapTypesRecursively(inspectionProvider, type, formal);
-        HiddenContentTypes typeHct = type.typeInfo.typeResolution.get().hiddenContentTypes();
-        return translateHcs(methodHctIndexToConcrete, typeHct, indices, type);
+                                              ParameterizedType from,
+                                              ParameterizedType to) {
+        ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
+        Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom);
+        ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
+        Map<NamedType, ParameterizedType> map2 = formalFrom.translateMap(inspectionProvider, formalTo,
+                true);
+        HiddenContentTypes toHct = to.typeInfo.typeResolution.get().hiddenContentTypes();
+        return toHct.translateHcs(indices, map1, map2);
     }
 
-    public Map<Integer, Integer> translateHcs(Map<Integer, ParameterizedType> methodHctIndexToConcrete,
-                                              HiddenContentTypes typeHct,
-                                              Collection<Integer> indices,
-                                              ParameterizedType type) {
-        Map<Integer, Integer> res = new HashMap<>();
+    public Map<Integer, Integer> translateHcs(Collection<Integer> indices,
+                                              Map<Integer, ParameterizedType> fromTypeMap,
+                                              Map<NamedType, ParameterizedType> fromToTo) {
+        Map<Integer, Integer> result = new HashMap<>();
         for (int i : indices) {
-            ParameterizedType atI = methodHctIndexToConcrete.get(i);
-            assert atI != null;
-            Integer iHct = typeHct.indexOfOrNull(atI);
-            assert iHct != null : "Cannot find " + atI + " in " + typeHct + "; start off " + type;
-            res.put(i, iHct);
+            ParameterizedType ec = fromTypeMap.get(i);
+            ParameterizedType el = fromToTo.get(ec.typeParameter);
+            int r = indexOf(el);
+            result.put(i, r);
         }
-        return res;
+        return result;
     }
 
     public HiddenContentTypes getHcsTypeInfo() {
