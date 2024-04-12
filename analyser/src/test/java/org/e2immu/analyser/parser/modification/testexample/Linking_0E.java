@@ -63,7 +63,7 @@ public class Linking_0E {
         return list.subList(0, 1);
     }
 
-    // dependent, regardless of X
+    // dependent, regardless of X, identical to m4
     static <X extends M> List<X> m5(List<X> list) {
         return list.subList(0, 1);
     }
@@ -83,13 +83,18 @@ public class Linking_0E {
         return new ArrayList<>(list);
     }
 
-    // independent HC, because of X
+    // independent HC, 0M-4-0M, identical to m7
     static <X extends M> List<X> m8(List<X> list) {
         return new ArrayList<>(list);
     }
 
-    // independent HC
+    // independent HC, 1M-4-1M
     static <X extends M> Map<Long, X> m9(Map<Long, X> map) {
+        return new HashMap<>(map);
+    }
+
+    // independent HC, 1-4-1
+    static <X extends I> Map<Long, X> m9b(Map<Long, X> map) {
         return new HashMap<>(map);
     }
 
@@ -103,7 +108,7 @@ public class Linking_0E {
         return new HashMap<>(map);
     }
 
-    // independent HC
+    // independent HC, mutable, not mutable: 0M,1-4-0M,1
     static <X extends M, Y> Map<X, Y> m11(Map<X, Y> map) {
         return new HashMap<>(map);
     }
@@ -118,12 +123,17 @@ public class Linking_0E {
         return new HashMap<>(map);
     }
 
+    // dependent -> downgrade removed; independent HC; identical to m11
+    static <X extends M, Y extends I> Map<X, Y> m13b(Map<X, Y> map) {
+        return new HashMap<>(map);
+    }
+
     // dependent
     static List<M> m14(List<M> list) {
         return list.subList(0, 1).subList(0, 1);
     }
 
-    // dependent
+    // dependent, identical to m14
     static <X extends M> List<X> m15(List<X> list) {
         return list.subList(0, 1).subList(0, 1);
     }
@@ -172,6 +182,7 @@ public class Linking_0E {
         return list;
     }
 
+    // identical to m21
     static <X extends M> List<X> m21b(X m, List<X> list) {
         Collections.addAll(list, m);
         return list;
