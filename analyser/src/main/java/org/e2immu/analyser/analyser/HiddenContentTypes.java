@@ -238,27 +238,39 @@ public class HiddenContentTypes {
     }
 
     public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
-                                                               ParameterizedType concreteType) {
+                                                               ParameterizedType concreteType,
+                                                               boolean thisContainsConcrete) {
         ParameterizedType formalType = concreteType.typeInfo.asParameterizedType(inspectionProvider);
-        return mapTypesRecursively(inspectionProvider, concreteType, formalType);
+        return mapTypesRecursively(inspectionProvider, concreteType, formalType, thisContainsConcrete);
     }
 
     public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
                                                                ParameterizedType concreteType,
-                                                               ParameterizedType typeInContextOfHCT) {
+                                                               ParameterizedType typeInContextOfHCT,
+                                                               boolean thisContainsConcrete) {
         Map<Integer, ParameterizedType> res = new LinkedHashMap<>(); // keep order, for testing
-        mapTypesRecursively(inspectionProvider, concreteType, typeInContextOfHCT, res);
+        mapTypesRecursively(inspectionProvider, concreteType, typeInContextOfHCT, thisContainsConcrete, res);
         return res;
     }
 
     private void mapTypesRecursively(InspectionProvider inspectionProvider,
                                      ParameterizedType concrete,
                                      ParameterizedType formal,
+                                     boolean thisContainsConcrete,
                                      Map<Integer, ParameterizedType> res) {
-        Integer typeItself = indexOfOrNull(concrete);
-        if (typeItself != null) {
-            res.put(typeItself, formal);
-            return;
+
+        if (thisContainsConcrete) {
+            Integer typeItself = indexOfOrNull(concrete);
+            if (typeItself != null) {
+                res.put(typeItself, formal);
+                return;
+            }
+        } else {
+            Integer typeItself = indexOfOrNull(formal);
+            if (typeItself != null) {
+                res.put(typeItself, concrete);
+                return;
+            }
         }
         ParameterizedType c2;
         if (formal.typeInfo != null && concrete.typeInfo == formal.typeInfo) {
@@ -272,7 +284,7 @@ public class HiddenContentTypes {
             ParameterizedType cp = i >= c2.parameters.size()
                     ? inspectionProvider.getPrimitives().objectParameterizedType()
                     : c2.parameters.get(i);
-            mapTypesRecursively(inspectionProvider, cp, fp, res);
+            mapTypesRecursively(inspectionProvider, cp, fp, thisContainsConcrete, res);
             i++;
         }
     }
@@ -299,7 +311,7 @@ public class HiddenContentTypes {
                                               ParameterizedType from,
                                               ParameterizedType to) {
         ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
-        Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom);
+        Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom, true);
         ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
         Map<NamedType, ParameterizedType> map2 = formalFrom.translateMap(inspectionProvider, formalTo,
                 true);
@@ -313,8 +325,11 @@ public class HiddenContentTypes {
         Map<Integer, Integer> result = new HashMap<>();
         for (int i : indices) {
             ParameterizedType ec = fromTypeMap.get(i);
+            assert ec != null;
             ParameterizedType el = fromToTo.get(ec.typeParameter);
-            int r = indexOf(el);
+            assert el != null;
+            Integer r = indexOfOrNull(el);
+            assert r != null;
             result.put(i, r);
         }
         return result;

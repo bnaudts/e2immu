@@ -149,7 +149,7 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         // to boolean 'mutable'
         private final Map<Integer, Boolean> map;
 
-        public CsSet(Set<Integer> set) {
+        public CsSet(Collection<Integer> set) {
             assert set != null && !set.isEmpty() && set.stream().allMatch(i -> i >= 0);
             this.map = set.stream().collect(Collectors.toUnmodifiableMap(s -> s, s -> false));
         }
@@ -245,7 +245,7 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
             assert type.typeInfo.typeResolution.isSet();
             HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
             Map<Integer, ParameterizedType> typeMap = hct.mapTypesRecursively(evaluationContext.getAnalyserContext(),
-                    type);
+                    type, false);
             CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
             Map<Integer, Boolean> res = new HashMap<>();
             for (int hcIndex : csSet.set()) {

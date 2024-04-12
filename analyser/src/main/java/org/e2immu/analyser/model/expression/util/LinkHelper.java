@@ -364,14 +364,32 @@ public class LinkHelper {
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
-        boolean targetIsTypeParameter = targetType.isTypeParameter();
-        ParameterizedType targetTypeFormal = targetIsTypeParameter ? null
-                : targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
-        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget = targetIsTypeParameter ? null :
-                hiddenContentTypes.mapTypesRecursively(context.getAnalyserContext(), targetType, targetTypeFormal);
+        boolean targetIsTypeParameter = methodTargetType.isTypeParameter() || targetType.isTypeParameter();
+        HiddenContentSelector hcsTarget;
+        Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget;
+        ParameterizedType targetTypeFormal;
+        if (targetIsTypeParameter) {
+            hcsTarget = hiddenContentSelectorOfTarget;
+            assert hcsTarget.isAll() || hcsTarget.isNone();
+            typesCorrespondingToHCOfTarget = null;
+            targetTypeFormal = null;
+        } else {
+            targetTypeFormal = targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
+            if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet csSet) {
+                Map<Integer, Integer> map3 = hiddenContentTypes.translateHcs(context.getAnalyserContext(), csSet.set(),
+                        methodTargetType, targetTypeFormal);
+                hcsTarget = new HiddenContentSelector.CsSet(new HashSet<>(map3.values()));
+                HiddenContentTypes hctTarget = targetType.typeInfo.typeResolution.get().hiddenContentTypes();
+                typesCorrespondingToHCOfTarget = hctTarget.mapTypesRecursively(context.getAnalyserContext(), targetType,
+                        false);
+            } else {
+                hcsTarget = hiddenContentSelectorOfTarget;
+                typesCorrespondingToHCOfTarget = null;
+            }
+        }
 
-        DV correctedIndependent = correctIndependent(immutableOfSource, transferIndependent, targetType,
-                typesCorrespondingToHCOfTarget, hiddenContentSelectorOfTarget);
+        DV correctedIndependent = correctIndependent(context.evaluationContext(),
+                immutableOfSource, transferIndependent, targetType, typesCorrespondingToHCOfTarget, hcsTarget);
 
         if (MultiLevel.INDEPENDENT_DV.equals(correctedIndependent)) {
             return LinkedVariables.EMPTY;
@@ -393,11 +411,6 @@ public class LinkHelper {
         } else {
             hctMethodToHctSource = null;
         }
-
-        HiddenContentTypes targetHct = targetIsTypeParameter
-                ? null : targetTypeFormal.typeInfo.typeResolution.get().hiddenContentTypes();
-        Map<NamedType, ParameterizedType> targetMethodToType = methodTargetType.translateMap(context.getAnalyserContext(),
-                targetTypeFormal, true);
 
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
@@ -448,17 +461,16 @@ public class LinkHelper {
                                 Map<Integer, Boolean> mineMap = new HashMap<>();
                                 Map<Integer, Boolean> theirsMap = new HashMap<>();
 
-                                assert targetHct != null;
                                 assert hctMethodToHctSource != null;
-
-                                Map<Integer, Integer> hcsMethodToHctTarget = targetHct.translateHcs(mineCsSet.set(),
-                                        typesCorrespondingToHCOfTarget, targetMethodToType);
+                                Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes.translateHcs(context.getAnalyserContext(),
+                                        mineCsSet.set(), methodTargetType, targetTypeFormal);
 
                                 for (int i : mineCsSet.set()) {
                                     ParameterizedType type = typesCorrespondingToHCOfTarget.get(i);
                                     DV typeImmutable = context.evaluationContext().immutable(type);
                                     if (typeImmutable.isDelayed()) {
                                         causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
+                                        typeImmutable = MUTABLE_DV;
                                     }
                                     if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)) {
                                         continue;
@@ -473,22 +485,22 @@ public class LinkHelper {
                                     int iInHctSource = hctMethodToHctSource.get(i);
                                     theirsMap.put(iInHctSource, mutable);
                                 }
-                                assert !mineMap.isEmpty();
-                                assert !theirsMap.isEmpty();
                                 if (correctForVarargsMutable != null) {
                                     // the normal link would be 0-4-0, we make it *-4-0
                                     mine = correctForVarargsMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
                                             : HiddenContentSelector.All.INSTANCE;
                                 } else {
-                                    mine = new HiddenContentSelector.CsSet(mineMap);
+                                    mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
                                 }
-                                theirs = new HiddenContentSelector.CsSet(theirsMap);
+                                theirs = theirsMap.isEmpty() ? null : new HiddenContentSelector.CsSet(theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
                         }
-                        LV commonHC = reverse ? LV.createHC(theirs, mine) : LV.createHC(mine, theirs);
-                        newLinked.put(e.getKey(), commonHC);
+                        if (mine != null && theirs != null) {
+                            LV commonHC = reverse ? LV.createHC(theirs, mine) : LV.createHC(mine, theirs);
+                            newLinked.put(e.getKey(), commonHC);
+                        }
                     } else {
                         throw new UnsupportedOperationException("I believe we should not link");
                     }
@@ -514,12 +526,20 @@ public class LinkHelper {
                 && !lv.isCommonHC()
                 && !MultiLevel.isAtLeastImmutableHC(immutableOfSource);
     }
+    
+    /*
+     Important: the last three parameters should form a consistent set, all computed with respect to the same
+     formal type (targetType.typeInfo).
+    
+     First translate the HCS from the method target to the target!
+     */
 
-    private DV correctIndependent(DV immutableOfSource,
-                                  DV independent,
-                                  ParameterizedType targetType,
-                                  Map<Integer, ParameterizedType> typesCorrespondingToHCInTarget,
-                                  HiddenContentSelector hiddenContentSelectorOfTarget) {
+    private static DV correctIndependent(EvaluationContext evaluationContext,
+                                         DV immutableOfSource,
+                                         DV independent,
+                                         ParameterizedType targetType,
+                                         Map<Integer, ParameterizedType> typesCorrespondingToHCInTarget,
+                                         HiddenContentSelector hiddenContentSelectorOfTarget) {
         // immutableOfSource is not recursively immutable, independent is not fully independent
         // remaining values immutable: mutable, immutable HC
         // remaining values independent: dependent, independent hc
@@ -529,7 +549,7 @@ public class LinkHelper {
             }
             if (hiddenContentSelectorOfTarget.isAll()) {
                 // look at the whole object
-                DV immutablePt = context.evaluationContext().immutable(targetType);
+                DV immutablePt = evaluationContext.immutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                     return MultiLevel.INDEPENDENT_HC_DV;
@@ -539,7 +559,7 @@ public class LinkHelper {
                 boolean allIndependentHC = true;
                 for (Map.Entry<Integer, ParameterizedType> entry : typesCorrespondingToHCInTarget.entrySet()) {
                     if (selectorSet.contains(entry.getKey())) {
-                        DV immutablePt = context.evaluationContext().immutable(entry.getValue());
+                        DV immutablePt = evaluationContext.immutable(entry.getValue());
                         if (immutablePt.isDelayed()) return immutablePt;
                         if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
                             allIndependentHC = false;
@@ -552,7 +572,7 @@ public class LinkHelper {
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
             if (hiddenContentSelectorOfTarget.isAll()) {
-                DV immutablePt = context.evaluationContext().immutable(targetType);
+                DV immutablePt = evaluationContext.immutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutablePt)) {
                     return MultiLevel.INDEPENDENT_DV;

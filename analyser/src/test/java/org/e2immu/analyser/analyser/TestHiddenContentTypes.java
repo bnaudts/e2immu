@@ -124,12 +124,12 @@ public class TestHiddenContentTypes {
     @Test
     @DisplayName("mapTypes, simple situation")
     public void test1() {
-        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, primitives.stringParameterizedType(), tp0Pt);
+        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, primitives.stringParameterizedType(), tp0Pt, false);
         assertEquals("{0=Type String}", map.toString());
 
         ParameterizedType someString = new ParameterizedType(someTypeWithHC, List.of(primitives.stringParameterizedType()));
         assertEquals("Type com.foo.HC<String>", someString.toString());
-        Map<Integer, ParameterizedType> map2 = barHct.mapTypesRecursively(inspectionProvider, someString, someTypeWithHCPt);
+        Map<Integer, ParameterizedType> map2 = barHct.mapTypesRecursively(inspectionProvider, someString, someTypeWithHCPt, false);
         assertEquals("{0=Type String}", map2.toString());
 
         assertEquals("Type com.foo.Set<E>", setPt.toString());
@@ -139,7 +139,7 @@ public class TestHiddenContentTypes {
         ParameterizedType setSomeTypeString = new ParameterizedType(set, List.of(someString));
         assertEquals("Type com.foo.Set<com.foo.HC<String>>", setSomeTypeString.toString());
 
-        Map<Integer, ParameterizedType> map3 = barHct.mapTypesRecursively(inspectionProvider, setSomeTypeString, setSomeType);
+        Map<Integer, ParameterizedType> map3 = barHct.mapTypesRecursively(inspectionProvider, setSomeTypeString, setSomeType, false);
         assertEquals("{0=Type String}", map3.toString());
     }
 
@@ -149,32 +149,32 @@ public class TestHiddenContentTypes {
         ParameterizedType stsPt = someTypeOfString.asParameterizedType(inspectionProvider);
         assertEquals("Type com.foo.SomeTypeOfString", stsPt.toString());
 
-        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, stsPt, someTypeWithHCPt);
+        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, stsPt, someTypeWithHCPt, false);
         assertEquals("{0=Type String}", map.toString());
     }
 
     @Test
     public void test3() {
         Map<Integer, ParameterizedType> map = mapMapHct.mapTypesRecursively(inspectionProvider,
-                primitives.stringParameterizedType(), mapMap1.toParameterizedType());
+                primitives.stringParameterizedType(), mapMap1.toParameterizedType(), false);
         assertEquals("{1=Type String}", map.toString());
 
         ParameterizedType someMapMap = new ParameterizedType(mapMap, List.of(primitives.stringParameterizedType(),
                 primitives.integerTypeInfo().asSimpleParameterizedType(), primitives.boxedBooleanParameterizedType()));
         assertEquals("Type com.foo.MapMap<String,Integer,Boolean>", someMapMap.toString());
-        Map<Integer, ParameterizedType> map2 = mapMapHct.mapTypesRecursively(inspectionProvider, someMapMap, mapMapPt);
+        Map<Integer, ParameterizedType> map2 = mapMapHct.mapTypesRecursively(inspectionProvider, someMapMap, mapMapPt, false);
         assertEquals("{0=Type String, 1=Type Integer, 2=Type Boolean}", map2.toString());
 
         ParameterizedType set1 = new ParameterizedType(set, List.of(mapMap1.toParameterizedType()));
         assertEquals("Type com.foo.Set<T1>", set1.toString());
         ParameterizedType stringSet = new ParameterizedType(set, List.of(primitives.stringParameterizedType()));
-        Map<Integer, ParameterizedType> map3 = mapMapHct.mapTypesRecursively(inspectionProvider, stringSet, set1);
+        Map<Integer, ParameterizedType> map3 = mapMapHct.mapTypesRecursively(inspectionProvider, stringSet, set1, false);
         assertEquals("{1=Type String}", map3.toString());
 
         ParameterizedType someType1 = new ParameterizedType(someTypeWithHC, List.of(mapMap2.toParameterizedType()));
         assertEquals("Type com.foo.HC<T2>", someType1.toString());
         Map<Integer, ParameterizedType> map4 = mapMapHct.mapTypesRecursively(inspectionProvider,
-                someTypeOfString.asSimpleParameterizedType(), someType1);
+                someTypeOfString.asSimpleParameterizedType(), someType1, false);
         assertEquals("{2=Type String}", map4.toString());
     }
 }
