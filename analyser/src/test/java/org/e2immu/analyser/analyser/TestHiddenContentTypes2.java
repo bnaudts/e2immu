@@ -89,7 +89,8 @@ public class TestHiddenContentTypes2 {
         assertEquals("Type com.foo.List<EL>", listPt.toString());
         assertEquals("Type com.foo.ArrayList<EA>", arrayListPt.toString());
 
-        Map<NamedType, ParameterizedType> map = listPt.translateMap(inspectionProvider, collectionPt, false);
+        Map<NamedType, ParameterizedType> map = listPt.translateMap(inspectionProvider, collectionPt,
+                false);
         assertEquals("{EL as #0 in com.foo.List=Type param EC}", map.toString());
     }
 
@@ -98,7 +99,7 @@ public class TestHiddenContentTypes2 {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
         ParameterizedType collEA = new ParameterizedType(collection, List.of(tpAl0Pt));
         ParameterizedType listStr = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
-        Map<Integer, Integer> map = hctAl.translateHcs(inspectionProvider, Set.of(0), collEA, listStr);
+        Map<Integer, Integer> map = hctAl.translateHcs(inspectionProvider, Set.of(0), collEA, listStr, true);
         assertEquals("{0=0}", map.toString());
     }
 }

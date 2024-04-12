@@ -309,12 +309,13 @@ public class HiddenContentTypes {
     public Map<Integer, Integer> translateHcs(InspectionProvider inspectionProvider,
                                               Collection<Integer> indices,
                                               ParameterizedType from,
-                                              ParameterizedType to) {
+                                              ParameterizedType to,
+                                              boolean fromFormalToConcrete) {
         ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
         Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom, true);
         ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
         Map<NamedType, ParameterizedType> map2 = formalFrom.translateMap(inspectionProvider, formalTo,
-                true);
+                fromFormalToConcrete);
         HiddenContentTypes toHct = to.typeInfo.typeResolution.get().hiddenContentTypes();
         return toHct.translateHcs(indices, map1, map2);
     }
@@ -341,5 +342,9 @@ public class HiddenContentTypes {
 
     public Map<Integer, NamedType> getIndexToType() {
         return indexToType;
+    }
+
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
     }
 }

@@ -23,6 +23,7 @@ import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -368,19 +369,20 @@ public class LinkHelper {
         HiddenContentSelector hcsTarget;
         Map<Integer, ParameterizedType> typesCorrespondingToHCOfTarget;
         ParameterizedType targetTypeFormal;
+        InspectionProvider inspectionProvider = context.getAnalyserContext();
         if (targetIsTypeParameter) {
             hcsTarget = hiddenContentSelectorOfTarget;
             assert hcsTarget.isAll() || hcsTarget.isNone();
             typesCorrespondingToHCOfTarget = null;
             targetTypeFormal = null;
         } else {
-            targetTypeFormal = targetType.typeInfo.asParameterizedType(context.getAnalyserContext());
+            targetTypeFormal = targetType.typeInfo.asParameterizedType(inspectionProvider);
             if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet csSet) {
-                Map<Integer, Integer> map3 = hiddenContentTypes.translateHcs(context.getAnalyserContext(), csSet.set(),
-                        methodTargetType, targetTypeFormal);
+                Map<Integer, Integer> map3 = hiddenContentTypes.translateHcs(inspectionProvider, csSet.set(),
+                        methodTargetType, targetTypeFormal, true);
                 hcsTarget = new HiddenContentSelector.CsSet(new HashSet<>(map3.values()));
                 HiddenContentTypes hctTarget = targetType.typeInfo.typeResolution.get().hiddenContentTypes();
-                typesCorrespondingToHCOfTarget = hctTarget.mapTypesRecursively(context.getAnalyserContext(), targetType,
+                typesCorrespondingToHCOfTarget = hctTarget.mapTypesRecursively(inspectionProvider, targetType,
                         false);
             } else {
                 hcsTarget = hiddenContentSelectorOfTarget;
@@ -406,11 +408,14 @@ public class LinkHelper {
         if (sourceType.arrays > 0) {
             hctMethodToHctSource = Map.of(0, 0);// array access
         } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet set && sourceType.typeInfo != null) {
-            hctMethodToHctSource = hiddenContentTypes.translateHcs(context.getAnalyserContext(), set.set(),
-                    methodSourceType, sourceType);
+            hctMethodToHctSource = hiddenContentTypes.translateHcs(inspectionProvider, set.set(),
+                    methodSourceType, sourceType, true);
         } else {
             hctMethodToHctSource = null;
         }
+
+        HiddenContentTypes hctSource = sourceType.typeInfo == null ? null
+                : sourceType.typeInfo.typeResolution.get().hiddenContentTypes();
 
         for (Map.Entry<Variable, LV> e : sourceLvs) {
             ParameterizedType pt = e.getKey().parameterizedType();
@@ -450,7 +455,7 @@ public class LinkHelper {
                                     assert iInHctSource != null;
                                     theirsMap.put(iInHctSource, mutable);
                                 }
-                                theirs = new HiddenContentSelector.CsSet(theirsMap);
+                                theirs = correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
@@ -462,8 +467,9 @@ public class LinkHelper {
                                 Map<Integer, Boolean> theirsMap = new HashMap<>();
 
                                 assert hctMethodToHctSource != null;
-                                Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes.translateHcs(context.getAnalyserContext(),
-                                        mineCsSet.set(), methodTargetType, targetTypeFormal);
+                                assert targetTypeFormal != null;
+                                Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes.translateHcs(inspectionProvider,
+                                        mineCsSet.set(), methodTargetType, targetTypeFormal, true);
 
                                 for (int i : mineCsSet.set()) {
                                     ParameterizedType type = typesCorrespondingToHCOfTarget.get(i);
@@ -492,7 +498,7 @@ public class LinkHelper {
                                 } else {
                                     mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
                                 }
-                                theirs = theirsMap.isEmpty() ? null : new HiddenContentSelector.CsSet(theirsMap);
+                                theirs = theirsMap.isEmpty() ? null : correctWithRespectTo(inspectionProvider, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
@@ -511,6 +517,23 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
         }
         return LinkedVariables.of(newLinked);
+    }
+
+    private HiddenContentSelector.CsSet correctWithRespectTo(InspectionProvider inspectionProvider,
+                                                             ParameterizedType pt,
+                                                             HiddenContentTypes hctSource,
+                                                             Map<Integer, Boolean> theirsMap) {
+        Map<Integer, Boolean> correctedMap = new HashMap<>();
+        ParameterizedType ptFormal = pt.typeInfo.asParameterizedType(inspectionProvider);
+        ParameterizedType sourceType = hctSource.getTypeInfo().asParameterizedType(inspectionProvider);
+        Map<Integer, Integer> translate = hctSource.translateHcs(inspectionProvider, theirsMap.keySet(), sourceType,
+                ptFormal, false);
+        for (Map.Entry<Integer, Boolean> e : theirsMap.entrySet()) {
+            Integer translated = translate.get(e.getKey());
+            assert translated != null;
+            correctedMap.put(translated, e.getValue());
+        }
+        return new HiddenContentSelector.CsSet(correctedMap);
     }
 
     private boolean isDependent(DV transferIndependent, DV correctedIndependent,
