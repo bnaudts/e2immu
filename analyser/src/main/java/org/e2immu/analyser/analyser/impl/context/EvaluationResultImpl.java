@@ -301,8 +301,12 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         return expression.getProperty(this, property, true);
     }
 
+    public interface Link {
+        void link(Variable from, Variable to, LV lv);
+    }
+
     // lazy creation of lists
-    public static class Builder {
+    public static class Builder implements Link {
         private final EvaluationContext evaluationContext;
         private final EvaluationResult previousResult;
         private final Messages messages = new Messages();
@@ -929,6 +933,7 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         delayed links must be symmetrical, until we know whether the direction is LINK_IS_HC_OF or not.
         you can never link to the return variable.
          */
+        @Override
         public void link(Variable from, Variable to, LV level) {
             assert !LV.LINK_INDEPENDENT.equals(level);
             assert !(to instanceof ReturnVariable) : "Cannot link to return variable";

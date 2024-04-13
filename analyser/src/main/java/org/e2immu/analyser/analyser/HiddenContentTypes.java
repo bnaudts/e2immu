@@ -284,9 +284,31 @@ public class HiddenContentTypes {
             ParameterizedType cp = i >= c2.parameters.size()
                     ? inspectionProvider.getPrimitives().objectParameterizedType()
                     : c2.parameters.get(i);
-            mapTypesRecursively(inspectionProvider, cp, fp, thisContainsConcrete, res);
+            ParameterizedType cpCorrected;
+            ParameterizedType fpCorrected;
+            if (thisContainsConcrete) {
+                cpCorrected = correctIfAssignable(inspectionProvider, cp);
+                fpCorrected = fp;
+            } else {
+                cpCorrected = cp;
+                fpCorrected = correctIfAssignable(inspectionProvider, fp);
+            }
+            mapTypesRecursively(inspectionProvider, cpCorrected, fpCorrected, thisContainsConcrete, res);
             i++;
         }
+    }
+
+    private ParameterizedType correctIfAssignable(InspectionProvider inspectionProvider, ParameterizedType pt) {
+        if (pt.typeParameter != null && !pt.owner().getTypeInfo().equals(typeInfo)) {
+            // FIXME this is one situation, there may be others; we're not checking isAssignable!
+            ParameterizedType thisPt = typeInfo.asParameterizedType(inspectionProvider);
+            Map<NamedType, ParameterizedType> map = pt.owner().getTypeInfo().mapInTermsOfParametersOfSubType(inspectionProvider, thisPt);
+            assert map != null : "We've not verified assignable";
+            ParameterizedType translated = map.get(pt.typeParameter);
+            assert translated != null;
+            return translated;
+        }
+        return pt;
     }
 
     /*

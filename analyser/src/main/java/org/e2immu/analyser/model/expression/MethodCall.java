@@ -384,10 +384,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(fp.intoObject());
 
         // (A)
-        linkedVariablesOfObject.stream().forEach(e ->
-                linkedVariablesOfObjectFromParams.stream().forEach(e2 ->
-                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
-                ));
+        linkHelper.crossLink(linkedVariablesOfObject, linkedVariablesOfObjectFromParams, builder);
 
         // links, 2nd: object -> result; this will be the result of the expression
         // copy the link result from the parameters into the lvs of the object. There can be a result when

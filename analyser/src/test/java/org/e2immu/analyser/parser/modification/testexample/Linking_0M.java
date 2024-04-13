@@ -44,4 +44,15 @@ public class Linking_0M {
         listM.add(m);
         listM2.add(m);
     }
+
+    @Modified
+    void m3(List<M> ms) {
+        listM.addAll(ms);
+    }
+/*
+    FIXME this is the next one to try
+    @Modified
+    void m4(Map<String, M> map) {
+        listM.addAll(map.values());
+    }*/
 }

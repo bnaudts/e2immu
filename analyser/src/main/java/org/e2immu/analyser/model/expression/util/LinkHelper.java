@@ -217,10 +217,7 @@ public class LinkHelper {
         LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
         LinkedVariables mergedLvs = linkedVariables(targetType, methodTargetType, hcsSource, targetLinkedVariables,
                 targetIsVarArgs, independentDv, sourceType, methodSourceType, hcsTarget, targetIsVarArgs);
-        sourceLinkedVariables.stream().forEach(e ->
-                mergedLvs.stream().forEach(e2 ->
-                        builder.link(e.getKey(), e2.getKey(), e.getValue().max(e2.getValue()))
-                ));
+        crossLink(sourceLinkedVariables, mergedLvs, builder);
     }
 
     /*
@@ -458,12 +455,16 @@ public class LinkHelper {
                                     theirsMap.put(iInHctSource, mutable);
                                 }
                                 assert hctSource != null;
-                                theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
+                                theirs = reverse
+                                        // correction takes place later
+                                        ? new HiddenContentSelector.CsSet(theirsMap)
+                                        : correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
                             } else {
                                 throw new UnsupportedOperationException();
                             }
                         } else {
                             // both are CsSet, we'll set mutable what is mutable, in a common way
+                            // FIXME: ignore the relevant correction for reverse links!
                             if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
                                 Boolean correctForVarargsMutable = null;
                                 Map<Integer, Boolean> mineMap = new HashMap<>();
@@ -622,5 +623,50 @@ public class LinkHelper {
             }
         }
         return independent;
+    }
+
+
+    public void crossLink(LinkedVariables linkedVariablesOfObject,
+                          LinkedVariables linkedVariablesOfObjectFromParams,
+                          EvaluationResultImpl.Link link) {
+        linkedVariablesOfObject.stream().forEach(e ->
+                linkedVariablesOfObjectFromParams.stream().forEach(e2 -> {
+                    Variable from = e.getKey();
+                    Variable to = e2.getKey();
+                    LV fromLv = e.getValue();
+                    LV toLv = e2.getValue();
+                    LV lv;
+                    if (fromLv.isDelayed() || toLv.isDelayed()) {
+                        lv = LV.delay(fromLv.causesOfDelay().merge(toLv.causesOfDelay()));
+                    } else if (!fromLv.isCommonHC() && !toLv.isCommonHC()) {
+                        lv = fromLv.max(toLv);
+                    } else if (fromLv.isCommonHC() && toLv.isCommonHC()) {
+                        lv = LV.createHC(fromLv.theirs(), toLv.theirs());
+                    } else if (fromLv.isCommonHC()) {
+                        HiddenContentSelector theirs;
+                        if (fromLv.theirs().isAll()) theirs = fromLv.theirs();
+                        else {
+                            // FIXME selectAll is wrong, we need to correct properly
+                            // o2v is --4--, p2v is 0,1,2. We must correct 'theirs' to the type of 'to'
+                            HiddenContentTypes hctTo = to.parameterizedType().typeInfo.typeResolution.get().hiddenContentTypes();
+                            theirs = hctTo.selectAll().ensureMutable(fromLv.theirs().containsMutable());
+                        }
+                        lv = LV.createHC(fromLv.theirs(), theirs);
+                    } else {
+                        HiddenContentSelector mine;
+                        if (toLv.mine().isAll()) mine = toLv.mine();
+                        else {
+                            // FIXME selectAll is wrong, we need to correct properly
+                            // o2v is --4--, p2v is 0,1,2. We must correct 'theirs' to the type of 'to'
+                            HiddenContentTypes hctFrom = from.parameterizedType().typeInfo.typeResolution.get().hiddenContentTypes();
+                            mine = hctFrom.selectAll().ensureMutable(toLv.theirs().containsMutable());
+                        }
+                        // o2v is 0,1,2; p2v is --4--. We must correct 'mine' to the type of 'from'
+                        lv = LV.createHC(mine, toLv.theirs());
+                    }
+
+                    link.link(from, to, lv);
+                })
+        );
     }
 }

@@ -79,7 +79,7 @@ public class Test_Linking0M extends CommonTestRunner {
                 if ("m".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
-                                it(2, "this.listM:4"));
+                                it(2, "this.listM:4,this:4"));
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
                 }
@@ -88,12 +88,12 @@ public class Test_Linking0M extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "m".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
-                                it(2, "this.listM:4"));
+                                it(2, "this.listM:4,this:4"));
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM2:-1,this.listM:-1,this:-1"),
-                                it(2, "this.listM2:4,this.listM:4"));
+                                it(2, "this.listM2:4,this.listM:4,this:4"));
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                         assertSingleLv(d, 2, 1, "*M-4-0M");
                     }
@@ -101,12 +101,12 @@ public class Test_Linking0M extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "listM".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1,this:-1"),
-                                it(2, "m:4"));
+                                it(2, "m:4,this:4"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                     }
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1,this.listM2:-1,this:-1"),
-                                it(2, "m:4,this.listM2:4"));
+                                it(2, "m:4,this.listM2:4,this:4"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                         // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
                         assertSingleLv(d, 2, 1, "0-4-0");
@@ -120,7 +120,7 @@ public class Test_Linking0M extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1,this.listM:-1,this:-1"),
-                                it(2, "m:4,this.listM:4"));
+                                it(2, "m:4,this.listM:4,this:4"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                         // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
                         assertSingleLv(d, 2, 1, "0-4-0");
