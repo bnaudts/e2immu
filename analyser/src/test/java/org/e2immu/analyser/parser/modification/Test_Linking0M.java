@@ -180,6 +180,13 @@ public class Test_Linking0M extends CommonTestRunner {
                         assertLinked(d, it(0, 1, "inverse:-1"), it(2, "inverse:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
                     }
+                    if ("2".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "inverse:-1,this.map:-1,this:-1,x:-1"),
+                                it(2, "inverse:4,this.map:4,this:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
+                        assertSingleLv(d, 2, 1, "*M-4-0M");
+                        assertSingleLv(d, 2, 2, "*M-4-0M");
+                    }
                 }
             }
         };
@@ -201,6 +208,13 @@ public class Test_Linking0M extends CommonTestRunner {
                         it(0, 1, "m:-1,this.listM:-1"), it(2, "m:4,this.listM:4"));
                 assertSingleLv(d, lvs, 2, 0, "0M-4-*M");
                 assertSingleLv(d, lvs, 2, 1, "0-4-0");
+            }
+            if ("map".equals(d.fieldInfo().name)) {
+                assertLinked(d, lvs,
+                        it(0, 1, "inverse:-1,m:-1,x:-1"),
+                        it(2, "inverse:4,x:4"));
+                assertSingleLv(d, lvs, 2, 0, "0-4-1");
+                assertSingleLv(d, lvs, 2, 1, "1-4-*");
             }
         };
 
