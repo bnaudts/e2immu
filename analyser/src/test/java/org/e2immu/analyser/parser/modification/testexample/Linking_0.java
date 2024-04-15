@@ -153,4 +153,8 @@ public class Linking_0 {
         collection.add(string);
         return collection;
     }
+
+    static <X> M m25(Map<X, M> map, X x) {
+        return map.get(x);
+    }
 }

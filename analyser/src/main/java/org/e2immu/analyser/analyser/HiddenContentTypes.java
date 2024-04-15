@@ -194,6 +194,15 @@ public class HiddenContentTypes {
         throw new UnsupportedOperationException();
     }
 
+    public NamedType typeByIndex(int i) {
+        NamedType here = indexToType.get(i);
+        if (here != null) return here;
+        if (hcsTypeInfo != null) {
+            return hcsTypeInfo.indexToType.get(i);
+        }
+        return null;
+    }
+
     public int indexOf(ParameterizedType type) {
         return indexOfOrNull(type);
     }
@@ -368,5 +377,29 @@ public class HiddenContentTypes {
 
     public TypeInfo getTypeInfo() {
         return typeInfo;
+    }
+
+    public boolean isAssignableTo(InspectionProvider inspectionProvider, NamedType namedType, int i) {
+        NamedType nt = typeByIndex(i);
+        if (namedType.equals(nt)) return true;
+        if (nt instanceof TypeParameter tp && namedType instanceof TypeParameter tp2) {
+            assert !tp.isMethodTypeParameter() && !tp2.isMethodTypeParameter() : "Not implemented";
+            TypeInfo owner = tp.getOwner().getLeft();
+            TypeInfo owner2 = tp2.getOwner().getLeft();
+            if (owner.equals(owner2)) return tp.equals(tp2);
+            ParameterizedType type = owner.asParameterizedType(inspectionProvider);
+            ParameterizedType type2 = owner2.asParameterizedType(inspectionProvider);
+            if (!type.isAssignableFrom(inspectionProvider, type2)) {
+                return false;
+            }
+            // do they map onto the same type?
+            Map<NamedType, ParameterizedType> map = owner2.mapInTermsOfParametersOfSubType(inspectionProvider, type);
+            assert map != null;
+            ParameterizedType translated = map.get(tp2);
+            return translated != null && tp.equals(translated.typeParameter);
+        }
+        ParameterizedType formal = nt.asParameterizedType(inspectionProvider);
+        ParameterizedType concrete = namedType.asParameterizedType(inspectionProvider);
+        return formal.isAssignableFrom(inspectionProvider, concrete);
     }
 }

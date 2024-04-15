@@ -14,6 +14,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.parser.InspectionProvider;
+
 public record PackagePrefix(String[] prefix) implements NamedType {
 
     public PackagePrefix append(String component) {
@@ -26,5 +28,10 @@ public record PackagePrefix(String[] prefix) implements NamedType {
     @Override
     public String simpleName() {
         return String.join(",", prefix);
+    }
+
+    @Override
+    public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
+        throw new UnsupportedOperationException();
     }
 }

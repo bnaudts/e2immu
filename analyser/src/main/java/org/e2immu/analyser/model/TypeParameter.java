@@ -66,4 +66,9 @@ public interface TypeParameter extends NamedType {
     }
 
     ParameterizedType toParameterizedType();
+
+    @Override
+    default ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
+        return toParameterizedType();
+    }
 }

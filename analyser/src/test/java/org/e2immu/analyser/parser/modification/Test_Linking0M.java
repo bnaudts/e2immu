@@ -174,6 +174,14 @@ public class Test_Linking0M extends CommonTestRunner {
                     }
                 }
             }
+            if ("m6".equals(d.methodInfo().name)) {
+                if ("m".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "inverse:-1"), it(2, "inverse:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
+                    }
+                }
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {

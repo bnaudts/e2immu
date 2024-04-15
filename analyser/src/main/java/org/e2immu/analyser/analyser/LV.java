@@ -92,6 +92,8 @@ public class LV implements Comparable<LV> {
         assert !mine.isNone() && !theirs.isNone()
                && !mine.isDelayed() && !theirs.isDelayed()
                && !(mine.isAll() && theirs.isAll());
+        assert !mine.isAll() || theirs instanceof HiddenContentSelector.CsSet set && set.set().size() == 1;
+        assert !theirs.isAll() || mine instanceof HiddenContentSelector.CsSet set && set.set().size() == 1;
         return new LV(HC, mine, theirs, mine + "-4-" + theirs, CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     }
 
@@ -103,6 +105,8 @@ public class LV implements Comparable<LV> {
         assert !mine.isNone() && !theirs.isNone()
                && !mine.isDelayed() && !theirs.isDelayed()
                && !(mine.isAll() && theirs.isAll());
+        assert !mine.isAll() || theirs instanceof HiddenContentSelector.CsSet set && set.set().size() == 1;
+        assert !theirs.isAll() || mine instanceof HiddenContentSelector.CsSet set && set.set().size() == 1;
         return new LV(DEPENDENT, mine, theirs, mine + "-2-" + theirs, CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
     }
 
@@ -217,5 +221,9 @@ public class LV implements Comparable<LV> {
             return label;
         }
         return Integer.toString(value);
+    }
+
+    public boolean isStaticallyAssignedOrAssigned() {
+        return value == 0 || value == 1;
     }
 }

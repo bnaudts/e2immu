@@ -406,7 +406,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                            && !e2.getKey().equals(e.getKey())
                                            && e.getValue().mine().isAll() && e2.getValue().mine().isAll();
                     if (!skipAllToAll) {
-                        map.merge(e2.getKey(), e2.getValue().max(e.getValue()), LV::max);
+                        LV follow = LinkHelper.follow(e2.getValue(), e.getValue(), e2.getKey(), e.getKey());
+                        if (follow != null) {
+                            map.put(e2.getKey(), follow);
+                        }
                     }
                 });
             }

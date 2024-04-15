@@ -62,12 +62,13 @@ public class Linking_0M<X> {
         Collection<M> values = map.values();
         listM.addAll(values);
     }
-/*
+
     @Modified
     void m6(Map<X, M> inverse, X x) {
         M m = inverse.get(x);
+        assert m != null;
         map.put(m, x);
-    }*/
+    }
 
     Map<M, X> getMap() {
         return map;

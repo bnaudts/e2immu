@@ -80,6 +80,12 @@ public class Test_Linking0 extends CommonTestRunner {
                     assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), 2, 0,
                             "0M-4-0M");
                 }
+                case "m25" -> {
+                    String expectedLv = d.iteration() < 2 ? "map:-1" : "map:4";
+                    assertEquals(expectedLv, d.evaluationResult().linkedVariablesOfExpression().toString());
+                    assertSingleLv(d, d.evaluationResult().linkedVariablesOfExpression(), 2, 0,
+                            "*M-4-1M");
+                }
                 default -> {
                 }
             }
@@ -214,6 +220,11 @@ public class Test_Linking0 extends CommonTestRunner {
                             assertCurrentValue(d, 1, "collection$0");
                             assertLinked(d, it(0, "collection:0"));
                         }
+                    }
+                    case "m25" -> {
+                        assertCurrentValue(d, 2, "map.get(x)");
+                        assertLinked(d, it(0, 1, "map:-1"), it(2, "map:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
                     }
                     default -> {
                     }
