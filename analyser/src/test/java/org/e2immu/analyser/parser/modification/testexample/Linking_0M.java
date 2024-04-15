@@ -5,7 +5,7 @@ import org.e2immu.annotation.NotModified;
 
 import java.util.*;
 
-public class Linking_0M {
+public class Linking_0M<X> {
 
     // the archetypal modifiable type
     static class M {
@@ -22,6 +22,7 @@ public class Linking_0M {
 
     private final List<M> listM = new ArrayList<>();
     private final List<M> listM2 = new ArrayList<>();
+    private final Map<M, X> map = new HashMap<>();
 
     @Modified
     void m1(int index) {
@@ -56,10 +57,19 @@ public class Linking_0M {
         listM.addAll(values);
     }
 
-    //@Modified
+    @Modified
     void m5(Map<String, M> map) {
-        // FIXME next
-        // Collection<M> values = map.values();
-        // listM.addAll(values);
+        Collection<M> values = map.values();
+        listM.addAll(values);
+    }
+/*
+    @Modified
+    void m6(Map<X, M> inverse, X x) {
+        M m = inverse.get(x);
+        map.put(m, x);
+    }*/
+
+    Map<M, X> getMap() {
+        return map;
     }
 }

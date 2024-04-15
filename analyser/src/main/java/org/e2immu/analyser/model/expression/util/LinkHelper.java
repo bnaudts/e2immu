@@ -425,103 +425,106 @@ public class LinkHelper {
 
             if (immutable.isDelayed() || lv.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay()).merge(lv.causesOfDelay());
-            } else {
-                if (MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
-                        immutableOfSource, lv)) {
-                    newLinked.put(e.getKey(), LINK_DEPENDENT);
-                } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                    if (!hiddenContentSelectorOfTarget.isNone()) {
-                        HiddenContentSelector mine; // target
-                        HiddenContentSelector theirs; // source
+            } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                boolean createDependentLink = MultiLevel.isMutable(immutable) && isDependent(transferIndependent, correctedIndependent,
+                        immutableOfSource, lv);
+
+                if (!hiddenContentSelectorOfTarget.isNone()) {
+                    HiddenContentSelector mine; // target
+                    HiddenContentSelector theirs; // source
 
                         /*
                         this is the only place during computational analysis where we create common HC links.
                         all other links are created in the ShallowMethodAnalyser.
                          */
-                        if (hiddenContentSelectorOfTarget.isAll()) {
-                            DV typeImmutable = context.evaluationContext().immutable(targetType);
-                            if (typeImmutable.isDelayed()) {
-                                causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
-                            }
-                            boolean mutable = MultiLevel.isMutable(typeImmutable);
-                            mine = mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
-                                    : HiddenContentSelector.All.INSTANCE;
-                            if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet csSet) {
-                                Map<Integer, Boolean> theirsMap = new HashMap<>();
-                                for (int i : csSet.set()) {
-                                    assert hctMethodToHctSource != null;
-                                    Integer iInHctSource = hctMethodToHctSource.get(i);
-                                    assert iInHctSource != null;
-                                    theirsMap.put(iInHctSource, mutable);
-                                }
-                                assert hctSource != null;
-                                theirs = reverse
-                                        // correction takes place later
-                                        ? new HiddenContentSelector.CsSet(theirsMap)
-                                        : correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
-                            } else {
-                                throw new UnsupportedOperationException();
-                            }
-                        } else {
-                            // both are CsSet, we'll set mutable what is mutable, in a common way
-                            if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
-                                Boolean correctForVarargsMutable = null;
-                                Map<Integer, Boolean> mineMap = new HashMap<>();
-                                Map<Integer, Boolean> theirsMap = new HashMap<>();
-
-                                assert hctMethodToHctSource != null;
-                                assert targetTypeFormal != null;
-                                Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes.translateHcs(inspectionProvider,
-                                        mineCsSet.set(), methodTargetType, targetTypeFormal, true);
-
-                                for (int i : mineCsSet.set()) {
-                                    ParameterizedType type = typesCorrespondingToHCOfTarget.get(i);
-                                    DV typeImmutable = context.evaluationContext().immutable(type);
-                                    if (typeImmutable.isDelayed()) {
-                                        causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
-                                        typeImmutable = MUTABLE_DV;
-                                    }
-                                    if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)) {
-                                        continue;
-                                    }
-                                    int iInHctTarget = hcsMethodToHctTarget.get(i);
-                                    boolean mutable = isMutable(typeImmutable);
-                                    mineMap.put(iInHctTarget, mutable);
-                                    if (sourceIsVarArgs) {
-                                        // we're in a varargs situation: the first element is the type itself
-                                        correctForVarargsMutable = mutable;
-                                    }
-                                    int iInHctSource = hctMethodToHctSource.get(i);
-                                    theirsMap.put(iInHctSource, mutable);
-                                }
-                                if (correctForVarargsMutable != null) {
-                                    // the normal link would be 0-4-0, we make it *-4-0
-                                    mine = correctForVarargsMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
-                                            : HiddenContentSelector.All.INSTANCE;
-                                } else {
-                                    mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
-                                }
-                                if (theirsMap.isEmpty()) {
-                                    theirs = null;
-                                } else if (sourceIsVarArgs || reverse) {
-                                    // no need for a correction, '0' is correct
-                                    theirs = new HiddenContentSelector.CsSet(theirsMap);
-                                } else {
-                                    assert hctSource != null;
-                                    theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This,
-                                            pt, hctSource, theirsMap);
-                                }
-                            } else {
-                                throw new UnsupportedOperationException();
-                            }
+                    if (hiddenContentSelectorOfTarget.isAll()) {
+                        DV typeImmutable = context.evaluationContext().immutable(targetType);
+                        if (typeImmutable.isDelayed()) {
+                            causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
                         }
-                        if (mine != null && theirs != null) {
-                            LV commonHC = reverse ? LV.createHC(theirs, mine) : LV.createHC(mine, theirs);
-                            newLinked.put(e.getKey(), commonHC);
+                        boolean mutable = MultiLevel.isMutable(typeImmutable);
+                        mine = mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
+                                : HiddenContentSelector.All.INSTANCE;
+                        if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet csSet) {
+                            Map<Integer, Boolean> theirsMap = new HashMap<>();
+                            for (int i : csSet.set()) {
+                                assert hctMethodToHctSource != null;
+                                Integer iInHctSource = hctMethodToHctSource.get(i);
+                                assert iInHctSource != null;
+                                theirsMap.put(iInHctSource, mutable);
+                            }
+                            assert hctSource != null;
+                            theirs = reverse
+                                    // correction takes place later
+                                    ? new HiddenContentSelector.CsSet(theirsMap)
+                                    : correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
+                        } else {
+                            throw new UnsupportedOperationException();
                         }
                     } else {
-                        throw new UnsupportedOperationException("I believe we should not link");
+                        // both are CsSet, we'll set mutable what is mutable, in a common way
+                        if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
+                            Boolean correctForVarargsMutable = null;
+                            Map<Integer, Boolean> mineMap = new HashMap<>();
+                            Map<Integer, Boolean> theirsMap = new HashMap<>();
+
+                            assert hctMethodToHctSource != null;
+                            assert targetTypeFormal != null;
+                            Map<Integer, Integer> hcsMethodToHctTarget = hiddenContentTypes.translateHcs(inspectionProvider,
+                                    mineCsSet.set(), methodTargetType, targetTypeFormal, true);
+
+                            for (int i : mineCsSet.set()) {
+                                int iInHctTarget = hcsMethodToHctTarget.get(i);
+                                ParameterizedType type = typesCorrespondingToHCOfTarget.get(iInHctTarget);
+                                assert type != null;
+                                DV typeImmutable = context.evaluationContext().immutable(type);
+                                if (typeImmutable.isDelayed()) {
+                                    causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
+                                    typeImmutable = MUTABLE_DV;
+                                }
+                                if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)) {
+                                    continue;
+                                }
+
+                                boolean mutable = isMutable(typeImmutable);
+                                mineMap.put(iInHctTarget, mutable);
+                                if (sourceIsVarArgs) {
+                                    // we're in a varargs situation: the first element is the type itself
+                                    correctForVarargsMutable = mutable;
+                                }
+                                int iInHctSource = hctMethodToHctSource.get(i);
+                                theirsMap.put(iInHctSource, mutable);
+                            }
+                            if (correctForVarargsMutable != null) {
+                                // the normal link would be 0-4-0, we make it *-4-0
+                                mine = correctForVarargsMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
+                                        : HiddenContentSelector.All.INSTANCE;
+                            } else {
+                                mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
+                            }
+                            if (theirsMap.isEmpty()) {
+                                theirs = null;
+                            } else if (sourceIsVarArgs || reverse) {
+                                // no need for a correction, '0' is correct
+                                theirs = new HiddenContentSelector.CsSet(theirsMap);
+                            } else {
+                                assert hctSource != null;
+                                theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This,
+                                        pt, hctSource, theirsMap);
+                            }
+                        } else {
+                            throw new UnsupportedOperationException();
+                        }
                     }
+                    if (createDependentLink) {
+                        LV dependent = reverse ? LV.createDependent(theirs, mine) : LV.createDependent(mine, theirs);
+                        newLinked.put(e.getKey(), dependent);
+                    } else if (mine != null && theirs != null) {
+                        LV commonHC = reverse ? LV.createHC(theirs, mine) : LV.createHC(mine, theirs);
+                        newLinked.put(e.getKey(), commonHC);
+                    }
+                } else {
+                    throw new UnsupportedOperationException("I believe we should not link");
                 }
             }
         }

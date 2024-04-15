@@ -551,11 +551,12 @@ public class ComputeLinkedVariables {
         for (Map.Entry<Variable, LV> entry : map.entrySet()) {
             LV newLv;
             Variable target = entry.getKey();
-            if (entry.getValue().isCommonHC()) {
+            LV lv = entry.getValue();
+            if (lv.isCommonHC() || lv.isDependent() && lv.mine() != null && lv.theirs() != null) {
                 boolean correctForMutable = reachableFromVariableInMutable.contains(target);
-                newLv = computeMineTheirs(evaluationContext, variable, target, entry.getValue(), correctForMutable);
+                newLv = computeMineTheirs(evaluationContext, variable, target, lv, correctForMutable);
             } else {
-                newLv = entry.getValue();
+                newLv = lv;
             }
             if (newLv != null) {
                 newMap.put(target, newLv);
@@ -567,19 +568,19 @@ public class ComputeLinkedVariables {
     private static LV computeMineTheirs(EvaluationContext evaluationContext,
                                         Variable variable,
                                         Variable target,
-                                        LV commonHc,
+                                        LV lv,
                                         boolean correctForMutable) {
-        assert commonHc.isCommonHC() && commonHc.mine() != null && commonHc.theirs() != null;
+        assert lv.mine() != null && lv.theirs() != null;
         LV newLv;
         HiddenContentSelector mine = variable instanceof This
                 ? new HiddenContentSelector.CsSet(Map.of(0, false))
-                : commonHc.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
+                : lv.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
                 correctForMutable);
         HiddenContentSelector theirs = target instanceof This
                 ? new HiddenContentSelector.CsSet(Map.of(0, mine.containsMutable()))
-                : commonHc.theirs().correctForMutable(evaluationContext,
+                : lv.theirs().correctForMutable(evaluationContext,
                 target.parameterizedType(), correctForMutable);
-        if(variable instanceof This) {
+        if (variable instanceof This) {
             // NOTE: we could not do this 2 statements higher, it relies on theirs
             mine = mine.ensureMutable(theirs.containsMutable());
         }
@@ -588,7 +589,8 @@ public class ComputeLinkedVariables {
         } else if (mine.isAll() && theirs.isAll()) {
             return null;
         } else {
-            newLv = theirs.isNone() || mine.isNone() ? null : LV.createHC(mine, theirs);
+            newLv = theirs.isNone() || mine.isNone() ? null
+                    : lv.isDependent() ? LV.createDependent(mine, theirs) : LV.createHC(mine, theirs);
         }
         return newLv;
     }

@@ -146,6 +146,7 @@ public class Test_Linking0E extends CommonTestRunner {
                     case "m14", "m15" -> {
                         assertCurrentValue(d, 2, "list.subList(0,1).subList(0,1)");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:2"));
+                        assertSingleLv(d, 2, 0, "0M-2-0M");
                     }
                     case "m16" -> {
                         assertCurrentValue(d, 2, "new ArrayList<>(list.subList(0,1).subList(0,1))");

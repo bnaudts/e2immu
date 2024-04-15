@@ -83,6 +83,7 @@ public class Test_Linking0M extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     assertLinked(d, lvsExpression, it(0, 1, "map:-1,values:0"),
                             it(2, "map:2,values:0"));
+                    assertSingleLv(d, 2, 0, "0M-2-1M");
                 } else {
                     assert "1".equals(d.statementId());
                     ChangeData cdL = d.findValueChangeByToString("listM");
@@ -179,12 +180,13 @@ public class Test_Linking0M extends CommonTestRunner {
             LinkedVariables lvs = d.fieldAnalysis().getLinkedVariables();
             if ("listM".equals(d.fieldInfo().name)) {
                 assertLinked(d, lvs,
-                        it(0, 1, "m:-1,m:-1,map:-1,ms:-1,this.listM2:-1,values:-1"),
-                        it(2, "m:4,map:4,ms:4,this.listM2:4"));
-                assertSingleLv(d, lvs, 2, 0, "0M-4-*M");
-                assertSingleLv(d, lvs, 2, 1, "0M-4-1M");
-                assertSingleLv(d, lvs, 2, 2, "0M-4-0M");
-                assertSingleLv(d, lvs, 2, 3, "0-4-0");
+                        it(0, 1, "m:-1,m:-1,map:-1,map:-1,ms:-1,this.listM2:-1,values:-1"),
+                        it(2, "m:4,map:4,map:4,ms:4,this.listM2:4"));
+                assertSingleLv(d, lvs, 2, 0, "0M-4-*M"); // m in m2
+                assertSingleLv(d, lvs, 2, 1, "0M-4-1M"); // map in m4
+                assertSingleLv(d, lvs, 2, 2, "0M-4-1M"); // map in m5
+                assertSingleLv(d, lvs, 2, 3, "0M-4-0M"); // ms
+                assertSingleLv(d, lvs, 2, 4, "0-4-0"); // this.listM2
             }
             if ("listM2".equals(d.fieldInfo().name)) {
                 assertLinked(d, lvs,
