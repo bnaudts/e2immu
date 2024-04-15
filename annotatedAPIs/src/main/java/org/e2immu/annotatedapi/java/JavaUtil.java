@@ -605,10 +605,10 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add(@NotNull E e) { return true; }
 
         @Modified
-        boolean addAll(int index, @NotNull(content = true) @NotModified Collection<? extends E> coll) { return true; }
+        boolean addAll(int index, @NotNull(content = true) @NotModified  @Independent(hc = true) Collection<? extends E> coll) { return true; }
 
         @Modified
-        boolean addAll(@NotNull(content = true) @NotModified Collection<? extends E> coll) { return true; }
+        boolean addAll(@NotNull(content = true) @NotModified @Independent(hc = true) Collection<? extends E> coll) { return true; }
 
         @Modified
         void clear() { }
@@ -616,7 +616,7 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull
         public Object clone() { return null; }
 
-        boolean contains(@NotNull Object o) { return true; }
+        boolean contains(@NotNull @Independent Object o) { return true; }
 
 
         @NotModified

@@ -72,6 +72,11 @@ public class Test_Linking0M extends CommonTestRunner {
                     assertLinked(d, cdM.linkedVariables(), it(0, ""));
                 }
             }
+            if("m3".equals(d.methodInfo().name)) {
+                assert "0".equals(d.statementId());
+                ChangeData cdL = d.findValueChangeByToString("listM");
+                assertLinked(d, cdL.linkedVariables(), it(0, 1, "ms:-1"), it(2, "ms:4"));
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -130,6 +135,13 @@ public class Test_Linking0M extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("listM".equals(d.fieldInfo().name)) {
+                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                        it(0, 1, "m:-1,m:-1,ms:-1,this.listM2:-1"), it(2, "m:4,ms:4,this.listM2:4"));
+                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 0, "0M-4-*M");
+                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 1, "0M-4-0M");
+                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 2, "0-4-0");
+            }
             if ("listM2".equals(d.fieldInfo().name)) {
                 assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
                         it(0, 1, "m:-1,this.listM:-1"), it(2, "m:4,this.listM:4"));

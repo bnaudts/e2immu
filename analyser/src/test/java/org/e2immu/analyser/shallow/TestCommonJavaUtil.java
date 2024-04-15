@@ -354,14 +354,27 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
-
-        // not involved: no restriction on usage
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
 
         // because of the type parameter, we're assuming it'll go into the hidden content
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
 
         assertEquals("*", p0.getHiddenContentSelector().toString());
+    }
+
+    @Test
+    public void testArrayListAddAll() {
+        TypeInfo typeInfo = typeContext.getFullyQualified(ArrayList.class);
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("addAll", 1);
+        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals(MultiLevel.INDEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
+        assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
+        assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
+
+        assertEquals("0", p0.getHiddenContentSelector().toString());
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
     }
 
     @Test
@@ -402,6 +415,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals("elements:4", p0Ana.getLinksToOtherParameters().toString());
         assertEquals("0-4-0", p0Ana.getLinksToOtherParameters().stream()
                 .map(Map.Entry::getValue).findFirst().orElseThrow().toString());
+        assertEquals(MultiLevel.INDEPENDENT_DV, p0Ana.getProperty(Property.INDEPENDENT));
 
         // this is 0 because it is an array type E[], rather than * for a concrete E instance
         ParameterAnalysis p1Ana = addAll.methodAnalysis.get().getParameterAnalyses().get(1);
