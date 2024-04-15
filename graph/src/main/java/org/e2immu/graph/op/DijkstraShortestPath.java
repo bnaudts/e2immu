@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class DijkstraShortestPath {
@@ -29,18 +30,27 @@ public class DijkstraShortestPath {
         }
     }
 
+    private record Accept(boolean accept, Connection next) {
+    }
+
     public record DCP(long dist, Connection mine, Connection theirs) {
-        public Connection accept(Connection connection) {
+        public Accept accept(Connection connection, boolean allowDisjoint) {
             if (mine == null) {
                 // no check, always true
-                return connection;
+                return new Accept(true, connection);
             }
             if (connection.isDisjointFrom(mine)) {
-                return null;
+                if (allowDisjoint) {
+                    return WITHOUT_CONNECTION;
+                }
+                return NO;
             }
-            return theirs;
+            return new Accept(true, theirs);
         }
     }
+
+    private static final Accept NO = new Accept(false, null);
+    private static final Accept WITHOUT_CONNECTION = new Accept(true, null);
 
     public static class DCPEntry implements Map.Entry<Integer, DijkstraShortestPath.DCP> {
         int variable;
@@ -114,12 +124,13 @@ public class DijkstraShortestPath {
     }
 
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
-        DC[] dcs = shortestPathDC(numVertices, edgeProvider, sourceVertex);
+        DC[] dcs = shortestPathDC(numVertices, edgeProvider, l -> false, sourceVertex);
         return Arrays.stream(dcs).mapToLong(DC::dist).toArray();
     }
 
     public DC[] shortestPathDC(int numVertices,
                                EdgeProvider edgeProvider,
+                               Predicate<Long> allowDisjoint,
                                int sourceVertex) {
         DC[] dist = new DC[numVertices]; // dist[source]<-0 implicit
 
@@ -151,12 +162,16 @@ public class DijkstraShortestPath {
                     alt = NO_PATH;
                 } else {
                     DCP edgeValue = edge.getValue();
-                    Connection next = edgeValue.accept(d.connection);
-                    if (next == null) {
+                    Accept a = edgeValue.accept(d.connection, allowDisjoint.test(edgeValue.dist));
+                    if (!a.accept) {
                         alt = NO_PATH;
                     } else {
-                        Connection initial = d.initialConnection == null ? edge.getValue().mine() : d.initialConnection;
-                        alt = new DC(d.dist + edgeValue.dist, initial, next);
+                        if (a.next != null) {
+                            Connection initial = d.initialConnection == null ? edge.getValue().mine() : d.initialConnection;
+                            alt = new DC(d.dist + edgeValue.dist, initial, a.next);
+                        } else {
+                            alt = new DC(d.dist + edgeValue.dist, initialConnection, initialConnection);
+                        }
                     }
                 }
                 if (alt.dist < dist[v].dist) {

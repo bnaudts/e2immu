@@ -207,7 +207,7 @@ public class ComputeLinkedVariables {
         Map<Variable, LV> combinedMap = new HashMap<>();
         external.stream().forEach(e -> {
             LV lv = e.getValue();
-            if (isMerge && lv.isCommonHC() && !lv.commonHCContainsMutable()) {
+            if (isMerge && lv.isCommonHC() && !lv.containsMutable()) {
                 setAside.put(e.getKey(), e.getValue());
             } else {
                 combinedMap.put(e.getKey(), e.getValue());
@@ -215,7 +215,7 @@ public class ComputeLinkedVariables {
         });
         inVi.stream().forEach(e -> {
             LV lv = e.getValue();
-            if (lv.isCommonHC() && !lv.commonHCContainsMutable()) {
+            if (lv.isCommonHC() && !lv.containsMutable()) {
                 setAside.put(e.getKey(), e.getValue());
             } else {
                 combinedMap.merge(e.getKey(), e.getValue(), LV::min);

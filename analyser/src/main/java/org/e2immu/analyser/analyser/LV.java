@@ -8,12 +8,13 @@ import java.util.*;
 public class LV implements Comparable<LV> {
     private static final int HC = 4;
     private static final int HC_MUTABLE = 3;
+    private static final int DEPENDENT = 2;
 
     public static final LV LINK_STATICALLY_ASSIGNED = new LV(0, null, null, "-0-",
             CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
     public static final LV LINK_ASSIGNED = new LV(1, null, null, "-1-", CausesOfDelay.EMPTY,
             MultiLevel.DEPENDENT_DV);
-    public static final LV LINK_DEPENDENT = new LV(2, null, null, "-2-", CausesOfDelay.EMPTY,
+    public static final LV LINK_DEPENDENT = new LV(DEPENDENT, null, null, "-2-", CausesOfDelay.EMPTY,
             MultiLevel.DEPENDENT_DV);
 
     // use of this value is severely restricted! Use in ShortestPath, ComputeLinkedVariables
@@ -32,6 +33,10 @@ public class LV implements Comparable<LV> {
     private final String label;
     private final CausesOfDelay causesOfDelay;
     private final DV correspondingIndependent;
+
+    public boolean isDependent() {
+        return DEPENDENT == value;
+    }
 
     public boolean isCommonHC() {
         return HC == value;
@@ -90,10 +95,25 @@ public class LV implements Comparable<LV> {
         return new LV(HC, mine, theirs, mine + "-4-" + theirs, CausesOfDelay.EMPTY, MultiLevel.INDEPENDENT_HC_DV);
     }
 
+    public static LV createDependent(HiddenContentSelector mine, HiddenContentSelector theirs) {
+        if (mine == null || theirs == null || mine.isAll() && theirs.isAll() || mine.isNone() || theirs.isNone()) {
+            return LINK_DEPENDENT;
+        }
+        assert mine.containsMutable() == theirs.containsMutable();
+        assert !mine.isNone() && !theirs.isNone()
+               && !mine.isDelayed() && !theirs.isDelayed()
+               && !(mine.isAll() && theirs.isAll());
+        return new LV(DEPENDENT, mine, theirs, mine + "-2-" + theirs, CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
+    }
+
     public LV reverse() {
+        if (isDependent()) {
+            return createDependent(theirs, mine);
+        }
         if (isCommonHC()) {
             return createHC(theirs, mine);
         }
+        assert !isHCMutable() : "Internal use only";
         return this;
     }
 
@@ -173,10 +193,9 @@ public class LV implements Comparable<LV> {
         if (o == null || getClass() != o.getClass()) return false;
         LV lv = (LV) o;
         if (value != lv.value) return false;
-        if (value == HC) {
-            return Objects.equals(mine, lv.mine) && Objects.equals(theirs, lv.theirs) && Objects.equals(causesOfDelay, lv.causesOfDelay);
-        }
-        return true;
+        return Objects.equals(mine, lv.mine)
+               && Objects.equals(theirs, lv.theirs)
+               && Objects.equals(causesOfDelay, lv.causesOfDelay);
     }
 
     @Override
@@ -189,13 +208,12 @@ public class LV implements Comparable<LV> {
         return label;
     }
 
-    public boolean commonHCContainsMutable() {
-        if (value != HC) return false;
-        return mine.containsMutable() || theirs.containsMutable();
+    public boolean containsMutable() {
+        return mine != null && mine.containsMutable() || theirs != null && theirs.containsMutable();
     }
 
     public String minimal() {
-        if(mine != null) {
+        if (mine != null) {
             return label;
         }
         return Integer.toString(value);

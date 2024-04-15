@@ -393,7 +393,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
 
     private static List<Property> propertiesToCopy(LV assignedOrLinked) {
         if (LinkedVariables.isAssigned(assignedOrLinked)) return PROPERTY_LIST;
-        if (assignedOrLinked.equals(LV.LINK_DEPENDENT)) return List.of(MODIFIED_OUTSIDE_METHOD);
+        if (assignedOrLinked.isDependent()) return List.of(MODIFIED_OUTSIDE_METHOD);
         return List.of();
     }
 

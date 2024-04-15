@@ -15,8 +15,6 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
 import org.e2immu.analyser.analyser.LV;
-import org.e2immu.analyser.analyser.LV;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
@@ -223,7 +221,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
 
                         mine = dv.mine();
                         theirs = dv.theirs();
-                        if (dv.commonHCContainsMutable()) {
+                        if (dv.containsMutable()) {
                             correctedLv = LINK_HC_MUTABLE;
                         } else if (forModification) {
                             continue; // we can ignore this link at the mutable level
@@ -231,8 +229,8 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                             correctedLv = dv;
                         }
                     } else {
-                        mine = null;
-                        theirs = null;
+                        mine = dv.mine();
+                        theirs = dv.theirs();
                         correctedLv = dv;
                     }
                     long d = ShortestPathImpl.toDistanceComponent(correctedLv);

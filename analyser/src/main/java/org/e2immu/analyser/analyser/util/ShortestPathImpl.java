@@ -62,9 +62,9 @@ public class ShortestPathImpl implements ShortestPath {
         if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
         if (lv.isDelayed()) return DELAYED;
         if (LINK_ASSIGNED.equals(lv)) return ASSIGNED;
-        if (LINK_DEPENDENT.equals(lv)) return DEPENDENT;
+        if (lv.isDependent()) return DEPENDENT;
         if (lv.isHCMutable()) return HC_MUTABLE;
-        assert lv.isCommonHC() && !lv.commonHCContainsMutable();
+        assert lv.isCommonHC() && !lv.containsMutable();
         return INDEPENDENT_HC;
     }
 
@@ -98,10 +98,10 @@ public class ShortestPathImpl implements ShortestPath {
     public static long toDistanceComponentHigh(LV lv) {
         if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
         if (LINK_ASSIGNED.equals(lv)) return ASSIGNED_H;
-        if (LINK_DEPENDENT.equals(lv)) return DEPENDENT_H;
+        if (lv.isDependent()) return DEPENDENT_H;
         if (lv.isHCMutable()) return HC_MUTABLE_H;
         if (lv.isCommonHC()) {
-            assert !lv.commonHCContainsMutable();
+            assert !lv.containsMutable();
             return INDEPENDENT_HC_H;
         }
         assert lv.isDelayed();
@@ -113,7 +113,11 @@ public class ShortestPathImpl implements ShortestPath {
         if (l == Long.MAX_VALUE) return null;
         if (l < ASSIGNED_H) return LINK_STATICALLY_ASSIGNED;
         if (l < DEPENDENT_H) return LINK_ASSIGNED;
-        if (l < HC_MUTABLE_H) return LINK_DEPENDENT;
+        if (l < HC_MUTABLE_H) {
+            HiddenContentSelector mine = (HiddenContentSelector) lowDc.initialConnection();
+            HiddenContentSelector theirs = (HiddenContentSelector) lowDc.connection();
+            return LV.createDependent(mine, theirs);
+        }
         if (l < DELAYED_H) {
             HiddenContentSelector mine = (HiddenContentSelector) lowDc.initialConnection();
             HiddenContentSelector theirs = (HiddenContentSelector) lowDc.connection();
@@ -201,7 +205,7 @@ public class ShortestPathImpl implements ShortestPath {
                     .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLong);
         };
         DijkstraShortestPath.DC[] shortestL = dijkstraShortestPath.shortestPathDC(variables.length, edgeProvider,
-                startVertex);
+                l -> l == DEPENDENT, startVertex);
         debug("delay low", shortestL, ShortestPathImpl::fromDistanceSum);
 
         long maxWeightLongHigh = maxWeight == null ? 0L : toDistanceComponentHigh(maxWeight);
@@ -212,7 +216,7 @@ public class ShortestPathImpl implements ShortestPath {
                     .filter(e -> maxWeight == null || e.getValue().dist() <= maxWeightLongHigh);
         };
         DijkstraShortestPath.DC[] shortestH = dijkstraShortestPath.shortestPathDC(variables.length, edgeProviderHigh,
-                startVertex);
+                l -> l == DEPENDENT_H, startVertex);
         debug("delay high", shortestH, ShortestPathImpl::fromDistanceSumHigh);
 
         LV[] shortest = new LV[shortestL.length];

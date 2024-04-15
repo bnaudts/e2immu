@@ -177,13 +177,15 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public void writeLinkToReturnValue(boolean dependent) {
+            assert hiddenContentSelector.isSet();
+            assert methodAnalysis.isSet() && methodAnalysis.get().hiddenContentSelectorIsSet();
+            HiddenContentSelector myHcs = getHiddenContentSelector();
+            HiddenContentSelector methodHcs = methodAnalysis.get().getHiddenContentSelector();
             LV lv;
             if (dependent) {
-                lv = LV.LINK_DEPENDENT;
+                lv = LV.createDependent(myHcs, methodHcs);
             } else {
-                assert hiddenContentSelector.isSet();
-                assert methodAnalysis.isSet() && methodAnalysis.get().hiddenContentSelectorIsSet();
-                lv = LV.createHC(getHiddenContentSelector(), methodAnalysis.get().getHiddenContentSelector());
+                lv = LV.createHC(myHcs, methodHcs);
             }
             ReturnVariable returnVariable = new ReturnVariable(parameterInfo.getMethodInfo());
             linkToReturnValueOfMethod.set(LinkedVariables.of(returnVariable, lv));
@@ -204,6 +206,9 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private LinkedVariables dependentLinkToParameters(int[] linkParameters) {
             Map<Variable, LV> map = new HashMap<>();
             List<ParameterInfo> parameters = parameterInfo.getMethod().methodInspection.get().getParameters();
+            assert hiddenContentSelector.isSet();
+            HiddenContentSelector myHcs = getHiddenContentSelector();
+
             for (int parameterIndex : linkParameters) {
                 if (parameterIndex < 0 || parameterIndex >= parameters.size()) {
                     LOGGER.error("Illegal parameter index {} for method {}", parameterIndex, parameterInfo.getMethod());
@@ -211,7 +216,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LOGGER.error("Ignoring link to myself: index {} for method {}", parameterIndex, parameterInfo.getMethod());
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
-                    map.put(pi, LV.LINK_DEPENDENT);
+                    HiddenContentSelector otherHcs = analysisProvider.getParameterAnalysis(pi).getHiddenContentSelector();
+                    map.put(pi, LV.createDependent(myHcs, otherHcs));
                 }
             }
             return LinkedVariables.of(map);

@@ -289,7 +289,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     }
 
     public Stream<Variable> dependentVariables() {
-        return variables.entrySet().stream().filter(e -> LINK_DEPENDENT.equals(e.getValue())).map(Map.Entry::getKey);
+        return variables.entrySet().stream().filter(e -> e.getValue().isDependent()).map(Map.Entry::getKey);
     }
 
     public Stream<Variable> assignedOrDependentVariables() {
