@@ -49,10 +49,17 @@ public class Linking_0M {
     void m3(List<M> ms) {
         listM.addAll(ms);
     }
-/*
-    FIXME this is the next one to try
+
     @Modified
     void m4(Map<String, M> map) {
-        listM.addAll(map.values());
-    }*/
+        Collection<M> values = map.values();
+        listM.addAll(values);
+    }
+
+    //@Modified
+    void m5(Map<String, M> map) {
+        // FIXME next
+        // Collection<M> values = map.values();
+        // listM.addAll(values);
+    }
 }

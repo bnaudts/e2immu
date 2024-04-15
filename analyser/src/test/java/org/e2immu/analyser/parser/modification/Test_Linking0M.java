@@ -15,9 +15,11 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.ChangeData;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -29,8 +31,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Test_Linking0M extends CommonTestRunner {
 
@@ -42,11 +43,12 @@ public class Test_Linking0M extends CommonTestRunner {
     public void test_0() throws IOException {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
+            LinkedVariables lvsExpression = d.evaluationResult().linkedVariablesOfExpression();
             if ("m1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<m:get>" : "listM.get(index)";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(),
+                    assertLinked(d, lvsExpression,
                             it(0, 1, "m:0,this.listM:-1,this:-1"),
                             it(2, "m:0,this.listM:4,this:4"));
                     assertSingleLv(d, 2, 1, "*M-4-0M");
@@ -61,7 +63,7 @@ public class Test_Linking0M extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     String expected = d.iteration() < 2 ? "<m:add>" : "instance 0 type boolean";
                     assertEquals(expected, d.evaluationResult().value().toString());
-                    assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, ""));
+                    assertLinked(d, lvsExpression, it(0, ""));
                     if (d.iteration() >= 2) {
                         assertTrue(d.evaluationResult().changeData().values().stream()
                                 .noneMatch(cd -> cd.linkedVariables().isDelayed()));
@@ -72,10 +74,27 @@ public class Test_Linking0M extends CommonTestRunner {
                     assertLinked(d, cdM.linkedVariables(), it(0, ""));
                 }
             }
-            if("m3".equals(d.methodInfo().name)) {
+            if ("m3".equals(d.methodInfo().name)) {
                 assert "0".equals(d.statementId());
                 ChangeData cdL = d.findValueChangeByToString("listM");
                 assertLinked(d, cdL.linkedVariables(), it(0, 1, "ms:-1"), it(2, "ms:4"));
+            }
+            if ("m4".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    assertLinked(d, lvsExpression, it(0, 1, "map:-1,values:0"),
+                            it(2, "map:2,values:0"));
+                } else {
+                    assert "1".equals(d.statementId());
+                    ChangeData cdL = d.findValueChangeByToString("listM");
+                    assertLinked(d, cdL.linkedVariables(), it(0, 1, "values:-1"),
+                            it(2, "values:4"));
+                    assertSingleLv(d, cdL.linkedVariables(), 2, 0, "0M-4-0M");
+
+                    ChangeData cdT = d.findValueChangeByToString("this");
+                    assertLinked(d, cdT.linkedVariables(), it(0, 1, "values:-1"),
+                            it(2, "values:4"));
+                    assertSingleLv(d, cdT.linkedVariables(), 2, 0, "0M-4-*M");
+                }
             }
         };
 
@@ -132,21 +151,46 @@ public class Test_Linking0M extends CommonTestRunner {
                     }
                 }
             }
+            if ("m4".equals(d.methodInfo().name)) {
+                if ("values".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "map:-1"), it(2, "map:2"));
+                    }
+                }
+                if (d.variable() instanceof FieldReference fr && "listM".equals(fr.fieldInfo().name)) {
+                    if ("0".equals(d.statementId())) {
+                        fail("Variable should not occur here");
+                    }
+                }
+                if (d.variable() instanceof This) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+                if (d.variable() instanceof ParameterInfo pi && "map".equals(pi.name)) {
+                    if ("0".equals(d.statementId())) {
+                        assertLinked(d, it(0, 1, "values:-1"), it(2, "values:2"));
+                    }
+                }
+            }
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            LinkedVariables lvs = d.fieldAnalysis().getLinkedVariables();
             if ("listM".equals(d.fieldInfo().name)) {
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
-                        it(0, 1, "m:-1,m:-1,ms:-1,this.listM2:-1"), it(2, "m:4,ms:4,this.listM2:4"));
-                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 0, "0M-4-*M");
-                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 1, "0M-4-0M");
-                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 2, "0-4-0");
+                assertLinked(d, lvs,
+                        it(0, 1, "m:-1,m:-1,map:-1,ms:-1,this.listM2:-1,values:-1"),
+                        it(2, "m:4,map:4,ms:4,this.listM2:4"));
+                assertSingleLv(d, lvs, 2, 0, "0M-4-*M");
+                assertSingleLv(d, lvs, 2, 1, "0M-4-1M");
+                assertSingleLv(d, lvs, 2, 2, "0M-4-0M");
+                assertSingleLv(d, lvs, 2, 3, "0-4-0");
             }
             if ("listM2".equals(d.fieldInfo().name)) {
-                assertLinked(d, d.fieldAnalysis().getLinkedVariables(),
+                assertLinked(d, lvs,
                         it(0, 1, "m:-1,this.listM:-1"), it(2, "m:4,this.listM:4"));
-                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 0, "0M-4-*M");
-                assertSingleLv(d, d.fieldAnalysis().getLinkedVariables(), 2, 1, "0-4-0");
+                assertSingleLv(d, lvs, 2, 0, "0M-4-*M");
+                assertSingleLv(d, lvs, 2, 1, "0-4-0");
             }
         };
 

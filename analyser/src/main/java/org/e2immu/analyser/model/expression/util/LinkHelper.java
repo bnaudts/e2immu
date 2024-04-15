@@ -464,7 +464,6 @@ public class LinkHelper {
                             }
                         } else {
                             // both are CsSet, we'll set mutable what is mutable, in a common way
-                            // FIXME: ignore the relevant correction for reverse links!
                             if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
                                 Boolean correctForVarargsMutable = null;
                                 Map<Integer, Boolean> mineMap = new HashMap<>();
@@ -504,7 +503,7 @@ public class LinkHelper {
                                 }
                                 if (theirsMap.isEmpty()) {
                                     theirs = null;
-                                } else if (sourceIsVarArgs) {
+                                } else if (sourceIsVarArgs || reverse) {
                                     // no need for a correction, '0' is correct
                                     theirs = new HiddenContentSelector.CsSet(theirsMap);
                                 } else {
@@ -641,7 +640,19 @@ public class LinkHelper {
                     } else if (!fromLv.isCommonHC() && !toLv.isCommonHC()) {
                         lv = fromLv.max(toLv);
                     } else if (fromLv.isCommonHC() && toLv.isCommonHC()) {
-                        lv = LV.createHC(fromLv.theirs(), toLv.theirs());
+                        if (fromLv.mine().isAll() && !toLv.mine().isAll()) {
+                            lv = fromLv.reverse();
+                        } else if (toLv.mine().isAll() && !fromLv.mine().isAll()) {
+                            lv = toLv;
+                        } else if (toLv.mine().isAll() && fromLv.mine().isAll()) {
+                            lv = LV.createHC(fromLv.theirs(), toLv.theirs());
+                        } else if (fromLv.theirs().isAll() && !toLv.theirs().isAll()) {
+                            lv = LV.createHC(fromLv.theirs(), toLv.theirs());
+                        } else if (toLv.theirs().isAll() && fromLv.theirs().isAll()) {
+                            lv = null;
+                        } else {
+                            lv = LV.createHC(fromLv.mine(), toLv.theirs());
+                        }
                     } else if (fromLv.isCommonHC()) {
                         HiddenContentSelector theirs;
                         if (fromLv.theirs().isAll()) theirs = fromLv.theirs();
@@ -664,8 +675,9 @@ public class LinkHelper {
                         // o2v is 0,1,2; p2v is --4--. We must correct 'mine' to the type of 'from'
                         lv = LV.createHC(mine, toLv.theirs());
                     }
-
-                    link.link(from, to, lv);
+                    if (lv != null) {
+                        link.link(from, to, lv);
+                    }
                 })
         );
     }
