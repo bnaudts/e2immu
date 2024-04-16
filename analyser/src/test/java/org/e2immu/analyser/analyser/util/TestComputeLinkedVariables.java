@@ -6,9 +6,7 @@ import org.e2immu.analyser.analyser.delay.ProgressAndDelay;
 import org.e2immu.analyser.analyser.impl.util.BreakDelayLevel;
 import org.e2immu.analyser.analyser.nonanalyserimpl.AbstractEvaluationContextImpl;
 import org.e2immu.analyser.analyser.nonanalyserimpl.VariableInfoContainerImpl;
-import org.e2immu.analyser.analysis.Analysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
-import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
 import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
@@ -175,7 +173,8 @@ public class TestComputeLinkedVariables {
         Properties properties = Properties.of(Map.of());
         vicMap.values().forEach(vic -> vic.setValue(valueOfSomeTypeWithoutHc, LinkedVariables.EMPTY, properties, Stage.INITIAL));
 
-        LV hc0ToAll = LV.createHC(new LV.Links(Map.of(0, new LV.Link(LV.ALL, false))));
+        LV.Indices i0 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
+        LV hc0ToAll = LV.createHC(new LV.Links(Map.of(i0, new LV.Link(LV.ALL_INDICES, false))));
 
         // corresponds to the fictional statement "return this.set.add(x)", where "add"
         // returns a set dependent on this.set, and "x" becomes hidden content of this.set

@@ -1,6 +1,5 @@
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +36,7 @@ public class TestWeightedGraph_11 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV link = LV.createHC(new LV.Links(Map.of(LV.ALL, new LV.Link(0, true))));
+        LV link = LV.createHC(new LV.Links(Map.of(LV.ALL_INDICES, new LV.Link(i0, true))));
         assertEquals("*M-4-0M", link.toString());
 
         wg.addNode(m, Map.of(ms, link));

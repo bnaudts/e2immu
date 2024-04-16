@@ -13,7 +13,9 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.e2immu.analyser.analyser.LV.*;
 import static org.e2immu.analyser.analyser.LinkedVariables.*;
@@ -21,8 +23,10 @@ import static org.e2immu.analyser.analyser.LinkedVariables.*;
 public class CommonWG {
     final LV v0 = LINK_STATICALLY_ASSIGNED;
     final LV v2 = LINK_DEPENDENT;
-    final LV v4 = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
+    final LV v4 = LV.createHC(new Links(0, 0));
     final LV delay = LV.delay(DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI)));
+    final LV.Indices i0 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
+    final LV.Indices i1 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
 
     protected static Variable makeVariable(String name) {
         TypeInfo t = new TypeInfo("a.b.c", "T");

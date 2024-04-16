@@ -44,7 +44,7 @@ public class TestWeightedGraph_12 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV rv_4_list = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
+        LV rv_4_list = v4;
         assertEquals("0-4-0", rv_4_list.toString());
 
         wg.addNode(returnVariable, Map.of(returnVariable, v0, list, rv_4_list));

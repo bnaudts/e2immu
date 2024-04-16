@@ -2,16 +2,28 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.NamedType;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+/*
+variable m               variable n
+Map<A,List<B>> --- 2 --- Map<X,List<C>>
+links: 0->[0], 1.0->[1.0]
+
+Map<A,List<A>> --- 2 --- Map<List<X>,X>
+links: [0,1.0] -> [0.1,1]
+
+[0]->[0] list.subList()
+[0]->*  list.get()
+
+ */
 public class LV implements Comparable<LV> {
-    public static final Index ALL = new Index(List.of(-1));
+    public static final int ALL = -1;
+    public static final Index ALL_INDEX = new Index(List.of(ALL));
+    public static final Indices ALL_INDICES = new Indices(Set.of(ALL_INDEX));
 
     public static final Links NO_LINKS = new Links(Map.of());
 
@@ -27,14 +39,49 @@ public class LV implements Comparable<LV> {
         }
     }
 
-    public record Links(Map<Index, Link> map) implements DijkstraShortestPath.Connection {
+    // important: as soon as there are multiple elements, use a TreeSet!!
+    public record Indices(Set<Index> set) implements Comparable<Indices> {
+        public Indices {
+            assert set != null && !set.isEmpty() && (set.size() == 1 || set instanceof TreeSet);
+            assert set.size() == 1 || !set.contains(ALL_INDEX);
+        }
+
+        public Indices(Collection<Index> collection) {
+            this(collection.size() == 1 ? Set.copyOf(collection) : new TreeSet<>(collection));
+        }
+
+        @Override
+        public String toString() {
+            return set.stream().map(Object::toString).collect(Collectors.joining(";"));
+        }
+
+        @Override
+        public int compareTo(Indices o) {
+            Iterator<Index> mine = set.iterator();
+            Iterator<Index> theirs = o.set.iterator();
+            while (mine.hasNext()) {
+                if (!theirs.hasNext()) return 1;
+                int c = mine.next().compareTo(theirs.next());
+                if (c != 0) return c;
+            }
+            if (theirs.hasNext()) return -1;
+            return 0;
+        }
+    }
+
+    public record Links(Map<Indices, Link> map) implements DijkstraShortestPath.Connection {
+        public Links(int from, int to) {
+            this(Map.of(from == ALL ? LV.ALL_INDICES : new LV.Indices(Set.of(new LV.Index(List.of(from)))),
+                    new LV.Link(new LV.Indices(Set.of(new LV.Index(List.of(to)))), false)));
+        }
+
         @Override
         public Links next(DijkstraShortestPath.Connection current) {
             if (current == NO_LINKS || this == NO_LINKS) {
                 return this;
             }
-            Map<Index, Link> res = new HashMap<>();
-            for (Map.Entry<Index, Link> entry : ((Links) current).map.entrySet()) {
+            Map<Indices, Link> res = new HashMap<>();
+            for (Map.Entry<Indices, Link> entry : ((Links) current).map.entrySet()) {
                 Link link = this.map.get(entry.getValue().to);
                 if (link == null) {
                     return null;
@@ -48,9 +95,9 @@ public class LV implements Comparable<LV> {
 
         public Links ensureMutable(boolean b) {
             if (map.isEmpty()) return this;
-            Map<Index, Link> res = new HashMap<>();
+            Map<Indices, Link> res = new HashMap<>();
             boolean change = false;
-            for (Map.Entry<Index, Link> entry : map.entrySet()) {
+            for (Map.Entry<Indices, Link> entry : map.entrySet()) {
                 Link link;
                 if (b != entry.getValue().mutable) {
                     link = new Link(entry.getValue().to, b);
@@ -63,30 +110,8 @@ public class LV implements Comparable<LV> {
             return change ? new Links(Map.copyOf(res)) : this;
         }
 
-        // inverse of matchingLinks
-        public HiddenContentSelector mine() {
-            if (map.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            Link allLink = map.get(ALL);
-            if (allLink != null) {
-                return allLink.mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
-            }
-            Map<Integer, Boolean> res = map.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                    e -> e.getValue().mutable));
-            return new HiddenContentSelector.CsSet(res);
-        }
-
-        public HiddenContentSelector theirs() {
-            if (map.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            Map<Index, Boolean> res = map.values().stream().collect(Collectors.toUnmodifiableMap(l -> l.to, l -> l.mutable));
-            Boolean allMutable = res.get(ALL);
-            if (allMutable != null) {
-                return allMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
-            }
-            return new HiddenContentSelector.CsSet(res);
-        }
-
         public Links theirsToTheirs(Links links) {
-            Map<Index, Link> res = new HashMap<>();
+            Map<Indices, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
                 res.put(thisTo.to, link);
@@ -96,7 +121,7 @@ public class LV implements Comparable<LV> {
 
         // use thisTo.to as the intermediary
         public Links mineToTheirs(Links links) {
-            Map<Index, Link> res = new HashMap<>();
+            Map<Indices, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
                 res.put(thisFrom, link);
@@ -106,15 +131,15 @@ public class LV implements Comparable<LV> {
 
         public Links reverse() {
             if (map.isEmpty()) return this;
-            Map<Index, Link> map = new HashMap<>();
-            for (Map.Entry<Index, Link> e : this.map.entrySet()) {
+            Map<Indices, Link> map = new HashMap<>();
+            for (Map.Entry<Indices, Link> e : this.map.entrySet()) {
                 map.put(e.getValue().to, new Link(e.getKey(), e.getValue().mutable));
             }
             return new Links(Map.copyOf(map));
         }
     }
 
-    public record Link(Index to, boolean mutable) {
+    public record Link(Indices to, boolean mutable) {
     }
 
     private static final int DELAY = -1;
@@ -201,11 +226,11 @@ public class LV implements Comparable<LV> {
         List<String> from = new ArrayList<>();
         List<String> to = new ArrayList<>();
         int countAll = 0;
-        for (Map.Entry<Index, Link> e : links.map.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
+        for (Map.Entry<Indices, Link> e : links.map.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             boolean mutable = e.getValue().mutable;
-            boolean fromIsAll = e.getKey().equals(ALL);
+            boolean fromIsAll = e.getKey().equals(ALL_INDICES);
             String f = (fromIsAll ? "*" : "" + e.getKey()) + (mutable ? "M" : "");
-            boolean toIsAll = e.getValue().to.equals(ALL);
+            boolean toIsAll = e.getValue().to.equals(ALL_INDICES);
             String t = (toIsAll ? "*" : "" + e.getValue().to) + (mutable ? "M" : "");
             assert !(fromIsAll && toIsAll);
             from.add(f);
@@ -228,31 +253,31 @@ public class LV implements Comparable<LV> {
     }
 
     /*
-    go from hidden content selectors to an actual Links object.
+    go from hidden content selectors to an actual Links object, in the method context.
      */
-    public static Links matchingLinks(HiddenContentSelector from,
-                                      HiddenContentSelector to) {
+    public static Links matchingLinks(HiddenContentSelector from, HiddenContentSelector to) {
         if (from.isAll()) {
             if (to instanceof HiddenContentSelector.CsSet set) {
                 assert set.set().size() == 1;
-                int indexInHCT = set.set().stream().findFirst().orElseThrow();
-                NamedType type = commonHCT.typeByIndex(indexInHCT);
-                Index index = null;// FIXME
-                return new Links(Map.of(ALL, new Link(indexInHCT,
-                        from.containsMutable())));
+                // hidden content to a number of indices, locations in the type
+                Map.Entry<Integer, List<Index>> indexMapEntry = set.getMap().entrySet().stream().findFirst().orElseThrow();
+                Indices indices = new Indices(indexMapEntry.getValue());
+                return new Links(Map.of(ALL_INDICES, new Link(indices, false)));
             } else throw new UnsupportedOperationException();
         }
         if (to.isAll()) {
             if (from instanceof HiddenContentSelector.CsSet set) {
                 assert set.set().size() == 1;
-                int i = set.set().stream().findFirst().orElseThrow();
-                return new Links(Map.of(i, new Link(ALL, from.containsMutable())));
+                Map.Entry<Integer, List<Index>> indexMapEntry = set.getMap().entrySet().stream().findFirst().orElseThrow();
+                Indices indices = new Indices(indexMapEntry.getValue());
+                return new Links(Map.of(ALL_INDICES, new Link(indices, false)));
             } else throw new UnsupportedOperationException();
         }
-        if (from instanceof HiddenContentSelector.CsSet set) {
-            Map<Integer, Link> res = new HashMap<>();
-            for (Map.Entry<Integer, Boolean> entry : set.getMap().entrySet()) {
-                res.put(entry.getKey(), new Link(entry.getKey(), entry.getValue()));
+        if (from instanceof HiddenContentSelector.CsSet setFrom && to instanceof HiddenContentSelector.CsSet setTo) {
+            Map<Indices, Link> res = new HashMap<>();
+            for (Map.Entry<Integer, List<Index>> entry : setFrom.getMap().entrySet()) {
+                List<Index> list = setTo.getMap().get(entry.getKey());
+                res.put(new Indices(entry.getValue()), new Link(new Indices(list), false));
             }
             return new Links(Map.copyOf(res));
         } else throw new UnsupportedOperationException();
@@ -303,8 +328,8 @@ public class LV implements Comparable<LV> {
     }
 
     private Links union(Links other) {
-        Map<Index, Link> res = new HashMap<>(links.map);
-        for (Map.Entry<Index, Link> e : other.map.entrySet()) {
+        Map<Indices, Link> res = new HashMap<>(links.map);
+        for (Map.Entry<Indices, Link> e : other.map.entrySet()) {
             res.putIfAbsent(e.getKey(), e.getValue());
         }
         return new Links(Map.copyOf(res));
@@ -383,10 +408,10 @@ public class LV implements Comparable<LV> {
     }
 
     public boolean mineIsAll() {
-        return links.map.size() == 1 && links.map.containsKey(ALL);
+        return links.map.size() == 1 && links.map.containsKey(ALL_INDICES);
     }
 
     public boolean theirsIsAll() {
-        return links.map.size() == 1 && links.map.values().stream().findFirst().orElseThrow().to == ALL;
+        return links.map.size() == 1 && links.map.values().stream().findFirst().orElseThrow().to.equals(ALL_INDICES);
     }
 }

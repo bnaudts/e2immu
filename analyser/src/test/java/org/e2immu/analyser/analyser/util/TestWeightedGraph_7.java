@@ -1,12 +1,12 @@
 package org.e2immu.analyser.analyser.util;
 
-import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,19 +55,19 @@ public class TestWeightedGraph_7 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV thisVar_4_map = LV.createHC(new LV.Links(Map.of(0, new LV.Link(1, false))));
+        LV thisVar_4_map = LV.createHC(new LV.Links(Map.of(i0, new LV.Link(i1, false))));
         assertEquals("0-4-1", thisVar_4_map.toString());
         assertEquals("1-4-0", thisVar_4_map.reverse().toString());
 
         wg.addNode(thisVar, Map.of(map, thisVar_4_map));
-        LV.Links l01to01 = new LV.Links(Map.of(0, new LV.Link(0, false), 1, new LV.Link(1, false)));
+        LV.Links l01to01 = new LV.Links(Map.of(i0, new LV.Link(i0, false), i1, new LV.Link(i1, false)));
         LV map_4_entries = LV.createHC(l01to01);
         assertEquals("0,1-4-0,1", map_4_entries.toString());
         wg.addNode(map, Map.of(thisVar, thisVar_4_map.reverse(), entries, map_4_entries));
         wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, map_4_entries));
 
-        LV entry_4_l = LV.createHC(new LV.Links(Map.of(0, new LV.Link(LV.ALL, false))));
-        LV entry_4_t = LV.createHC(new LV.Links(Map.of(1, new LV.Link(LV.ALL, false))));
+        LV entry_4_l = LV.createHC(new LV.Links(0, LV.ALL));
+        LV entry_4_t = LV.createHC(new LV.Links(0, LV.ALL));
         assertEquals("0-4-*", entry_4_l.toString());
         assertEquals("1-4-*", entry_4_t.toString());
         wg.addNode(entry, Map.of(entries, map_4_entries.reverse(), l, entry_4_l, t, entry_4_t));

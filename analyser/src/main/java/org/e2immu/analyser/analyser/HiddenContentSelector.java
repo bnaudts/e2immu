@@ -6,6 +6,7 @@ import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // integers represent type parameters, as result of HC.typeParameters()
 public abstract sealed class HiddenContentSelector
@@ -35,10 +36,6 @@ public abstract sealed class HiddenContentSelector
 
     public boolean isDelayed() {
         return causesOfDelay().isDelayed();
-    }
-
-    public boolean containsMutable() {
-        return false;
     }
 
     public HiddenContentTypes hiddenContentTypesOfMethod() {
@@ -112,11 +109,11 @@ public abstract sealed class HiddenContentSelector
     public static final class CsSet extends HiddenContentSelector {
 
         // to boolean 'mutable'
-        private final Map<Integer, LV.Index> map;
+        private final Map<Integer, List<LV.Index>> map;
 
         public CsSet(HiddenContentTypes hiddenContentTypesOfMethod,
                      ParameterizedType typeInMethodDeclaration,
-                     Map<Integer, LV.Index> map) {
+                     Map<Integer, List<LV.Index>> map) {
             super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
             this.map = map;
         }
@@ -132,7 +129,7 @@ public abstract sealed class HiddenContentSelector
             return map.keySet();
         }
 
-        public Map<Integer, LV.Index> getMap() {
+        public Map<Integer, List<LV.Index>> getMap() {
             return map;
         }
 
@@ -150,12 +147,6 @@ public abstract sealed class HiddenContentSelector
         }
     }
 
-    public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes) {
-        Map<Integer, LV.Index> map = hiddenContentTypes.selectAll().stream()
-                .collect(Collectors.toUnmodifiableMap(i -> i, i -> new LV.Index(List.of(i))));
-        return new CsSet(hiddenContentTypes, null, map);
-    }
-
     /*
      Take in a type, and return the hidden content components of this type, with respect to the hidden content types
      of the current type or method.
@@ -171,7 +162,7 @@ public abstract sealed class HiddenContentSelector
         if (type.isTypeParameter()) {
             if (haveArrays) {
                 assert index != null;
-                return new CsSet(hiddenContentTypes, typeIn, Map.of(index, new LV.Index(List.of(index))));
+                return new CsSet(hiddenContentTypes, typeIn, Map.of(index, List.of(new LV.Index(List.of(index)))));
             }
             return new All(hiddenContentTypes, typeIn, index);
         }
@@ -183,7 +174,7 @@ public abstract sealed class HiddenContentSelector
             // assert type.parameters.isEmpty(); // not doing the combination
             return new None(hiddenContentTypes, typeIn);
         }
-        Map<Integer, LV.Index> map = new HashMap<>();
+        Map<Integer, List<LV.Index>> map = new HashMap<>();
         recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
         if (map.isEmpty()) {
             return new None(hiddenContentTypes, typeIn);
@@ -194,10 +185,11 @@ public abstract sealed class HiddenContentSelector
     private static void recursivelyCollectHiddenContentParameters(HiddenContentTypes hiddenContentTypes,
                                                                   ParameterizedType type,
                                                                   Stack<Integer> prefix,
-                                                                  Map<Integer, LV.Index> map) {
+                                                                  Map<Integer, List<LV.Index>> map) {
         Integer index = hiddenContentTypes.indexOfOrNull(type.copyWithoutArrays());
         if (index != null && type.parameters.isEmpty()) {
-            map.put(index, new LV.Index(List.copyOf(prefix)));
+            map.merge(index, List.of(new LV.Index(List.copyOf(prefix))),
+                    (l1, l2) -> Stream.concat(l1.stream(), l2.stream()).toList());
         } else {
             int i = 0;
             for (ParameterizedType parameter : type.parameters) {

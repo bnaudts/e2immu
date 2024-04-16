@@ -22,7 +22,6 @@ import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.slf4j.Logger;
@@ -54,7 +53,8 @@ public class LinkHelper {
         this.methodAnalysis = methodAnalysis;
         hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
         assert hiddenContentTypes != null : "For method " + methodInfo;
-        hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes);
+        ParameterizedType formalObject = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
+        hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes, formalObject);
     }
 
     private LinkedVariables linkedVariablesOfParameter(ParameterizedType parameterMethodType,
@@ -104,7 +104,7 @@ public class LinkHelper {
                     newLv = null;
                 } else {
                     boolean m = MultiLevel.isMutable(mutable);
-                    Links links = new Links(Map.of(ALL, new Link(index, m)));
+                    Links links = new Links(Map.of(ALL_INDEX, new Link(index, m)));
                     newLv = independentHc ? LV.createHC(links) : LV.createDependent(links);
                 }
             } else {
@@ -294,8 +294,11 @@ public class LinkHelper {
 
                 for (int i = target.index; i < parameterResults.size(); i++) {
                     ParameterizedType targetType = parameterExpressions.get(target.index).returnType();
-                    tryLinkBetweenParameters(builder, i, targetIsVarArgs, targetType,
-                            target.parameterizedType, level, sourceType, pi.parameterizedType, sourceLvs, parameterLvs);
+                    HiddenContentSelector hcsTarget = methodAnalysis.getParameterAnalyses().get(target.index).getHiddenContentSelector();
+                    HiddenContentSelector hcsSource = methodAnalysis.getParameterAnalyses().get(pi.index).getHiddenContentSelector();
+                    tryLinkBetweenParameters(builder, i, targetIsVarArgs, hcsTarget, targetType,
+                            target.parameterizedType, level,
+                            hcsSource, sourceType, pi.parameterizedType, sourceLvs, parameterLvs);
                 }
             } // else: no value... empty varargs
         }));
@@ -304,15 +307,15 @@ public class LinkHelper {
     private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
                                           int targetIndex,
                                           boolean targetIsVarArgs,
+                                          HiddenContentSelector hcsTarget,
                                           ParameterizedType targetType,
                                           ParameterizedType methodTargetType,
                                           LV level,
+                                          HiddenContentSelector hcsSource,
                                           ParameterizedType sourceType,
                                           ParameterizedType methodSourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
-        HiddenContentSelector hcsTarget = level.isCommonHC() ? level.links().mine() : HiddenContentSelector.None.INSTANCE;
-        HiddenContentSelector hcsSource = level.isCommonHC() ? level.links().theirs() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
         LinkedVariables mergedLvs = linkedVariables(targetType, methodTargetType, hcsSource, targetLinkedVariables,
@@ -553,7 +556,7 @@ public class LinkHelper {
                                 assert hctMethodToHctSource != null;
                                 Integer iInHctSource = hctMethodToHctSource.get(i);
                                 assert iInHctSource != null;
-                                linkMap.put(ALL, new Link(iInHctSource, mutable));
+                                linkMap.put(ALL_INDEX, new Link(iInHctSource, mutable));
                             }
                         } else {
                             throw new UnsupportedOperationException();
@@ -589,7 +592,7 @@ public class LinkHelper {
                                 int iInHctSource = hctMethodToHctSource.get(i);
                                 int correctedIInHctTarget;
                                 if (correctForVarargsMutable != null) {
-                                    correctedIInHctTarget = ALL;
+                                    correctedIInHctTarget = ALL_INDEX;
                                 } else {
                                     correctedIInHctTarget = iInHctTarget;
                                 }
