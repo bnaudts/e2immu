@@ -132,8 +132,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         VariableExpression vc = makeLVAsExpression("c", zero, mutablePtWithOneTypeParameter);
         VariableExpression vd = makeLVAsExpression("d", zero, mutablePtWithOneTypeParameter);
 
-        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-        LV hc = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
+        LV hc = lv0hc0;
         assertEquals("0-4-0", hc.toString());
         ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(va.variable(),
                 LV.LINK_ASSIGNED, vd.variable(), LV.LINK_DEPENDENT, vc.variable(), hc)));
@@ -218,7 +217,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("a::add")
     public void test3() {
-        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, new HiddenContentSelector.All(0));
 
         EvaluationResult er = evaluateMethodReference(add);
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
@@ -228,7 +227,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("b.forEach(a::add)")
     public void test3b() {
-        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo add = methodWithHCParameter(MultiLevel.INDEPENDENT_HC_DV, new HiddenContentSelector.All(0));
         MethodInfo forEach = methodWithConsumerParameter(mutableWithOneTypeParameter, MultiLevel.INDEPENDENT_HC_DV,
                 HiddenContentSelector.CsSet.selectTypeParameter(0));
 
@@ -247,7 +246,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("a::get")
     public void test3c() {
-        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, new HiddenContentSelector.All(0));
 
         EvaluationResult er = evaluateMethodReference(get);
         assertEquals("a:4", er.linkedVariablesOfExpression().toString());
@@ -262,7 +261,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("b.map(a::get)")
     public void test3d() {
-        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, new HiddenContentSelector.All(0));
         ParameterizedType integerPt = primitives.integerTypeInfo().asSimpleParameterizedType();
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         MethodInfo map = methodWithFunctionParameter(mutableWithOneTypeParameter, integerPt, MultiLevel.INDEPENDENT_HC_DV,
@@ -287,7 +286,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
     @Test
     @DisplayName("b.map(a::get), Function<T,T>, a and b independent HC")
     public void test3e() {
-        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, HiddenContentSelector.All.INSTANCE);
+        MethodInfo get = methodReturningHCParameter(MultiLevel.INDEPENDENT_HC_DV, new HiddenContentSelector.All(0));
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         MethodInfo map = methodWithFunctionParameter(immutableHcWithOneTypeParameter,
                 tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, select0, tpHc0Pt, MultiLevel.INDEPENDENT_HC_DV, select0,

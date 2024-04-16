@@ -99,15 +99,18 @@ public abstract class CommonTest {
                     .setAccess(Inspection.Access.PUBLIC)
                     .setReturnType(tp0Pt)
                     .build(inspectionProvider).getMethodInfo();
+
+            HiddenContentTypes hcsType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
+            HiddenContentTypes hcs = HiddenContentTypes.compute(hcsType, mi.methodInspection.get());
+
             MethodAnalysisImpl.Builder mab = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED, primitives,
                     analysisProvider, inspectionProvider, mi, mutableWithOneTypeParameter.typeAnalysis.get(), List.of());
             mab.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_HC_DV);
             mab.setProperty(Property.IDENTITY, DV.FALSE_DV);
             mab.setProperty(Property.FLUENT, DV.FALSE_DV);
-            mab.setHiddenContentSelector(HiddenContentSelector.All.INSTANCE);
+            mab.setHiddenContentSelector(new HiddenContentSelector.All(0));
             mi.methodAnalysis.set(mab.build());
-            HiddenContentTypes hcsType = mutableWithOneTypeParameter.typeResolution.get().hiddenContentTypes();
-            HiddenContentTypes hcs = HiddenContentTypes.compute(hcsType, mi.methodInspection.get());
+
             mi.methodResolution.set(new MethodResolution(Set.of(), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,
                     false, Set.of(), false, hcs));
             return mi;
@@ -326,4 +329,8 @@ public abstract class CommonTest {
             }
         };
     }
+
+    protected static final LV lv0hc0 = LV.createHC(new LV.Links(Map.of(LV.INDICES_0, new LV.Link(LV.INDICES_0, false))));
+    protected static final LV lv0hc1 = LV.createHC(new LV.Links(Map.of(LV.INDICES_0, new LV.Link(LV.INDICES_1, false))));
+
 }

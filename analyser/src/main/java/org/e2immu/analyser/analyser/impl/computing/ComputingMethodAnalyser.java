@@ -186,7 +186,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
         ParameterizedType returnType = methodInspection.getReturnType();
         // FIXME this is very temporary 20240322
-        methodAnalysis.setHiddenContentSelector(new HiddenContentSelector.None(hctMethod, returnType));
+        methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         return DONE;
     }
 

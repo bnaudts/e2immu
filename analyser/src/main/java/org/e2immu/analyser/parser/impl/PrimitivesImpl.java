@@ -797,8 +797,7 @@ public class PrimitivesImpl implements Primitives {
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
-        HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
-        builder.setHiddenContentSelector(new HiddenContentSelector.None(hctMethod, methodInspection.getReturnType()));
+        builder.setHiddenContentSelector( HiddenContentSelector.None.INSTANCE);
         return builder.build();
     }
 

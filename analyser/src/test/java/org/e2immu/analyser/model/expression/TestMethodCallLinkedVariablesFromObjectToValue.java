@@ -196,8 +196,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     public void test3Bb() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
                 SELECT_0, primitives.voidParameterizedType());
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
-                createHC(new LV.Links(Map.of(0, new LV.Link(0, false)))));
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT, lv0hc0);
         // the resulting object is the same as the object, so it keeps its linked variables
         assertTrue(lv.isEmpty());
     }
@@ -218,8 +217,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     public void test3Cb() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.TRUE_DV, MultiLevel.DEPENDENT_DV,
                 SELECT_0, mutablePt);
-        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT,
-                createHC(new LV.Links(Map.of(0, new LV.Link(0, false)))));
+        LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutablePt, LINK_ASSIGNED, LINK_DEPENDENT, lv0hc0);
         // the resulting object is the same as the object, so it keeps its linked variables
         assertEquals("a:2,b:4,o:1,this:2", lv.toString());
     }
@@ -264,11 +262,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     public void test6() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.DEPENDENT_DV, SELECT_0,
                 mutablePtWithOneTypeParameter, mutableWithOneTypeParameter);
-        LV commonHC = LV.createHC(new LV.Links(Map.of(0, new LV.Link(1, false))));
-        assertEquals("0-4-1", commonHC.toString());
+        assertEquals("0-4-1", lv0hc1.toString());
         ParameterizedType mutableImmutable = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutableImmutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
-                commonHC);
+                lv0hc1);
 
         /*
         object is linked o:0, a:2, b:4 <0>-<0>, this:2
@@ -315,10 +312,9 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     public void test9() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV, SELECT_0,
                 mutablePtWithOneTypeParameter, mutableWithOneTypeParameter);
-        LV commonHC = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
         ParameterizedType mutableImmutable = new ParameterizedType(mutableWithOneTypeParameter, List.of(tp0Pt));
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, mutableImmutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
-                commonHC);
+                lv0hc0);
 
         /*
          o = new ArrayList<>(ts), with ts some collection of Ts
@@ -336,11 +332,10 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV,
-                HiddenContentSelector.All.INSTANCE, tpHc0Pt, immutableHcWithOneTypeParameter);
-        LV commonHC = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
+                new HiddenContentSelector.All(0), tpHc0Pt, immutableHcWithOneTypeParameter);
         ParameterizedType immutableMutable = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(mutablePt));
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableMutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
-                commonHC);
+                lv0hc0);
 
         /*
          o = List.copyOf(is), with I the mutable object shown higher up; concrete type is mutable

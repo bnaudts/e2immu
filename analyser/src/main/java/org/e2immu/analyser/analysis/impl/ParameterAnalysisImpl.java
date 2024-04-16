@@ -246,8 +246,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LV.Links links;
                     if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
                         HiddenContentTypes hctObject = primitives.objectTypeInfo().typeResolution.get().hiddenContentTypes();
-                        HiddenContentSelector select0 = new HiddenContentSelector.CsSet(hctObject,
-                                primitives.objectParameterizedType(), Map.of(0, List.of(new LV.Index(List.of(0)))));
+                        HiddenContentSelector select0 = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(0)));
                         links = LV.matchingLinks(select0, select0);
                     } else {
                         links = LV.matchingLinks(mine, theirs);
@@ -261,9 +260,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public HiddenContentSelector getHiddenContentSelector() {
             // must add a default, for ShallowAnalyser/CompanionAnalyser
-            if (hiddenContentSelectorIsSet()) return hiddenContentSelector.get();
-            HiddenContentTypes hctMethod = parameterInfo.getMethod().methodResolution.get().hiddenContentTypes();
-            return new HiddenContentSelector.None(hctMethod, parameterInfo.getMethod().returnType());
+            return hiddenContentSelector.getOrDefault(HiddenContentSelector.None.INSTANCE);
         }
 
         public Builder setHiddenContentSelector(HiddenContentSelector hiddenContentSelector) {

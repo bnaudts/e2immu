@@ -100,7 +100,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     public void test2cb() {
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         MethodInfo constructor = constructorOneArgument(mutablePtWithOneTypeParameter, tp0Pt,
-                MultiLevel.INDEPENDENT_HC_DV, select0, HiddenContentSelector.All.INSTANCE);
+                MultiLevel.INDEPENDENT_HC_DV, select0, new HiddenContentSelector.All(0));
 
         ParameterInfo p0 = constructor.methodInspection.get().getParameters().get(0);
         assertEquals("Type param T", p0.parameterizedType.toString());

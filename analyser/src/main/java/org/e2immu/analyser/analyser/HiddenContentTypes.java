@@ -336,21 +336,25 @@ public class HiddenContentTypes {
      STEP 2: compute the map EL to EC
      STEP 3: find where EL sits in 'to''s hidden content
     */
-    public Map<Integer, Integer> translateHcs(InspectionProvider inspectionProvider,
-                                              Collection<Integer> indices,
-                                              ParameterizedType from,
-                                              ParameterizedType to,
-                                              boolean fromFormalToConcrete) {
+
+    public record IndicesAndType(LV.Indices indices, ParameterizedType type) {}
+    public Map<LV.Indices, IndicesAndType> translateHcs(InspectionProvider inspectionProvider,
+                                       HiddenContentSelector hiddenContentSelector,
+                                        ParameterizedType from,
+                                        ParameterizedType to,
+                                        boolean fromFormalToConcrete) {
+        throw new UnsupportedOperationException();
+        /*
         ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
         Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom, true);
         ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
         Map<NamedType, ParameterizedType> map2 = formalFrom.translateMap(inspectionProvider, formalTo,
                 fromFormalToConcrete);
         HiddenContentTypes toHct = to.typeInfo.typeResolution.get().hiddenContentTypes();
-        return toHct.translateHcs(indices, map1, map2);
+        return toHct.translateHcs(indices, map1, map2);*/
     }
-
-    public Map<Integer, Integer> translateHcs(Collection<Integer> indices,
+/*
+    public Map<Integer, Integer> translateHcs( Map<Integer, List<LV.Index>> indices,
                                               Map<Integer, ParameterizedType> fromTypeMap,
                                               Map<NamedType, ParameterizedType> fromToTo) {
         Map<Integer, Integer> result = new HashMap<>();
@@ -364,7 +368,7 @@ public class HiddenContentTypes {
             result.put(i, r);
         }
         return result;
-    }
+    }*/
 
     public HiddenContentTypes getHcsTypeInfo() {
         return hcsTypeInfo;

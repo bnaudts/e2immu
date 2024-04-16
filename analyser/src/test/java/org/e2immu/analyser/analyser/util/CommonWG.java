@@ -25,8 +25,8 @@ public class CommonWG {
     final LV v2 = LINK_DEPENDENT;
     final LV v4 = LV.createHC(new Links(0, 0));
     final LV delay = LV.delay(DelayFactory.createDelay(new SimpleCause(Location.NOT_YET_SET, CauseOfDelay.Cause.ECI)));
-    final LV.Indices i0 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
-    final LV.Indices i1 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
+    final LV.Indices i0 = new LV.Indices(0);
+    final LV.Indices i1 = new LV.Indices(1);
 
     protected static Variable makeVariable(String name) {
         TypeInfo t = new TypeInfo("a.b.c", "T");

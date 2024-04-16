@@ -15,9 +15,6 @@ public abstract sealed class HiddenContentSelector
         HiddenContentSelector.CsSet,
         HiddenContentSelector.Delayed {
 
-    private final HiddenContentTypes hiddenContentTypesOfMethod;
-    private final ParameterizedType typeInMethodDeclaration;
-
     public boolean isNone() {
         return false;
     }
@@ -38,27 +35,10 @@ public abstract sealed class HiddenContentSelector
         return causesOfDelay().isDelayed();
     }
 
-    public HiddenContentTypes hiddenContentTypesOfMethod() {
-        return hiddenContentTypesOfMethod;
-    }
-
-    public ParameterizedType typeInMethodDeclaration() {
-        return typeInMethodDeclaration;
-    }
-
-    protected HiddenContentSelector(HiddenContentTypes hiddenContentTypesOfMethod,
-                                    ParameterizedType typeInMethodDeclaration) {
-        this.hiddenContentTypesOfMethod = hiddenContentTypesOfMethod;
-        this.typeInMethodDeclaration = typeInMethodDeclaration;
-    }
-
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
-        public Delayed(HiddenContentTypes hiddenContentTypesOfMethod,
-                       ParameterizedType typeInMethodDeclaration,
-                       CausesOfDelay causesOfDelay) {
-            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+        public Delayed(CausesOfDelay causesOfDelay) {
             this.causesOfDelay = causesOfDelay;
         }
 
@@ -71,10 +51,7 @@ public abstract sealed class HiddenContentSelector
     public static final class All extends HiddenContentSelector {
         private final int hiddenContentIndex;
 
-        private All(HiddenContentTypes hiddenContentTypesOfMethod,
-                    ParameterizedType typeInMethodDeclaration,
-                    int hiddenContentIndex) {
-            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+        public All(int hiddenContentIndex) {
             this.hiddenContentIndex = hiddenContentIndex;
         }
 
@@ -90,9 +67,9 @@ public abstract sealed class HiddenContentSelector
 
     public static final class None extends HiddenContentSelector {
 
-        public None(HiddenContentTypes hiddenContentTypesOfMethod,
-                    ParameterizedType typeInMethodDeclaration) {
-            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+        public static final None INSTANCE = new None();
+
+        private None() {
         }
 
         @Override
@@ -109,13 +86,15 @@ public abstract sealed class HiddenContentSelector
     public static final class CsSet extends HiddenContentSelector {
 
         // to boolean 'mutable'
-        private final Map<Integer, List<LV.Index>> map;
+        private final Map<Integer, LV.Indices> map;
 
-        public CsSet(HiddenContentTypes hiddenContentTypesOfMethod,
-                     ParameterizedType typeInMethodDeclaration,
-                     Map<Integer, List<LV.Index>> map) {
-            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+        public CsSet(Map<Integer, LV.Indices> map) {
             this.map = map;
+        }
+
+        // for testing
+        public static HiddenContentSelector selectTypeParameter(int i) {
+            return new CsSet(Map.of(i, new LV.Indices(i)));
         }
 
         @Override
@@ -129,7 +108,7 @@ public abstract sealed class HiddenContentSelector
             return map.keySet();
         }
 
-        public Map<Integer, List<LV.Index>> getMap() {
+        public Map<Integer, LV.Indices> getMap() {
             return map;
         }
 
@@ -162,34 +141,33 @@ public abstract sealed class HiddenContentSelector
         if (type.isTypeParameter()) {
             if (haveArrays) {
                 assert index != null;
-                return new CsSet(hiddenContentTypes, typeIn, Map.of(index, List.of(new LV.Index(List.of(index)))));
+                return new CsSet(Map.of(index, new LV.Indices(index)));
             }
-            return new All(hiddenContentTypes, typeIn, index);
+            return new All(index);
         }
         if (type.typeInfo == null) {
             // ?, equivalent to ? extends Object; 0 for now
-            return new All(hiddenContentTypes, typeIn, 0);
+            return new All(0);
         }
         if (type.arrays > 0) {
             // assert type.parameters.isEmpty(); // not doing the combination
-            return new None(hiddenContentTypes, typeIn);
+            return None.INSTANCE;
         }
-        Map<Integer, List<LV.Index>> map = new HashMap<>();
+        Map<Integer, LV.Indices> map = new HashMap<>();
         recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
         if (map.isEmpty()) {
-            return new None(hiddenContentTypes, typeIn);
+            return None.INSTANCE;
         }
-        return new CsSet(hiddenContentTypes, typeIn, map);
+        return new CsSet(map);
     }
 
     private static void recursivelyCollectHiddenContentParameters(HiddenContentTypes hiddenContentTypes,
                                                                   ParameterizedType type,
                                                                   Stack<Integer> prefix,
-                                                                  Map<Integer, List<LV.Index>> map) {
+                                                                  Map<Integer, LV.Indices> map) {
         Integer index = hiddenContentTypes.indexOfOrNull(type.copyWithoutArrays());
         if (index != null && type.parameters.isEmpty()) {
-            map.merge(index, List.of(new LV.Index(List.copyOf(prefix))),
-                    (l1, l2) -> Stream.concat(l1.stream(), l2.stream()).toList());
+            map.merge(index, new LV.Indices(Set.of(new LV.Index(List.copyOf(prefix)))), LV.Indices::merge);
         } else {
             int i = 0;
             for (ParameterizedType parameter : type.parameters) {

@@ -67,7 +67,7 @@ public class TestWeightedGraph_7 extends CommonWG {
         wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, map_4_entries));
 
         LV entry_4_l = LV.createHC(new LV.Links(0, LV.ALL));
-        LV entry_4_t = LV.createHC(new LV.Links(0, LV.ALL));
+        LV entry_4_t = LV.createHC(new LV.Links(1, LV.ALL));
         assertEquals("0-4-*", entry_4_l.toString());
         assertEquals("1-4-*", entry_4_t.toString());
         wg.addNode(entry, Map.of(entries, map_4_entries.reverse(), l, entry_4_l, t, entry_4_t));

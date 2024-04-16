@@ -332,12 +332,11 @@ public class TestAssignment extends CommonTest {
         ExpressionMock mock1 = new ExpressionMock() {
             @Override
             public EvaluationResult evaluate(EvaluationResult context, ForwardEvaluationInfo forwardEvaluationInfo) {
-                LV commonHc = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
                 LinkedVariables lv = LinkedVariables.of(Map.of(
                         va.variable(), LINK_DEPENDENT,
                         vc.variable(), LINK_ASSIGNED,
                         vf.variable(), LINK_STATICALLY_ASSIGNED,
-                        vd.variable(), commonHc));
+                        vd.variable(), lv0hc0));
                 return new EvaluationResultImpl.Builder(context)
                         .setExpression(this)
                         .setLinkedVariablesOfExpression(lv)
