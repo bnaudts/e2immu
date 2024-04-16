@@ -15,7 +15,20 @@ public class LV implements Comparable<LV> {
     public record Links(Map<Integer, Link> map) implements DijkstraShortestPath.Connection {
         @Override
         public Links next(DijkstraShortestPath.Connection current) {
-            throw new UnsupportedOperationException("NYI"); // FIXME implement
+            if (current == NO_LINKS || this == NO_LINKS) {
+                return this;
+            }
+            Map<Integer, Link> res = new HashMap<>();
+            for (Map.Entry<Integer, Link> entry : ((Links) current).map.entrySet()) {
+                Link link = this.map.get(entry.getValue().to);
+                if (link == null) {
+                    return null;
+                }
+                boolean mutable = entry.getValue().mutable || link.mutable;
+                Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
+                res.put(entry.getKey(), newLink);
+            }
+            return new Links(res);
         }
 
         public Links ensureMutable(boolean b) {
@@ -57,9 +70,22 @@ public class LV implements Comparable<LV> {
         }
 
         public Links theirsToTheirs(Links links) {
+            Map<Integer, Link> res = new HashMap<>();
+            map.forEach((thisFrom, thisTo) -> {
+                Link link = links.map.get(thisTo.to);
+                res.put(thisTo.to, link);
+            });
+            return new Links(res);
         }
 
+        // use thisTo.to as the intermediary
         public Links mineToTheirs(Links links) {
+            Map<Integer, Link> res = new HashMap<>();
+            map.forEach((thisFrom, thisTo) -> {
+                Link link = links.map.get(thisTo.to);
+                res.put(thisFrom, link);
+            });
+            return new Links(res);
         }
 
         public Links reverse() {
@@ -159,7 +185,7 @@ public class LV implements Comparable<LV> {
         List<String> from = new ArrayList<>();
         List<String> to = new ArrayList<>();
         int countAll = 0;
-        for (Map.Entry<Integer, Link> e : links.map.entrySet()) {
+        for (Map.Entry<Integer, Link> e : links.map.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             boolean mutable = e.getValue().mutable;
             boolean fromIsAll = e.getKey() < 0;
             String f = (fromIsAll ? "*" : "" + e.getKey()) + (mutable ? "M" : "");

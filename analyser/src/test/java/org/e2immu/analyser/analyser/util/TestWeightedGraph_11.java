@@ -36,10 +36,8 @@ public class TestWeightedGraph_11 extends CommonWG {
         n = makeVariable("n");
 
         wg = new WeightedGraphImpl();
-        HiddenContentSelector m0 = new HiddenContentSelector.CsSet(Map.of(0, true));
 
-        LV link = LV.createHC(HiddenContentSelector.All.MUTABLE_INSTANCE, m0);
-
+        LV link = LV.createHC(new LV.Links(Map.of(LV.ALL, new LV.Link(0, true))));
         assertEquals("*M-4-0M", link.toString());
 
         wg.addNode(m, Map.of(ms, link));

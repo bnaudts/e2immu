@@ -133,7 +133,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
         VariableExpression vd = makeLVAsExpression("d", zero, mutablePtWithOneTypeParameter);
 
         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-        LV hc = LV.createHC(select0, select0);
+        LV hc = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
         assertEquals("0-4-0", hc.toString());
         ExpressionMock argument0 = simpleMock(mutablePtWithOneTypeParameter, LinkedVariables.of(Map.of(va.variable(),
                 LV.LINK_ASSIGNED, vd.variable(), LV.LINK_DEPENDENT, vc.variable(), hc)));

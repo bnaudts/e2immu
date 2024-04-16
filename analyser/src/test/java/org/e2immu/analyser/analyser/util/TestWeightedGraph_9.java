@@ -39,8 +39,8 @@ public class TestWeightedGraph_9 extends CommonWG {
         HiddenContentSelector hc0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
         HiddenContentSelector hc1 = HiddenContentSelector.CsSet.selectTypeParameter(1);
 
-        LV map_4_keys = LV.createHC(m0, m0);
-        LV map_4_values = LV.createHC(hc1, hc0);
+        LV map_4_keys = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, true))));
+        LV map_4_values = LV.createHC(new LV.Links(Map.of(1, new LV.Link(0, true))));
 
         assertEquals("1-4-0", map_4_values.toString());
         assertEquals("0M-4-0M", map_4_keys.reverse().toString());

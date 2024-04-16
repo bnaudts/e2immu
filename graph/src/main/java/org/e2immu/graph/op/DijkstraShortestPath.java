@@ -34,8 +34,9 @@ public class DijkstraShortestPath {
     }
 
     public record DCP(long dist, Connection connection) {
-        private Accept accept(Connection connection, boolean allowNoConnection) {
-            Connection next = connection.next(this.connection);
+        // this = the new edge; conn
+        private Accept accept(Connection current, boolean allowNoConnection) {
+            Connection next = this.connection.next(current);
             if (next == null) {
                 if (allowNoConnection) {
                     return WITHOUT_CONNECTION;

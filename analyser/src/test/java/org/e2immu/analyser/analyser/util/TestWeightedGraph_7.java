@@ -55,21 +55,19 @@ public class TestWeightedGraph_7 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-        HiddenContentSelector select1 = HiddenContentSelector.CsSet.selectTypeParameter(1);
-        LV thisVar_4_map = LV.createHC(select0, select1);
+        LV thisVar_4_map = LV.createHC(new LV.Links(Map.of(0, new LV.Link(1, false))));
         assertEquals("0-4-1", thisVar_4_map.toString());
         assertEquals("1-4-0", thisVar_4_map.reverse().toString());
 
         wg.addNode(thisVar, Map.of(map, thisVar_4_map));
-        HiddenContentSelector select01 = HiddenContentSelector.CsSet.selectTypeParameters(0, 1);
-        LV map_4_entries = LV.createHC(select01, select01);
+        LV.Links l01to01 = new LV.Links(Map.of(0, new LV.Link(0, false), 1, new LV.Link(1, false)));
+        LV map_4_entries = LV.createHC(l01to01);
         assertEquals("0,1-4-0,1", map_4_entries.toString());
         wg.addNode(map, Map.of(thisVar, thisVar_4_map.reverse(), entries, map_4_entries));
         wg.addNode(entries, Map.of(map, map_4_entries.reverse(), entry, map_4_entries));
 
-        LV entry_4_l = LV.createHC(select0, HiddenContentSelector.All.INSTANCE);
-        LV entry_4_t = LV.createHC(select1, HiddenContentSelector.All.INSTANCE);
+        LV entry_4_l = LV.createHC(new LV.Links(Map.of(0, new LV.Link(LV.ALL, false))));
+        LV entry_4_t = LV.createHC(new LV.Links(Map.of(1, new LV.Link(LV.ALL, false))));
         assertEquals("0-4-*", entry_4_l.toString());
         assertEquals("1-4-*", entry_4_t.toString());
         wg.addNode(entry, Map.of(entries, map_4_entries.reverse(), l, entry_4_l, t, entry_4_t));
@@ -85,7 +83,7 @@ public class TestWeightedGraph_7 extends CommonWG {
     public void testTV() {
         Map<Variable, LV> links = shortestPath.links(thisVar, null);
         assertEquals(v0, links.get(thisVar)); // start all
-        assertTrue( links.get(map).isCommonHC()); // then <0> of map
+        assertTrue(links.get(map).isCommonHC()); // then <0> of map
         assertTrue(links.get(entries).isCommonHC()); // <0> of entries
         assertTrue(links.get(entry).isCommonHC()); // <0> of entry
         assertTrue(links.get(l).isCommonHC()); // * of l
@@ -96,6 +94,7 @@ public class TestWeightedGraph_7 extends CommonWG {
     @DisplayName("starting in l")
     public void testL() {
         Map<Variable, LV> links = shortestPath.links(l, null);
+        assertEquals(5, links.size());
         assertEquals(v0, links.get(l)); // start all
         assertTrue(links.get(entry).isCommonHC()); // then <0> of entry
         assertNull(links.get(t)); // not reachable

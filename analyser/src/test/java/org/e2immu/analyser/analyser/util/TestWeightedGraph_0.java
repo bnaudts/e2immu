@@ -48,14 +48,16 @@ public class TestWeightedGraph_0 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV this_4_cycle = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0),
-                HiddenContentSelector.CsSet.selectTypeParameter(0));
+        LV this_4_cycle = v4;
         assertEquals("0-4-0", this_4_cycle.toString());
 
         wg.addNode(thisVar, Map.of(thisVar, v0, removed, delay, cycle, this_4_cycle));
         wg.addNode(cycle, Map.of(cycle, v0));
         wg.addNode(removed, Map.of(removed, v0));
+
         shortestPath = wg.shortestPath();
+        assertEquals("0(0:0;2:D)1(1:0;2:0-4-0)2(0:D;1:0-4-0;2:0)",
+                ((ShortestPathImpl)shortestPath).getCacheKey());
     }
 
     @Test

@@ -175,8 +175,7 @@ public class TestComputeLinkedVariables {
         Properties properties = Properties.of(Map.of());
         vicMap.values().forEach(vic -> vic.setValue(valueOfSomeTypeWithoutHc, LinkedVariables.EMPTY, properties, Stage.INITIAL));
 
-        LV hc0ToAll = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0),
-                HiddenContentSelector.All.INSTANCE);
+        LV hc0ToAll = LV.createHC(new LV.Links(Map.of(0, new LV.Link(LV.ALL, false))));
 
         // corresponds to the fictional statement "return this.set.add(x)", where "add"
         // returns a set dependent on this.set, and "x" becomes hidden content of this.set

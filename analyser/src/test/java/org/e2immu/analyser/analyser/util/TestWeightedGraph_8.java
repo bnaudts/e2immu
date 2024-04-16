@@ -39,8 +39,8 @@ public class TestWeightedGraph_8 extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV map_4_keys = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(0), HiddenContentSelector.CsSet.selectTypeParameter(0));
-        LV map_4_values = LV.createHC(HiddenContentSelector.CsSet.selectTypeParameter(1), HiddenContentSelector.CsSet.selectTypeParameter(0));
+        LV map_4_keys = LV.createHC(new LV.Links(Map.of(0, new LV.Link(0, false))));
+        LV map_4_values = LV.createHC(new LV.Links(Map.of(1, new LV.Link(0, false))));
         assertEquals("1-4-0", map_4_values.toString());
         assertEquals("0-4-0", map_4_keys.reverse().toString());
 

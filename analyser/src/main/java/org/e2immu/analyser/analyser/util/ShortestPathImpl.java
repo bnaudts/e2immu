@@ -43,7 +43,7 @@ public class ShortestPathImpl implements ShortestPath {
         this.edgesHigh = edgesHigh;
         this.variableIndex = variableIndex;
         this.someDelay = someDelay;
-        dijkstraShortestPath = new DijkstraShortestPath(HiddenContentSelector.All.INSTANCE);
+        dijkstraShortestPath = new DijkstraShortestPath(NO_LINKS);
         this.linkMap = linkMap;
     }
 

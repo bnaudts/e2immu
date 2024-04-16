@@ -571,7 +571,7 @@ public class ComputeLinkedVariables {
                                         LV lv,
                                         boolean correctForMutable) {
         assert lv.haveLinks();
-        LV newLv;
+  /*      LV newLv;
         HiddenContentSelector mine = variable instanceof This
                 ? new HiddenContentSelector.CsSet(Map.of(0, false))
                 : lv.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
@@ -592,7 +592,8 @@ public class ComputeLinkedVariables {
             newLv = theirs.isNone() || mine.isNone() ? null
                     : lv.isDependent() ? LV.createDependent(mine, theirs) : LV.createHC(mine, theirs);
         }
-        return newLv;
+        return newLv;*/
+        return lv; // FIXME to implement!!!
     }
 
     /**
