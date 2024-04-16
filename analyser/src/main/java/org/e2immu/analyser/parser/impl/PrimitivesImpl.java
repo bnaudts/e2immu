@@ -785,7 +785,8 @@ public class PrimitivesImpl implements Primitives {
 
     @Override
     public MethodAnalysis createMethodAnalysisForArrayConstructor(MethodInfo methodInfo) {
-        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+        List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
                 .map(p -> {
                     ParameterAnalysisImpl.Builder pb = new ParameterAnalysisImpl.Builder(this, AnalysisProvider.DEFAULT_PROVIDER, p);
                     pb.setProperty(Property.CONTAINER_RESTRICTION, MultiLevel.NOT_CONTAINER_DV);
@@ -796,8 +797,9 @@ public class PrimitivesImpl implements Primitives {
                 this, AnalysisProvider.DEFAULT_PROVIDER, InspectionProvider.DEFAULT,
                 methodInfo, null, parameterAnalyses);
         builder.ensureIsNotEventualUnlessOtherwiseAnnotated();
-        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
-        return (MethodAnalysis) builder.build();
+        HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
+        builder.setHiddenContentSelector(new HiddenContentSelector.None(hctMethod, methodInspection.getReturnType()));
+        return builder.build();
     }
 
     @Override

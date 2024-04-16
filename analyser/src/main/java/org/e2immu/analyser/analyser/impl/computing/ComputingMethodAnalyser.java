@@ -183,7 +183,10 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus markFirstIteration(SharedState sharedState) {
         methodAnalysis.markFirstIteration();
-        methodAnalysis.setHiddenContentSelector(HiddenContentSelector.All.INSTANCE); // FIXME this is very temporary 20240322
+        HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
+        ParameterizedType returnType = methodInspection.getReturnType();
+        // FIXME this is very temporary 20240322
+        methodAnalysis.setHiddenContentSelector(new HiddenContentSelector.None(hctMethod, returnType));
         return DONE;
     }
 

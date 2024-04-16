@@ -2,24 +2,39 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.NamedType;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class LV implements Comparable<LV> {
-    public static final int ALL = -1;
+    public static final Index ALL = new Index(List.of(-1));
 
     public static final Links NO_LINKS = new Links(Map.of());
 
-    public record Links(Map<Integer, Link> map) implements DijkstraShortestPath.Connection {
+    public record Index(List<Integer> list) implements Comparable<Index> {
+        @Override
+        public int compareTo(Index o) {
+            return ListUtil.compare(list, o.list);
+        }
+
+        @Override
+        public String toString() {
+            return list.stream().map(Object::toString).collect(Collectors.joining(","));
+        }
+    }
+
+    public record Links(Map<Index, Link> map) implements DijkstraShortestPath.Connection {
         @Override
         public Links next(DijkstraShortestPath.Connection current) {
             if (current == NO_LINKS || this == NO_LINKS) {
                 return this;
             }
-            Map<Integer, Link> res = new HashMap<>();
-            for (Map.Entry<Integer, Link> entry : ((Links) current).map.entrySet()) {
+            Map<Index, Link> res = new HashMap<>();
+            for (Map.Entry<Index, Link> entry : ((Links) current).map.entrySet()) {
                 Link link = this.map.get(entry.getValue().to);
                 if (link == null) {
                     return null;
@@ -33,9 +48,9 @@ public class LV implements Comparable<LV> {
 
         public Links ensureMutable(boolean b) {
             if (map.isEmpty()) return this;
-            Map<Integer, Link> res = new HashMap<>();
+            Map<Index, Link> res = new HashMap<>();
             boolean change = false;
-            for (Map.Entry<Integer, Link> entry : map.entrySet()) {
+            for (Map.Entry<Index, Link> entry : map.entrySet()) {
                 Link link;
                 if (b != entry.getValue().mutable) {
                     link = new Link(entry.getValue().to, b);
@@ -48,6 +63,7 @@ public class LV implements Comparable<LV> {
             return change ? new Links(Map.copyOf(res)) : this;
         }
 
+        // inverse of matchingLinks
         public HiddenContentSelector mine() {
             if (map.isEmpty()) return HiddenContentSelector.None.INSTANCE;
             Link allLink = map.get(ALL);
@@ -61,7 +77,7 @@ public class LV implements Comparable<LV> {
 
         public HiddenContentSelector theirs() {
             if (map.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            Map<Integer, Boolean> res = map.values().stream().collect(Collectors.toUnmodifiableMap(l -> l.to, l -> l.mutable));
+            Map<Index, Boolean> res = map.values().stream().collect(Collectors.toUnmodifiableMap(l -> l.to, l -> l.mutable));
             Boolean allMutable = res.get(ALL);
             if (allMutable != null) {
                 return allMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
@@ -70,7 +86,7 @@ public class LV implements Comparable<LV> {
         }
 
         public Links theirsToTheirs(Links links) {
-            Map<Integer, Link> res = new HashMap<>();
+            Map<Index, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
                 res.put(thisTo.to, link);
@@ -80,7 +96,7 @@ public class LV implements Comparable<LV> {
 
         // use thisTo.to as the intermediary
         public Links mineToTheirs(Links links) {
-            Map<Integer, Link> res = new HashMap<>();
+            Map<Index, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
                 res.put(thisFrom, link);
@@ -90,15 +106,15 @@ public class LV implements Comparable<LV> {
 
         public Links reverse() {
             if (map.isEmpty()) return this;
-            Map<Integer, Link> map = new HashMap<>();
-            for (Map.Entry<Integer, Link> e : this.map.entrySet()) {
+            Map<Index, Link> map = new HashMap<>();
+            for (Map.Entry<Index, Link> e : this.map.entrySet()) {
                 map.put(e.getValue().to, new Link(e.getKey(), e.getValue().mutable));
             }
             return new Links(Map.copyOf(map));
         }
     }
 
-    public record Link(int to, boolean mutable) {
+    public record Link(Index to, boolean mutable) {
     }
 
     private static final int DELAY = -1;
@@ -185,11 +201,11 @@ public class LV implements Comparable<LV> {
         List<String> from = new ArrayList<>();
         List<String> to = new ArrayList<>();
         int countAll = 0;
-        for (Map.Entry<Integer, Link> e : links.map.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
+        for (Map.Entry<Index, Link> e : links.map.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             boolean mutable = e.getValue().mutable;
-            boolean fromIsAll = e.getKey() < 0;
+            boolean fromIsAll = e.getKey().equals(ALL);
             String f = (fromIsAll ? "*" : "" + e.getKey()) + (mutable ? "M" : "");
-            boolean toIsAll = e.getValue().to < 0;
+            boolean toIsAll = e.getValue().to.equals(ALL);
             String t = (toIsAll ? "*" : "" + e.getValue().to) + (mutable ? "M" : "");
             assert !(fromIsAll && toIsAll);
             from.add(f);
@@ -211,11 +227,18 @@ public class LV implements Comparable<LV> {
         return new LV(DEPENDENT, links, createLabel(links, DEPENDENT), CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
     }
 
-    public static Links matchingLinks(HiddenContentSelector from, HiddenContentSelector to) {
+    /*
+    go from hidden content selectors to an actual Links object.
+     */
+    public static Links matchingLinks(HiddenContentSelector from,
+                                      HiddenContentSelector to) {
         if (from.isAll()) {
             if (to instanceof HiddenContentSelector.CsSet set) {
                 assert set.set().size() == 1;
-                return new Links(Map.of(ALL, new Link(set.set().stream().findFirst().orElseThrow(),
+                int indexInHCT = set.set().stream().findFirst().orElseThrow();
+                NamedType type = commonHCT.typeByIndex(indexInHCT);
+                Index index = null;// FIXME
+                return new Links(Map.of(ALL, new Link(indexInHCT,
                         from.containsMutable())));
             } else throw new UnsupportedOperationException();
         }
@@ -280,8 +303,8 @@ public class LV implements Comparable<LV> {
     }
 
     private Links union(Links other) {
-        Map<Integer, Link> res = new HashMap<>(links.map);
-        for (Map.Entry<Integer, Link> e : other.map.entrySet()) {
+        Map<Index, Link> res = new HashMap<>(links.map);
+        for (Map.Entry<Index, Link> e : other.map.entrySet()) {
             res.putIfAbsent(e.getKey(), e.getValue());
         }
         return new Links(Map.copyOf(res));

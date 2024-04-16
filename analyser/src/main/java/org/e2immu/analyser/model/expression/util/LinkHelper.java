@@ -54,7 +54,7 @@ public class LinkHelper {
         this.methodAnalysis = methodAnalysis;
         hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
         assert hiddenContentTypes != null : "For method " + methodInfo;
-        hcsSource = hiddenContentTypes.selectAll();
+        hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes);
     }
 
     private LinkedVariables linkedVariablesOfParameter(ParameterizedType parameterMethodType,

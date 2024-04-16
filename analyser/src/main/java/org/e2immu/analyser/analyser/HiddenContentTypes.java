@@ -83,11 +83,10 @@ public class HiddenContentTypes {
         return methodInfo != null;
     }
 
-    public HiddenContentSelector selectAll() {
-        if (forMethod()) return hcsTypeInfo.selectAll();
-        return typeToIndex.isEmpty()
-                ? HiddenContentSelector.None.INSTANCE
-                : new HiddenContentSelector.CsSet(indexToType.keySet());
+    public Set<Integer> selectAll() {
+        Set<Integer> set = new HashSet<>(indexToType.keySet());
+        if (!forMethod()) set.addAll(hcsTypeInfo.indexToType.keySet());
+        return set;
     }
 
     public static HiddenContentTypes compute(TypeInspection typeInspection) {

@@ -14,6 +14,9 @@ public abstract sealed class HiddenContentSelector
         HiddenContentSelector.CsSet,
         HiddenContentSelector.Delayed {
 
+    private final HiddenContentTypes hiddenContentTypesOfMethod;
+    private final ParameterizedType typeInMethodDeclaration;
+
     public boolean isNone() {
         return false;
     }
@@ -38,14 +41,27 @@ public abstract sealed class HiddenContentSelector
         return false;
     }
 
-    public HiddenContentSelector ensureMutable(boolean mutable) {
-        return this;
+    public HiddenContentTypes hiddenContentTypesOfMethod() {
+        return hiddenContentTypesOfMethod;
+    }
+
+    public ParameterizedType typeInMethodDeclaration() {
+        return typeInMethodDeclaration;
+    }
+
+    protected HiddenContentSelector(HiddenContentTypes hiddenContentTypesOfMethod,
+                                    ParameterizedType typeInMethodDeclaration) {
+        this.hiddenContentTypesOfMethod = hiddenContentTypesOfMethod;
+        this.typeInMethodDeclaration = typeInMethodDeclaration;
     }
 
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
-        public Delayed(CausesOfDelay causesOfDelay) {
+        public Delayed(HiddenContentTypes hiddenContentTypesOfMethod,
+                       ParameterizedType typeInMethodDeclaration,
+                       CausesOfDelay causesOfDelay) {
+            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
             this.causesOfDelay = causesOfDelay;
         }
 
@@ -56,17 +72,13 @@ public abstract sealed class HiddenContentSelector
     }
 
     public static final class All extends HiddenContentSelector {
-        private final boolean mutable;
+        private final int hiddenContentIndex;
 
-        public static final HiddenContentSelector INSTANCE = new All(false);
-        public static final HiddenContentSelector MUTABLE_INSTANCE = new All(true);
-
-        private All(boolean mutable) {
-            this.mutable = mutable;
-        }
-
-        public boolean isMutable() {
-            return mutable;
+        private All(HiddenContentTypes hiddenContentTypesOfMethod,
+                    ParameterizedType typeInMethodDeclaration,
+                    int hiddenContentIndex) {
+            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+            this.hiddenContentIndex = hiddenContentIndex;
         }
 
         @Override
@@ -74,27 +86,16 @@ public abstract sealed class HiddenContentSelector
             return true;
         }
 
-        @Override
-        public String toString() {
-            return mutable ? "*M" : "*";
-        }
-
-        @Override
-        public boolean containsMutable() {
-            return mutable;
-        }
-
-        @Override
-        public HiddenContentSelector ensureMutable(boolean mutable) {
-            return mutable ? MUTABLE_INSTANCE : INSTANCE;
+        public int getHiddenContentIndex() {
+            return hiddenContentIndex;
         }
     }
 
     public static final class None extends HiddenContentSelector {
 
-        public static final HiddenContentSelector INSTANCE = new None();
-
-        private None() {
+        public None(HiddenContentTypes hiddenContentTypesOfMethod,
+                    ParameterizedType typeInMethodDeclaration) {
+            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
         }
 
         @Override
@@ -111,30 +112,19 @@ public abstract sealed class HiddenContentSelector
     public static final class CsSet extends HiddenContentSelector {
 
         // to boolean 'mutable'
-        private final Map<Integer, Boolean> map;
+        private final Map<Integer, LV.Index> map;
 
-        public CsSet(Collection<Integer> set) {
-            assert set != null && !set.isEmpty() && set.stream().allMatch(i -> i >= 0);
-            this.map = set.stream().collect(Collectors.toUnmodifiableMap(s -> s, s -> false));
-        }
-
-        public CsSet(Map<Integer, Boolean> map) {
-            assert map != null && !map.isEmpty() && map.keySet().stream().allMatch(i -> i >= 0);
-            this.map = Map.copyOf(map);
-        }
-
-        public static HiddenContentSelector selectTypeParameter(int i) {
-            return new CsSet(Map.of(i, false));
-        }
-
-        public static HiddenContentSelector selectTypeParameters(int... is) {
-            return new CsSet(Arrays.stream(is).boxed().collect(Collectors.toUnmodifiableMap(i -> i, i -> false)));
+        public CsSet(HiddenContentTypes hiddenContentTypesOfMethod,
+                     ParameterizedType typeInMethodDeclaration,
+                     Map<Integer, LV.Index> map) {
+            super(hiddenContentTypesOfMethod, typeInMethodDeclaration);
+            this.map = map;
         }
 
         @Override
         public String toString() {
             return map.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                    .map(e -> e.getKey() + (e.getValue() ? "M" : ""))
+                    .map(e -> e.getKey().toString())
                     .collect(Collectors.joining(","));
         }
 
@@ -142,7 +132,7 @@ public abstract sealed class HiddenContentSelector
             return map.keySet();
         }
 
-        public Map<Integer, Boolean> getMap() {
+        public Map<Integer, LV.Index> getMap() {
             return map;
         }
 
@@ -158,68 +148,19 @@ public abstract sealed class HiddenContentSelector
         public int hashCode() {
             return Objects.hash(map);
         }
-
-        @Override
-        public boolean containsMutable() {
-            return map.values().stream().anyMatch(v -> v);
-        }
-
-        @Override
-        public HiddenContentSelector ensureMutable(boolean addMutable) {
-            Map<Integer, Boolean> newMap = map.keySet().stream()
-                    .collect(Collectors.toUnmodifiableMap(i -> i, i -> addMutable));
-            return new CsSet(newMap);
-        }
     }
 
-    public HiddenContentSelector correctForMutable(EvaluationContext evaluationContext,
-                                                   ParameterizedType type,
-                                                   boolean correct) {
-        if (isDelayed()) return this;
-        if (isNone()) throw new UnsupportedOperationException();
-        if (isAll()) {
-            DV immutableOfParameterizedType = evaluationContext.immutable(type);
-            if (immutableOfParameterizedType.isDelayed()) {
-                return new HiddenContentSelector.Delayed(immutableOfParameterizedType.causesOfDelay());
-            }
-            boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableOfParameterizedType);
-            if (immutable) return HiddenContentSelector.None.INSTANCE;
-            boolean mutable = correct && MultiLevel.isMutable(immutableOfParameterizedType);
-            return mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE : HiddenContentSelector.All.INSTANCE;
-        }
-        if (this instanceof CsSet csSet) {
-            assert type.typeInfo != null;
-            assert type.typeInfo.typeResolution.isSet();
-            HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
-            Map<Integer, ParameterizedType> typeMap = hct.mapTypesRecursively(evaluationContext.getAnalyserContext(),
-                    type, false);
-            CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
-            Map<Integer, Boolean> res = new HashMap<>();
-            for (int hcIndex : csSet.set()) {
-                ParameterizedType hcType = typeMap.get(hcIndex);
-                assert hcType != null;
-                DV immutableDv = evaluationContext.immutable(hcType);
-                if (immutableDv.isDelayed()) {
-                    causesOfDelay = causesOfDelay.merge(immutableDv.causesOfDelay());
-                } else {
-                    boolean immutable = MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutableDv);
-                    if (!immutable) {
-                        boolean mutable = correct && MultiLevel.isMutable(immutableDv);
-                        res.put(hcIndex, mutable);
-                    }
-                }
-            }
-            if (causesOfDelay.isDelayed()) return new HiddenContentSelector.Delayed(causesOfDelay);
-            if (res.isEmpty()) return HiddenContentSelector.None.INSTANCE;
-            return new HiddenContentSelector.CsSet(res);
-        }
-        throw new UnsupportedOperationException();
+    public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes) {
+        Map<Integer, LV.Index> map = hiddenContentTypes.selectAll().stream()
+                .collect(Collectors.toUnmodifiableMap(i -> i, i -> new LV.Index(List.of(i))));
+        return new CsSet(hiddenContentTypes, null, map);
     }
 
     /*
      Take in a type, and return the hidden content components of this type, with respect to the hidden content types
      of the current type or method.
-     Set<Map.Entry<K, V>> will return the indices of K and V, likely 0, 1.
+     Set<Map.Entry<K, V>> will return the indices of K and V mapped to their position in the formal type,
+     i.e., 0 -> 0.0, 1 -> 0.1
      */
     public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes, ParameterizedType typeIn) {
         assert hiddenContentTypes != null;
@@ -230,38 +171,39 @@ public abstract sealed class HiddenContentSelector
         if (type.isTypeParameter()) {
             if (haveArrays) {
                 assert index != null;
-                return new CsSet(Map.of(index, false));
+                return new CsSet(hiddenContentTypes, typeIn, Map.of(index, new LV.Index(List.of(index))));
             }
-            return All.INSTANCE;
+            return new All(hiddenContentTypes, typeIn, index);
         }
         if (type.typeInfo == null) {
-            // ?, equivalent to ? extends Object
-            return All.INSTANCE;
+            // ?, equivalent to ? extends Object; 0 for now
+            return new All(hiddenContentTypes, typeIn, 0);
         }
         if (type.arrays > 0) {
             // assert type.parameters.isEmpty(); // not doing the combination
-            return None.INSTANCE;
+            return new None(hiddenContentTypes, typeIn);
         }
-        Set<Integer> set = new HashSet<>();
-        recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, set);
-        if (set.isEmpty()) {
-            if (index != null) {
-                return new CsSet(Map.of(index, false));
-            }
-            return None.INSTANCE;
+        Map<Integer, LV.Index> map = new HashMap<>();
+        recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
+        if (map.isEmpty()) {
+            return new None(hiddenContentTypes, typeIn);
         }
-        return new CsSet(set);
+        return new CsSet(hiddenContentTypes, typeIn, map);
     }
 
     private static void recursivelyCollectHiddenContentParameters(HiddenContentTypes hiddenContentTypes,
                                                                   ParameterizedType type,
-                                                                  Set<Integer> set) {
+                                                                  Stack<Integer> prefix,
+                                                                  Map<Integer, LV.Index> map) {
         Integer index = hiddenContentTypes.indexOfOrNull(type.copyWithoutArrays());
         if (index != null && type.parameters.isEmpty()) {
-            set.add(index);
+            map.put(index, new LV.Index(List.copyOf(prefix)));
         } else {
+            int i = 0;
             for (ParameterizedType parameter : type.parameters) {
-                recursivelyCollectHiddenContentParameters(hiddenContentTypes, parameter, set);
+                prefix.push(i);
+                recursivelyCollectHiddenContentParameters(hiddenContentTypes, parameter, prefix, map);
+                prefix.pop();
             }
         }
     }
