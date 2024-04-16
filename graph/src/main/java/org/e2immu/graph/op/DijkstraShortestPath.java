@@ -15,10 +15,10 @@ public class DijkstraShortestPath {
     private final Connection initialConnection;
 
     public interface Connection {
-        boolean isDisjointFrom(Connection required);
+        Connection next(Connection connection);
     }
 
-    public record DC(long dist, Connection initialConnection, Connection connection) implements Comparable<DC> {
+    public record DC(long dist, Connection connection) implements Comparable<DC> {
         @Override
         public int compareTo(DC o) {
             return Long.compare(dist, o.dist);
@@ -33,19 +33,16 @@ public class DijkstraShortestPath {
     private record Accept(boolean accept, Connection next) {
     }
 
-    public record DCP(long dist, Connection mine, Connection theirs) {
-        public Accept accept(Connection connection, boolean allowDisjoint) {
-            if (mine == null) {
-                // no check, always true
-                return new Accept(true, connection);
-            }
-            if (connection.isDisjointFrom(mine)) {
-                if (allowDisjoint) {
+    public record DCP(long dist, Connection connection) {
+        private Accept accept(Connection connection, boolean allowNoConnection) {
+            Connection next = connection.next(this.connection);
+            if (next == null) {
+                if (allowNoConnection) {
                     return WITHOUT_CONNECTION;
                 }
                 return NO;
             }
-            return new Accept(true, theirs);
+            return new Accept(true, next);
         }
     }
 
@@ -58,7 +55,7 @@ public class DijkstraShortestPath {
 
         public DCPEntry(Map.Entry<Integer, Long> e) {
             variable = e.getKey();
-            dcp = new DCP(e.getValue(), null, null);
+            dcp = new DCP(e.getValue(), null);
         }
 
         @Override
@@ -112,7 +109,7 @@ public class DijkstraShortestPath {
      */
 
 
-    private static final DC NO_PATH = new DC(Long.MAX_VALUE, null, null);
+    private static final DC NO_PATH = new DC(Long.MAX_VALUE, null);
 
 
     public DijkstraShortestPath(Connection initialConnection) {
@@ -120,7 +117,7 @@ public class DijkstraShortestPath {
     }
 
     public DijkstraShortestPath() {
-        this(required -> false);
+        this(required -> null);
     }
 
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
@@ -145,7 +142,7 @@ public class DijkstraShortestPath {
             if (i != sourceVertex) {
                 dc = NO_PATH;
             } else {
-                dc = new DC(0, null, initialConnection);
+                dc = new DC(0, initialConnection);
             }
             dist[i] = dc;
             handles.add(priorityQueue.insert(dc, i));
@@ -167,10 +164,10 @@ public class DijkstraShortestPath {
                         alt = NO_PATH;
                     } else {
                         if (a.next != null) {
-                            Connection initial = d.initialConnection == null ? edge.getValue().mine() : d.initialConnection;
-                            alt = new DC(d.dist + edgeValue.dist, initial, a.next);
+                            alt = new DC(d.dist + edgeValue.dist, a.next);
                         } else {
-                            alt = new DC(d.dist + edgeValue.dist, initialConnection, initialConnection);
+                            // allow no connection
+                            alt = new DC(d.dist + edgeValue.dist, initialConnection);
                         }
                     }
                 }

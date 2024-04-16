@@ -181,11 +181,12 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             assert methodAnalysis.isSet() && methodAnalysis.get().hiddenContentSelectorIsSet();
             HiddenContentSelector myHcs = getHiddenContentSelector();
             HiddenContentSelector methodHcs = methodAnalysis.get().getHiddenContentSelector();
+            LV.Links links = LV.matchingLinks(myHcs, methodHcs);
             LV lv;
             if (dependent) {
-                lv = LV.createDependent(myHcs, methodHcs);
+                lv = LV.createDependent(links);
             } else {
-                lv = LV.createHC(myHcs, methodHcs);
+                lv = LV.createHC(links);
             }
             ReturnVariable returnVariable = new ReturnVariable(parameterInfo.getMethodInfo());
             linkToReturnValueOfMethod.set(LinkedVariables.of(returnVariable, lv));
@@ -217,7 +218,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                 } else {
                     ParameterInfo pi = parameters.get(parameterIndex);
                     HiddenContentSelector otherHcs = analysisProvider.getParameterAnalysis(pi).getHiddenContentSelector();
-                    map.put(pi, LV.createDependent(myHcs, otherHcs));
+                    LV.Links links = LV.matchingLinks(myHcs, otherHcs);
+                    map.put(pi, LV.createDependent(links));
                 }
             }
             return LinkedVariables.of(map);
@@ -241,12 +243,14 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     ParameterInfo pi = parameters.get(parameterIndex);
                     HiddenContentSelector theirs = HiddenContentSelector.selectAll(hiddenContentTypes, pi.parameterizedType);
                     // System.arrayCopy... what we mean is: 0-0
+                    LV.Links links;
                     if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
                         HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
-                        map.put(pi, LV.createHC(select0, select0));
+                        links = LV.matchingLinks(select0, select0);
                     } else {
-                        map.put(pi, LV.createHC(mine, theirs));
+                        links = LV.matchingLinks(mine, theirs);
                     }
+                    map.put(pi, LV.createHC(links));
                 }
             }
             return LinkedVariables.of(map);

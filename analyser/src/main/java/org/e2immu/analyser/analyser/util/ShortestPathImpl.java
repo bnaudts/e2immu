@@ -114,20 +114,15 @@ public class ShortestPathImpl implements ShortestPath {
         if (l < ASSIGNED_H) return LINK_STATICALLY_ASSIGNED;
         if (l < DEPENDENT_H) return LINK_ASSIGNED;
         if (l < HC_MUTABLE_H) {
-            HiddenContentSelector mine = (HiddenContentSelector) lowDc.initialConnection();
-            HiddenContentSelector theirs = (HiddenContentSelector) lowDc.connection();
-            return LV.createDependent(mine, theirs);
+            Links links = (Links) lowDc.connection();
+            return LV.createDependent(links);
         }
         if (l < DELAYED_H) {
-            HiddenContentSelector mine = (HiddenContentSelector) lowDc.initialConnection();
-            HiddenContentSelector theirs = (HiddenContentSelector) lowDc.connection();
-            if (mine.isAll() && theirs.isAll()) {
-                return null;
-            }
+            Links links = (Links) lowDc.connection();
             if (l < INDEPENDENT_HC_H) {
-                return LV.createHC(mine.ensureMutable(true), theirs.ensureMutable(true));
+                return LV.createHC(links.ensureMutable(true));
             }
-            return LV.createHC(mine.ensureMutable(false), theirs.ensureMutable(false));
+            return LV.createHC(links.ensureMutable(false));
         }
         return LV.delay(someDelay);
     }

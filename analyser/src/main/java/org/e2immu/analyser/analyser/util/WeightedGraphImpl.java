@@ -213,14 +213,10 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                     if (dv.isDelayed() && delay == null) {
                         delay = dv.causesOfDelay();
                     }
-                    DijkstraShortestPath.Connection mine;
-                    DijkstraShortestPath.Connection theirs;
                     if (dv.isCommonHC()) {
                         // we'll be skipping any link that points to All, so *-4-* and 0-4-* will be ignored
-                        if (forModification && dv.theirs().isAll()) continue;
+                        if (forModification && dv.theirsIsAll()) continue;
 
-                        mine = dv.mine();
-                        theirs = dv.theirs();
                         if (dv.containsMutable()) {
                             correctedLv = LINK_HC_MUTABLE;
                         } else if (forModification) {
@@ -229,14 +225,12 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                             correctedLv = dv;
                         }
                     } else {
-                        mine = dv.mine();
-                        theirs = dv.theirs();
                         correctedLv = dv;
                     }
                     long d = ShortestPathImpl.toDistanceComponent(correctedLv);
-                    edgesOfD1.put(d2, new DijkstraShortestPath.DCP(d, mine, theirs));
+                    edgesOfD1.put(d2, new DijkstraShortestPath.DCP(d, dv.links()));
                     long dHigh = ShortestPathImpl.toDistanceComponentHigh(correctedLv);
-                    edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, mine, theirs));
+                    edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, dv.links()));
 
                     String cacheCode = dv.isDelayed() ? "D" : dv.minimal();
                     unsorted.add(d2 + ":" + cacheCode);

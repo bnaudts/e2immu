@@ -8,13 +8,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 // integers represent type parameters, as result of HC.typeParameters()
-public abstract sealed class HiddenContentSelector implements DijkstraShortestPath.Connection
+public abstract sealed class HiddenContentSelector
         permits HiddenContentSelector.All,
         HiddenContentSelector.None,
         HiddenContentSelector.CsSet,
         HiddenContentSelector.Delayed {
-
-    public abstract HiddenContentSelector union(HiddenContentSelector other);
 
     public boolean isNone() {
         return false;
@@ -52,18 +50,8 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
 
         @Override
-        public HiddenContentSelector union(HiddenContentSelector other) {
-            return new Delayed(causesOfDelay.merge(other.causesOfDelay()));
-        }
-
-        @Override
         public CausesOfDelay causesOfDelay() {
             return causesOfDelay;
-        }
-
-        @Override
-        public boolean isDisjointFrom(DijkstraShortestPath.Connection required) {
-            return true; // always follow!
         }
     }
 
@@ -84,20 +72,6 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         @Override
         public boolean isAll() {
             return true;
-        }
-
-        @Override
-        public HiddenContentSelector union(HiddenContentSelector other) {
-            if (other instanceof All all) {
-                assert mutable == all.mutable;
-                return this;
-            }
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isDisjointFrom(DijkstraShortestPath.Connection required) {
-            return false;
         }
 
         @Override
@@ -125,16 +99,6 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
 
         @Override
         public boolean isNone() {
-            return true;
-        }
-
-        @Override
-        public HiddenContentSelector union(HiddenContentSelector other) {
-            return other;
-        }
-
-        @Override
-        public boolean isDisjointFrom(DijkstraShortestPath.Connection required) {
             return true;
         }
 
@@ -168,12 +132,6 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         }
 
         @Override
-        public boolean isDisjointFrom(DijkstraShortestPath.Connection other) {
-            if (other instanceof None) throw new UnsupportedOperationException();
-            return !(other instanceof All) && Collections.disjoint(map.keySet(), ((CsSet) other).map.keySet());
-        }
-
-        @Override
         public String toString() {
             return map.entrySet().stream().sorted(Map.Entry.comparingByKey())
                     .map(e -> e.getKey() + (e.getValue() ? "M" : ""))
@@ -199,17 +157,6 @@ public abstract sealed class HiddenContentSelector implements DijkstraShortestPa
         @Override
         public int hashCode() {
             return Objects.hash(map);
-        }
-
-
-        @Override
-        public HiddenContentSelector union(HiddenContentSelector other) {
-            assert !(other instanceof All);
-            if (other instanceof None) return this;
-            Map<Integer, Boolean> map = new HashMap<>(this.map);
-            map.putAll(((CsSet) other).map);
-            assert !map.isEmpty();
-            return new CsSet(map);
         }
 
         @Override

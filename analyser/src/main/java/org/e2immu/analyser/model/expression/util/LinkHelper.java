@@ -104,15 +104,14 @@ public class LinkHelper {
                     newLv = null;
                 } else {
                     boolean m = MultiLevel.isMutable(mutable);
-                    HiddenContentSelector mine = HiddenContentSelector.All.INSTANCE.ensureMutable(m);
-                    HiddenContentSelector theirs = HiddenContentSelector.CsSet.selectTypeParameter(index).ensureMutable(m);
-                    newLv = independentHc ? LV.createHC(mine, theirs) : LV.createDependent(mine, theirs);
+                    Links links = new Links(Map.of(ALL, new Link(index, m)));
+                    newLv = independentHc ? LV.createHC(links) : LV.createDependent(links);
                 }
             } else {
                 if (!hcs.isEmpty()) {
-                    Map<Integer, Boolean> mineMap = new HashMap<>();
-                    Map<Integer, Boolean> theirsMap = new HashMap<>();
+                    Map<Integer, Link> linkMap = new HashMap<>();
                     for (Map.Entry<Integer, ParameterizedType> entry : hcs.entrySet()) {
+                        assert hcsMethodToHctTarget != null;
                         int iInHctTarget = hcsMethodToHctTarget.get(entry.getKey());
                         ParameterizedType type = typesCorrespondingToHCOfTarget.get(iInHctTarget);
                         assert type != null;
@@ -125,16 +124,13 @@ public class LinkHelper {
                             immutable = MUTABLE_DV;
                         }
                         boolean mutable = MultiLevel.isMutable(immutable);
-                        mineMap.put(entry.getKey(), mutable);
-                        theirsMap.put(iInHctTarget, mutable);
+                        linkMap.put(entry.getKey(), new Link(iInHctTarget, mutable));
                     }
-                    if (mineMap.isEmpty()) {
-                        assert theirsMap.isEmpty();
+                    if (linkMap.isEmpty()) {
                         newLv = LINK_DEPENDENT;
                     } else {
-                        HiddenContentSelector mine = new HiddenContentSelector.CsSet(mineMap);
-                        HiddenContentSelector theirs = new HiddenContentSelector.CsSet(theirsMap);
-                        newLv = independentHc ? LV.createHC(mine, theirs) : LV.createDependent(mine, theirs);
+                        Links links = new Links(Map.copyOf(linkMap));
+                        newLv = independentHc ? LV.createHC(links) : LV.createDependent(links);
                     }
                 } else {
                     newLv = LINK_DEPENDENT;
@@ -315,8 +311,8 @@ public class LinkHelper {
                                           ParameterizedType methodSourceType,
                                           LinkedVariables sourceLinkedVariables,
                                           List<LinkedVariables> parameterLvs) {
-        HiddenContentSelector hcsTarget = level.isCommonHC() ? level.mine() : HiddenContentSelector.None.INSTANCE;
-        HiddenContentSelector hcsSource = level.isCommonHC() ? level.theirs() : HiddenContentSelector.None.INSTANCE;
+        HiddenContentSelector hcsTarget = level.isCommonHC() ? level.links().mine() : HiddenContentSelector.None.INSTANCE;
+        HiddenContentSelector hcsSource = level.isCommonHC() ? level.links().theirs() : HiddenContentSelector.None.INSTANCE;
         DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
         LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
         LinkedVariables mergedLvs = linkedVariables(targetType, methodTargetType, hcsSource, targetLinkedVariables,
@@ -534,8 +530,8 @@ public class LinkHelper {
                         immutableOfSource, lv);
 
                 if (!hiddenContentSelectorOfTarget.isNone()) {
-                    HiddenContentSelector mine; // target
-                    HiddenContentSelector theirs; // source
+                    // from mine==target to theirs==source
+                    Map<Integer, Link> linkMap = new HashMap<>();
 
                         /*
                         this is the only place during computational analysis where we create common HC links.
@@ -547,26 +543,18 @@ public class LinkHelper {
                             causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
                         }
                         boolean mutable = MultiLevel.isMutable(typeImmutable);
-                        mine = mutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
-                                : HiddenContentSelector.All.INSTANCE;
                         if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet csSet) {
-                            Map<Integer, Boolean> theirsMap = new HashMap<>();
-                            for (int i : csSet.set()) {
-                                NamedType namedType = methodTargetType.isTypeParameter()
-                                        ? methodTargetType.typeParameter : methodTargetType.typeInfo;
-                                boolean accept = hiddenContentTypes.isAssignableTo(inspectionProvider, namedType, i);
-                                if (accept) {
-                                    assert hctMethodToHctSource != null;
-                                    Integer iInHctSource = hctMethodToHctSource.get(i);
-                                    assert iInHctSource != null;
-                                    theirsMap.put(iInHctSource, mutable);
-                                }
+                            assert csSet.getMap().size() == 1;
+                            int i = csSet.getMap().keySet().stream().findFirst().orElseThrow();
+                            NamedType namedType = methodTargetType.isTypeParameter()
+                                    ? methodTargetType.typeParameter : methodTargetType.typeInfo;
+                            boolean accept = hiddenContentTypes.isAssignableTo(inspectionProvider, namedType, i);
+                            if (accept) {
+                                assert hctMethodToHctSource != null;
+                                Integer iInHctSource = hctMethodToHctSource.get(i);
+                                assert iInHctSource != null;
+                                linkMap.put(ALL, new Link(iInHctSource, mutable));
                             }
-                            assert hctSource != null;
-                            theirs = reverse
-                                    // correction takes place later
-                                    ? new HiddenContentSelector.CsSet(theirsMap)
-                                    : correctWithRespectTo(inspectionProvider, e.getKey() instanceof This, pt, hctSource, theirsMap);
                         } else {
                             throw new UnsupportedOperationException();
                         }
@@ -574,8 +562,6 @@ public class LinkHelper {
                         // both are CsSet, we'll set mutable what is mutable, in a common way
                         if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
                             Boolean correctForVarargsMutable = null;
-                            Map<Integer, Boolean> mineMap = new HashMap<>();
-                            Map<Integer, Boolean> theirsMap = new HashMap<>();
 
                             assert hctMethodToHctSource != null;
                             assert targetTypeFormal != null;
@@ -596,45 +582,40 @@ public class LinkHelper {
                                 }
 
                                 boolean mutable = isMutable(typeImmutable);
-                                mineMap.put(iInHctTarget, mutable);
                                 if (sourceIsVarArgs) {
                                     // we're in a varargs situation: the first element is the type itself
                                     correctForVarargsMutable = mutable;
                                 }
                                 int iInHctSource = hctMethodToHctSource.get(i);
-                                theirsMap.put(iInHctSource, mutable);
-                            }
-                            if (correctForVarargsMutable != null) {
-                                // the normal link would be 0-4-0, we make it *-4-0
-                                mine = correctForVarargsMutable ? HiddenContentSelector.All.MUTABLE_INSTANCE
-                                        : HiddenContentSelector.All.INSTANCE;
-                            } else {
-                                mine = mineMap.isEmpty() ? null : new HiddenContentSelector.CsSet(mineMap);
-                            }
-                            if (theirsMap.isEmpty()) {
-                                theirs = null;
-                            } else if (sourceIsVarArgs || reverse) {
-                                // no need for a correction, '0' is correct
-                                theirs = new HiddenContentSelector.CsSet(theirsMap);
-                            } else {
-                                assert hctSource != null;
-                                theirs = correctWithRespectTo(inspectionProvider, e.getKey() instanceof This,
-                                        pt, hctSource, theirsMap);
+                                int correctedIInHctTarget;
+                                if (correctForVarargsMutable != null) {
+                                    correctedIInHctTarget = ALL;
+                                } else {
+                                    correctedIInHctTarget = iInHctTarget;
+                                }
+                                linkMap.put(iInHctTarget, new Link(iInHctSource, mutable));
                             }
                         } else {
                             throw new UnsupportedOperationException();
                         }
                     }
+
                     if (createDependentLink) {
-                        LV dependent = reverse ? LV.createDependent(theirs, mine) : LV.createDependent(mine, theirs);
-                        newLinked.put(e.getKey(), dependent);
-                    } else if (mine != null && theirs != null) {
-                        LV commonHC = reverse ? LV.createHC(theirs, mine) : LV.createHC(mine, theirs);
+                        if (linkMap.isEmpty()) {
+                            newLinked.put(e.getKey(), LINK_DEPENDENT);
+                        } else {
+                            Links links = new Links(Map.copyOf(linkMap));
+                            LV dependent = reverse ? LV.createDependent(links.reverse()) : LV.createDependent(links);
+                            newLinked.put(e.getKey(), dependent);
+                        }
+                    } else if (!linkMap.isEmpty()) {
+                        Links links = new Links(Map.copyOf(linkMap));
+                        LV commonHC = reverse ? LV.createHC(links.reverse()) : LV.createHC(links);
                         newLinked.put(e.getKey(), commonHC);
                     }
-                } else {
-                    throw new UnsupportedOperationException("I believe we should not link");
                 }
+            } else {
+                throw new UnsupportedOperationException("I believe we should not link");
             }
         }
         if (causesOfDelay.isDelayed()) {
@@ -746,7 +727,7 @@ public class LinkHelper {
                     Variable to = e2.getKey();
                     LV fromLv = e.getValue();
                     LV toLv = e2.getValue();
-                    LV lv = follow(fromLv, toLv, to, from);
+                    LV lv = follow(fromLv, toLv);
                     if (lv != null) {
                         link.link(from, to, lv);
                     }
@@ -754,11 +735,13 @@ public class LinkHelper {
         );
     }
 
-    public static LV follow(LV fromLv, LV toLv, Variable to, Variable from) {
+    public static LV follow(LV fromLv, LV toLv) {
         if (fromLv.isDelayed() || toLv.isDelayed()) {
             return LV.delay(fromLv.causesOfDelay().merge(toLv.causesOfDelay()));
         }
-        if (fromLv.mine() == null && toLv.mine() == null) {
+        boolean fromLvHaveLinks = fromLv.haveLinks();
+        boolean toLvHaveLinks = toLv.haveLinks();
+        if (!fromLvHaveLinks && !toLvHaveLinks) {
             return fromLv.max(toLv); // -0- and -1-, -1- and -2-
         }
         if (fromLv.isStaticallyAssignedOrAssigned()) {
@@ -767,29 +750,33 @@ public class LinkHelper {
         if (toLv.isStaticallyAssignedOrAssigned()) {
             return fromLv; // 1-2-1 -1-
         }
-        if (fromLv.mine() != null && toLv.mine() != null) {
-            if (fromLv.mine().isAll() && !toLv.mine().isAll()) {
+        if (fromLvHaveLinks && toLvHaveLinks) {
+            boolean fromLvMineIsAll = fromLv.mineIsAll();
+            boolean toLvMineIsAll = toLv.mineIsAll();
+            if (fromLvMineIsAll && !toLvMineIsAll) {
                 return fromLv.reverse();
             }
-            if (toLv.mine().isAll() && !fromLv.mine().isAll()) {
+            if (toLvMineIsAll && !fromLvMineIsAll) {
                 return toLv;
-            } else if (toLv.mine().isAll() && fromLv.mine().isAll()) {
-                return LV.createHC(fromLv.theirs(), toLv.theirs());
+            } else if (toLvMineIsAll) {
+                return LV.createHC(fromLv.links().theirsToTheirs(toLv.links()));
             }
-            if (fromLv.theirs().isAll() && !toLv.theirs().isAll()) {
-                return LV.createHC(fromLv.theirs(), toLv.theirs());
+            boolean fromLvTheirsIsAll = fromLv.theirsIsAll();
+            boolean toLvTheirsIsAll = toLv.theirsIsAll();
+            if (fromLvTheirsIsAll && !toLvTheirsIsAll) {
+                return LV.createHC(fromLv.links().theirsToTheirs(toLv.links()));
             }
-            if (toLv.theirs().isAll() && fromLv.theirs().isAll()) {
+            if (toLvTheirsIsAll && fromLvTheirsIsAll) {
                 return null;
             }
-            return LV.createHC(fromLv.mine(), toLv.theirs());
+            return LV.createHC(fromLv.links().mineToTheirs(toLv.links()));
         }
         if (fromLv.isDependent()) {
-            assert fromLv.mine() == null && toLv.isCommonHC();
+            assert !fromLvHaveLinks && toLv.isCommonHC();
             return null;
         }
         if (toLv.isDependent()) {
-            assert toLv.mine() == null && fromLv.isCommonHC();
+            assert !toLvHaveLinks && fromLv.isCommonHC();
             return null;
         }
         throw new UnsupportedOperationException("?");

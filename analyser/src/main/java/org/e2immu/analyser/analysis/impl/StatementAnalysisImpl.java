@@ -1038,8 +1038,8 @@ public class StatementAnalysisImpl extends AbstractAnalysisBuilder implements St
         LinkedVariables linkedVariables;
         if (variable instanceof DependentVariable dv) {
             VariableExpression arrayBase = new VariableExpression(dv.arrayExpression().getIdentifier(), dv.arrayVariable());
-            LinkedVariables lvArrayBase = LinkedVariables.of(arrayBase.variable(),
-                    LV.createHC(HiddenContentSelector.All.INSTANCE, HiddenContentSelector.CsSet.selectTypeParameters(0))); // FIXME correct? like List.get(index)
+            LV.Links links = new LV.Links(Map.of(LV.ALL, new LV.Link(0, false)));
+            LinkedVariables lvArrayBase = LinkedVariables.of(arrayBase.variable(), LV.createHC(links));
             DV independent = determineIndependentOfArrayBase(context, arrayBase);
             CausesOfDelay causesOfDelay = independent.causesOfDelay().merge(lvArrayBase.causesOfDelay());
             Expression arrayValue;

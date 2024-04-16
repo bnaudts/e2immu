@@ -552,7 +552,7 @@ public class ComputeLinkedVariables {
             LV newLv;
             Variable target = entry.getKey();
             LV lv = entry.getValue();
-            if (lv.isCommonHC() || lv.isDependent() && lv.mine() != null && lv.theirs() != null) {
+            if (lv.isCommonHC() || lv.isDependent() && lv.haveLinks()) {
                 boolean correctForMutable = reachableFromVariableInMutable.contains(target);
                 newLv = computeMineTheirs(evaluationContext, variable, target, lv, correctForMutable);
             } else {
@@ -570,7 +570,7 @@ public class ComputeLinkedVariables {
                                         Variable target,
                                         LV lv,
                                         boolean correctForMutable) {
-        assert lv.mine() != null && lv.theirs() != null;
+        assert lv.haveLinks();
         LV newLv;
         HiddenContentSelector mine = variable instanceof This
                 ? new HiddenContentSelector.CsSet(Map.of(0, false))
