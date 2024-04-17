@@ -1,12 +1,10 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.graph.op.DijkstraShortestPath;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // integers represent type parameters, as result of HC.typeParameters()
 public abstract sealed class HiddenContentSelector
@@ -33,6 +31,10 @@ public abstract sealed class HiddenContentSelector
 
     public boolean isDelayed() {
         return causesOfDelay().isDelayed();
+    }
+
+    public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
+        throw new UnsupportedOperationException();
     }
 
     public static final class Delayed extends HiddenContentSelector {
@@ -67,6 +69,11 @@ public abstract sealed class HiddenContentSelector
         @Override
         public String toString() {
             return "*";
+        }
+
+        @Override
+        public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
+            return Map.of(LV.ALL_INDICES, type);
         }
     }
 
@@ -135,6 +142,12 @@ public abstract sealed class HiddenContentSelector
         @Override
         public int hashCode() {
             return Objects.hash(map);
+        }
+
+        @Override
+        public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
+            return map.values().stream().collect(Collectors.toUnmodifiableMap(i -> i,
+                    i -> i.findInFormal(inspectionProvider, type)));
         }
     }
 

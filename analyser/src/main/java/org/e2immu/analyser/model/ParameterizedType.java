@@ -1136,4 +1136,8 @@ public class ParameterizedType {
         }
         return this;
     }
+
+    public NamedType namedType() {
+        return typeParameter != null ? typeParameter : typeInfo;
+    }
 }

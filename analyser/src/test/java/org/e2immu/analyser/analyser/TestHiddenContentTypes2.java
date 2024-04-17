@@ -7,14 +7,14 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.impl.PrimitivesImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestHiddenContentTypes2 {
     private final Primitives primitives = new PrimitivesImpl();
@@ -34,6 +34,11 @@ public class TestHiddenContentTypes2 {
     private final TypeParameter tpList0 = new TypeParameterImpl(list, "EL", 0).noTypeBounds();
     private final ParameterizedType tpList0Pt = new ParameterizedType(tpList0, 0, ParameterizedType.WildCard.NONE);
     private final ParameterizedType listPt = new ParameterizedType(list, List.of(tpList0Pt));
+
+    private final TypeInfo map = new TypeInfo("com.foo", "Map");
+    private final TypeParameter tpMap0 = new TypeParameterImpl(map, "MK", 0).noTypeBounds();
+    private final TypeParameter tpMap1 = new TypeParameterImpl(map, "MV", 1).noTypeBounds();
+    private final ParameterizedType mapPt = new ParameterizedType(map, List.of(tpMap0.toParameterizedType(), tpMap1.toParameterizedType()));
 
 
     @BeforeEach
@@ -81,6 +86,17 @@ public class TestHiddenContentTypes2 {
         arrayList.typeResolution.set(new TypeResolution.Builder()
                 .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, arrayList.typeInspection.get()))
                 .build());
+
+        map.typeInspection.set(new TypeInspectionImpl.Builder(map, Inspector.BY_HAND)
+                .setTypeNature(TypeNature.INTERFACE)
+                .addTypeParameter(tpMap0)
+                .addTypeParameter(tpMap1)
+                .setParentClass(primitives.objectParameterizedType())
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(inspectionProvider));
+        map.typeResolution.set(new TypeResolution.Builder()
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, map.typeInspection.get()))
+                .build());
     }
 
     @Test
@@ -103,4 +119,111 @@ public class TestHiddenContentTypes2 {
         assertEquals(0, map.get(tpList0));
         assertEquals(0, map.get(tpAl0));
     }
+
+    @Test
+    public void test2() {
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(0)));
+        assertEquals("0", hcs.toString());
+        ParameterizedType pt = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
+        assertEquals("Type com.foo.List<String>", pt.toString());
+        assertEquals("{0=Type param EL}", hcs.extract(inspectionProvider, pt).toString());
+    }
+
+    @Test
+    public void test2b() {
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(Set.of(new LV.Index(List.of(0, 0))))));
+        assertEquals("0=0.0", hcs.toString());
+        ParameterizedType pt = new ParameterizedType(list, List.of(new ParameterizedType(arrayList, List.of(primitives.stringParameterizedType()))));
+        assertEquals("Type com.foo.List<com.foo.ArrayList<String>>", pt.toString());
+        assertEquals("{0.0=Type param EA}", hcs.extract(inspectionProvider, pt).toString());
+    }
+
+    @Test
+    @DisplayName("allOccurrencesOf")
+    public void test3() {
+        ParameterizedType pt = new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt));
+        assertEquals("1;2", HiddenContentTypes.allOccurrencesOf(tpList0Pt, pt).toString());
+
+        ParameterizedType pt2 = new ParameterizedType(list, List.of(new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt))));
+        assertEquals("0.1;0.2", HiddenContentTypes.allOccurrencesOf(tpList0Pt, pt2).toString());
+    }
+
+    @Test
+    @DisplayName("translateHcs, simplest situation")
+    public void test4a() {
+        HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
+        LV.Indices i0 = new LV.Indices(0);
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i0));
+        // from is expressed in terms of the hidden content of hctAl
+        ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
+        assertEquals("Type com.foo.Collection<EA>", from.toString());
+        assertEquals(0, hctAl.indexOf(tpAl0));
+
+        ParameterizedType to = new ParameterizedType(collection, List.of(primitives.stringParameterizedType()));
+        assertEquals("Type com.foo.Collection<String>", to.toString());
+
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to,
+                true);
+        assertEquals(1, map.size());
+        HiddenContentTypes.IndicesAndType iat = map.get(i0);
+        assertNotNull(iat);
+        assertEquals(i0, iat.indices());
+        assertSame(primitives.stringParameterizedType(), iat.type());
+    }
+
+    @Test
+    @DisplayName("translateHcs, from is supertype of to")
+    public void test4b() {
+        HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
+        LV.Indices i0 = new LV.Indices(0);
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i0));
+        // from is expressed in terms of the hidden content of hctAl
+        ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
+        assertEquals("Type com.foo.Collection<EA>", from.toString());
+        assertEquals(0, hctAl.indexOf(tpAl0));
+
+        ParameterizedType to = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
+        assertEquals("Type com.foo.List<String>", to.toString());
+
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to, true);
+        assertEquals(1, map.size());
+        HiddenContentTypes.IndicesAndType iat = map.get(i0);
+        assertNotNull(iat);
+        assertEquals(i0, iat.indices());
+        assertSame(primitives.stringParameterizedType(), iat.type());
+    }
+
+    @Test
+    @DisplayName("translateHcs, collection of map, simplest situation")
+    public void test4c() {
+        HiddenContentTypes hctMap = map.typeResolution.get().hiddenContentTypes();
+        LV.Indices i00 = new LV.Indices(Set.of(new LV.Index(List.of(0, 0))));
+        LV.Indices i01 = new LV.Indices(Set.of(new LV.Index(List.of(0, 1))));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i00, 1, i01));
+        assertEquals("0=0.0,1=0.1", hcs.toString());
+
+        // from is expressed in terms of the hidden content of hctMap
+        ParameterizedType mapKV = new ParameterizedType(map, List.of(tpMap0.toParameterizedType(), tpMap1.toParameterizedType()));
+        ParameterizedType from = new ParameterizedType(collection, List.of(mapKV));
+        assertEquals("Type com.foo.Collection<com.foo.Map<MK,MV>>", from.toString());
+        assertEquals(1, hctMap.indexOf(tpMap1));
+
+        ParameterizedType mapSI = new ParameterizedType(map, List.of(primitives.stringParameterizedType(),
+                primitives.integerTypeInfo().asSimpleParameterizedType()));
+        ParameterizedType to = new ParameterizedType(collection, List.of(mapSI));
+        assertEquals("Type com.foo.Collection<com.foo.Map<String,Integer>>", to.toString());
+
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctMap.translateHcs(inspectionProvider, hcs, from, to, true);
+        assertEquals(2, map.size());
+        HiddenContentTypes.IndicesAndType iat0 = map.get(i00);
+        assertNotNull(iat0);
+        assertEquals(i00, iat0.indices());
+        assertSame(primitives.stringParameterizedType(), iat0.type());
+        HiddenContentTypes.IndicesAndType iat1 = map.get(i01);
+        assertNotNull(iat1);
+        assertEquals(i01, iat1.indices());
+        assertEquals(primitives.integerTypeInfo().asSimpleParameterizedType(), iat1.type());
+    }
+
+
 }

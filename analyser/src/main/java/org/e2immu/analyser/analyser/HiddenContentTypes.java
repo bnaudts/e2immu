@@ -379,21 +379,21 @@ public class HiddenContentTypes {
     }
 
     /*
-     The 'indices' are expressed with respect to 'this'.
-     'to' is a concrete type for 'from', whose hidden content types are in 'this'.
-     the resulting indices are wrt the formal type of 'to'.
+     The hidden content selector's hct indices (the keys in the map) are computed with respect to 'this'.
+     They map to indices (the values in the map) which exist in 'from'.
+
+     'to' is a concrete type for 'from'. We'll map the indices of the selector to indices wrt the formal
+     type of to, also attaching the concrete types at those indices.
 
      E.g. method context is the type ArrayList<EA>.new ArrayList<>(Collection<? extends EA>)
      concrete constructor call is new ArrayList<>(List<M>)
 
-     'this' is with respect to ArrayList<EA> and the constructor, mapping EA=0
+     'this' is with respect to ArrayList<EA> and the constructor, mapping EA=0 (and EL=0, EC=0 for List, Collection)
      'from' is Collection<? extends EA>, formal type Collection<EC>.
-     'to' is List<M>, with formal type List<EL>. The concrete type doesn't matter here, the formal does.
-     The end result is 0 -> 0: the index of EA goes to the index of EL, via the mapping
+     The hidden content selector is 0=0.
 
-     STEP 1: compute 0=EC based on 'this', formal 'from'.
-     STEP 2: compute the map EL to EC
-     STEP 3: find where EL sits in 'to''s hidden content
+     'to' is List<M>, with formal type List<EL>.
+     The result maps 'indices' 0 to the combination of "M" and indices 0.
     */
 
     public record IndicesAndType(LV.Indices indices, ParameterizedType type) {
@@ -404,32 +404,99 @@ public class HiddenContentTypes {
                                                         ParameterizedType from,
                                                         ParameterizedType to,
                                                         boolean fromFormalToConcrete) {
-        throw new UnsupportedOperationException();
-        /*
-        ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
-        Map<Integer, ParameterizedType> map1 = mapTypesRecursively(inspectionProvider, from, formalFrom, true);
-        ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
-        Map<NamedType, ParameterizedType> map2 = formalFrom.translateMap(inspectionProvider, formalTo,
-                fromFormalToConcrete);
-        HiddenContentTypes toHct = to.typeInfo.typeResolution.get().hiddenContentTypes();
-        return toHct.translateHcs(indices, map1, map2);*/
-    }
-/*
-    public Map<Integer, Integer> translateHcs( Map<Integer, List<LV.Index>> indices,
-                                              Map<Integer, ParameterizedType> fromTypeMap,
-                                              Map<NamedType, ParameterizedType> fromToTo) {
-        Map<Integer, Integer> result = new HashMap<>();
-        for (int i : indices) {
-            ParameterizedType ec = fromTypeMap.get(i);
-            assert ec != null;
-            ParameterizedType el = fromToTo.get(ec.typeParameter);
-            assert el != null;
-            Integer r = indexOfOrNull(el);
-            assert r != null;
-            result.put(i, r);
+        Map<LV.Indices, ParameterizedType> map1 = hiddenContentSelector.extract(inspectionProvider, from);
+        Map<LV.Indices, IndicesAndType> result = new HashMap<>();
+        for (Map.Entry<LV.Indices, ParameterizedType> entry1 : map1.entrySet()) {
+            IndicesAndType iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to, fromFormalToConcrete);
+            result.put(entry1.getKey(), iat);
         }
-        return result;
-    }*/
+        return Map.copyOf(result);
+    }
+
+    /*
+    if what is a type parameter, is will be with respect to the formal type of that level of generics.
+
+    what == the result of 'ptInFrom in from' translated to ('to' == where)
+
+    Given what=EL, with where==List<String>, return 0,String
+    Given what=K in Map.Entry, with where = Set<Map.Entry<A,B>>, return 0.0,A
+
+    If from=Set<Set<K>>, and we extract K at 0.0
+    If to=Collection<ArrayList<String>>, we'll have to return 0.0, String
+     */
+    private static IndicesAndType findAll(InspectionProvider inspectionProvider,
+                                          LV.Indices indices,
+                                          ParameterizedType ptInFrom,
+                                          ParameterizedType from,
+                                          ParameterizedType to,
+                                          boolean fromFormalToConcrete) {
+        // it does not matter with which index we start
+        LV.Index index = indices.set().stream().findFirst().orElseThrow();
+        IndicesAndType res = findAll(inspectionProvider, index, 0, ptInFrom, from, to, fromFormalToConcrete);
+        // but once we have found it, we must make sure that we return all occurrences
+        assert res.indices.set().size() == 1;
+        assert res.type != null;
+        LV.Indices findAll = allOccurrencesOf(res.type, to);
+        return new IndicesAndType(findAll, res.type);
+    }
+
+    public static LV.Indices allOccurrencesOf(ParameterizedType what, ParameterizedType where) {
+        Set<LV.Index> set = new TreeSet<>();
+        allOccurrencesOf(what, where, set, new Stack<>());
+        assert !set.isEmpty();
+        return new LV.Indices(set);
+    }
+
+    private static void allOccurrencesOf(ParameterizedType what, ParameterizedType where, Set<LV.Index> set, Stack<Integer> pos) {
+        if (what.equals(where)) {
+            LV.Index index = new LV.Index(List.copyOf(pos));
+            set.add(index);
+            return;
+        }
+        int i = 0;
+        for (ParameterizedType pt : where.parameters) {
+            pos.push(i);
+            allOccurrencesOf(what, pt, set, pos);
+            pos.pop();
+            i++;
+        }
+    }
+
+    private static IndicesAndType findAll(InspectionProvider inspectionProvider,
+                                          LV.Index index,
+                                          int pos,
+                                          ParameterizedType ptFrom,
+                                          ParameterizedType from,
+                                          ParameterizedType to,
+                                          boolean fromFormalToConcrete) {
+        int atPos = index.list().get(pos);
+        if (pos == index.list().size() - 1) {
+            // the last entry
+            ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
+            assert formalFrom.parameters.get(atPos).equals(ptFrom);
+            if (formalFrom.typeInfo == to.typeInfo) {
+                ParameterizedType concrete = to.parameters.get(atPos);
+                return new IndicesAndType(new LV.Indices(Set.of(index)), concrete);
+            }
+            Map<NamedType, ParameterizedType> map1 = to.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, formalFrom);
+            assert map1 != null;
+            ParameterizedType ptTo = map1.get(ptFrom.namedType());
+            assert ptTo != null;
+            int iTo = to.typeInfo.typeResolution.get().hiddenContentTypes().indexOf(ptTo);
+            LV.Index indexTo = index.replaceLast(iTo);
+            LV.Indices indicesTo = new LV.Indices(Set.of(indexTo));
+            Map<NamedType, ParameterizedType> map2 = to.initialTypeParameterMap(inspectionProvider);
+            ParameterizedType concreteTypeTo = map2.get(ptTo.namedType());
+            assert concreteTypeTo != null;
+            return new IndicesAndType(indicesTo, concreteTypeTo);
+        }
+        if (from.typeInfo == to.typeInfo) {
+            ParameterizedType inFrom = from.parameters.get(atPos);
+            ParameterizedType inTo = to.parameters.get(atPos);
+            return findAll(inspectionProvider, index, pos + 1, ptFrom, inFrom, inTo, fromFormalToConcrete);
+        }
+        throw new UnsupportedOperationException();
+    }
 
     public HiddenContentTypes getHcsTypeInfo() {
         return hcsTypeInfo;

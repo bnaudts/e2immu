@@ -2,6 +2,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.graph.op.DijkstraShortestPath;
 
@@ -41,6 +43,36 @@ public class LV implements Comparable<LV> {
         public String toString() {
             return list.stream().map(Object::toString).collect(Collectors.joining("."));
         }
+
+        /*
+         extract type given the indices. Switch to formal for the last index in the list only!
+         Map.Entry<A,B>, with index 0, will return K in Map.Entry
+         Set<Map.Entry<A,B>>, with indices 0.1, will return V in Map.Entry.
+         */
+        public ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type) {
+            return findInFormal(inspectionProvider, type, 0);
+        }
+
+        private ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type, int pos) {
+            if (type.parameters.isEmpty()) {
+                // no generics, so substitute "Object"
+                return inspectionProvider.getPrimitives().objectParameterizedType();
+            }
+            int index = list.get(pos);
+            if (pos == list.size() - 1) {
+                assert type.typeInfo != null;
+                ParameterizedType formal = type.typeInfo.asParameterizedType(inspectionProvider);
+                return formal.parameters.get(index);
+            }
+            ParameterizedType nextType = type.parameters.get(index);
+            assert nextType != null;
+            return findInFormal(inspectionProvider, nextType, pos + 1);
+        }
+
+        public Index replaceLast(int v) {
+            if (list.get(list.size() - 1) == v) return this;
+            return new Index(Stream.concat(list.stream().limit(list.size() - 1), Stream.of(v)).toList());
+        }
     }
 
     // important: as soon as there are multiple elements, use a TreeSet!!
@@ -79,6 +111,12 @@ public class LV implements Comparable<LV> {
         public Indices merge(Indices indices) {
             return new Indices(Stream.concat(set.stream(), indices.set.stream())
                     .collect(Collectors.toCollection(TreeSet::new)));
+        }
+
+        public ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type) {
+            // in theory, they all should map to the same type... so we pick one
+            Index first = set.stream().findFirst().orElseThrow();
+            return first.findInFormal(inspectionProvider, type);
         }
     }
 
@@ -292,7 +330,7 @@ public class LV implements Comparable<LV> {
             Map<Indices, Link> res = new HashMap<>();
             for (Map.Entry<Integer, Indices> entry : setFrom.getMap().entrySet()) {
                 Indices list = setTo.getMap().get(entry.getKey());
-                if(list != null) {
+                if (list != null) {
                     res.put(entry.getValue(), new Link(list, false));
                 }
             }
