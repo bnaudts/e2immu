@@ -207,7 +207,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
 
         // index
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
@@ -282,7 +282,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
-        assertEquals("1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
 
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
@@ -494,12 +494,12 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("2,3", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("2=0,3=1", methodAnalysis.getHiddenContentSelector().toString());
 
         ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals("2,3", p0.getHiddenContentSelector().toString());
+        assertEquals("2=0,3=1", p0.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -512,7 +512,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
-        assertEquals("2,3", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("2=0,3=1", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -524,7 +524,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
         // important: the 0 is with respect to Collection (V is position 0 in Collection)
-        assertEquals("1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
     }
 
     @Test
@@ -536,7 +536,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
-        assertEquals("0.0,0.1", methodAnalysis.getHiddenContentSelector().toString());
+        // the 0. prefix is due to the Set in the Set<Map.Entry<K,V>> result type
+        assertEquals("0=0.0,1=0.1", methodAnalysis.getHiddenContentSelector().toString());
     }
 
 

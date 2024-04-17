@@ -63,6 +63,11 @@ public abstract sealed class HiddenContentSelector
         public int getHiddenContentIndex() {
             return hiddenContentIndex;
         }
+
+        @Override
+        public String toString() {
+            return "*";
+        }
     }
 
     public static final class None extends HiddenContentSelector {
@@ -100,8 +105,15 @@ public abstract sealed class HiddenContentSelector
         @Override
         public String toString() {
             return map.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                    .map(e -> e.getKey().toString())
+                    .map(e -> print(e.getKey(), e.getValue()))
                     .collect(Collectors.joining(","));
+        }
+
+        private static String print(int i, LV.Indices indices) {
+            String is = indices.toString();
+            String iToString = "" + i;
+            if (is.equals(iToString)) return iToString;
+            return iToString + "=" + is;
         }
 
         public Set<Integer> set() {
@@ -174,6 +186,7 @@ public abstract sealed class HiddenContentSelector
                 prefix.push(i);
                 recursivelyCollectHiddenContentParameters(hiddenContentTypes, parameter, prefix, map);
                 prefix.pop();
+                i++;
             }
         }
     }

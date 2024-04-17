@@ -123,7 +123,8 @@ public class HiddenContentTypes {
             TypeInfo enclosing = typeInfo.packageNameOrEnclosingType.getRight();
             HiddenContentTypes hct = getOrCompute(inspectionProvider, enclosing, shallow);
             offset = hct.size();
-            fromEnclosing = hct.typeToIndex;
+            fromEnclosing = hct.indexToType.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
         } else {
             offset = 0;
             fromEnclosing = Map.of();

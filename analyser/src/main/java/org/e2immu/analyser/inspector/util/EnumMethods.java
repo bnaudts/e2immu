@@ -243,7 +243,7 @@ public class EnumMethods {
         typeBuilder.addMethod(predicate.getMethodInfo());
 
         lambdaType.typeInspection.set(typeBuilder.build(typeContext));
-        var hcs = HiddenContentTypes.compute(InspectionProvider.DEFAULT, lambdaType.typeInspection.get());
+        var hcs = HiddenContentTypes.compute(typeContext, lambdaType.typeInspection.get());
         var lambdaTypeResolution = new TypeResolution.Builder()
                 .setSortedType(new SortedType(lambdaType, List.of(lambdaType, predicate.getMethodInfo())))
                 .setHiddenContentTypes(hcs)
