@@ -244,7 +244,7 @@ public class TypeMapImpl implements TypeMap {
                         HiddenContentTypes hctType;
                         if (!typeInfo.typeResolution.isSet()) {
                             Set<TypeInfo> superTypes = ResolverImpl.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo, null);
-                            hctType = HiddenContentTypes.compute(typeInfo.typeInspection.get());
+                            hctType = HiddenContentTypes.compute(this, typeInfo.typeInspection.get());
                             TypeResolution typeResolution = new TypeResolution.Builder()
                                     .setSuperTypesExcludingJavaLangObject(superTypes)
                                     .setHiddenContentTypes(hctType)

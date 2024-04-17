@@ -177,7 +177,8 @@ public class ResolverImpl implements Resolver {
                 subTypeStream).collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         allBuilders.forEach((typeInfo, builder) -> {
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-            HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(typeInspection, shallowResolver);
+            HiddenContentTypes hiddenContentTypes = HiddenContentTypes.compute(inspectionProvider, typeInspection,
+                    shallowResolver);
             builder.setHiddenContentTypes(hiddenContentTypes);
         });
         if (parent == null) {
@@ -1029,7 +1030,7 @@ public class ResolverImpl implements Resolver {
             // there's a few types not in the builder map...
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
             assert typeInspection != null;
-            hcsTypeInfo = HiddenContentTypes.compute(typeInspection);
+            hcsTypeInfo = HiddenContentTypes.compute(inspectionProvider, typeInspection);
         }
         HiddenContentTypes hcs = HiddenContentTypes.compute(hcsTypeInfo, methodInspection);
         builder.setHiddenContentTypes(hcs);

@@ -421,7 +421,7 @@ public class TestMethodCallLinkedVariablesFromParametersToObject extends CommonT
                 .addMethod(sam)
                 .build(inspectionProvider));
 
-        HiddenContentTypes hctType = HiddenContentTypes.compute(implementation.typeInspection.get());
+        HiddenContentTypes hctType = HiddenContentTypes.compute(inspectionProvider, implementation.typeInspection.get());
         implementation.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(hctType).build());
         HiddenContentTypes hctMethod = HiddenContentTypes.compute(hctType, sam.methodInspection.get());
         MethodResolution samMr = new MethodResolution(Set.of(abstractSam), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,

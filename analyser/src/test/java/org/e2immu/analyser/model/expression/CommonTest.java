@@ -249,7 +249,7 @@ public abstract class CommonTest {
                 string, analyserContext);
         builder.setProperty(Property.IMMUTABLE, MultiLevel.EFFECTIVELY_IMMUTABLE_DV);
         string.typeAnalysis.set(builder.build());
-        HiddenContentTypes hctString = HiddenContentTypes.compute(string.typeInspection.get());
+        HiddenContentTypes hctString = HiddenContentTypes.compute(inspectionProvider, string.typeInspection.get());
         string.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(hctString).build());
         fill(mutable, MultiLevel.MUTABLE_DV, null);
         fill(mutable2, MultiLevel.MUTABLE_DV, null);
@@ -274,7 +274,7 @@ public abstract class CommonTest {
         taBuilder.setProperty(Property.IMMUTABLE, immutable);
         typeInfo.typeAnalysis.set(taBuilder.build());
         TypeResolution.Builder trBuilder = new TypeResolution.Builder();
-        trBuilder.setHiddenContentTypes(HiddenContentTypes.compute(typeInfo.typeInspection.get()));
+        trBuilder.setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, typeInfo.typeInspection.get()));
         typeInfo.typeResolution.set(trBuilder.build());
     }
 

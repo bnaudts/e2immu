@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.impl.SortedType;
 
@@ -242,7 +243,7 @@ public class EnumMethods {
         typeBuilder.addMethod(predicate.getMethodInfo());
 
         lambdaType.typeInspection.set(typeBuilder.build(typeContext));
-        var hcs = HiddenContentTypes.compute(lambdaType.typeInspection.get());
+        var hcs = HiddenContentTypes.compute(InspectionProvider.DEFAULT, lambdaType.typeInspection.get());
         var lambdaTypeResolution = new TypeResolution.Builder()
                 .setSortedType(new SortedType(lambdaType, List.of(lambdaType, predicate.getMethodInfo())))
                 .setHiddenContentTypes(hcs)

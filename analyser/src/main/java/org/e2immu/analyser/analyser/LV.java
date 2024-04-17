@@ -39,7 +39,7 @@ public class LV implements Comparable<LV> {
 
         @Override
         public String toString() {
-            return list.stream().map(Object::toString).collect(Collectors.joining(","));
+            return list.stream().map(Object::toString).collect(Collectors.joining("."));
         }
     }
 
@@ -77,7 +77,8 @@ public class LV implements Comparable<LV> {
         }
 
         public Indices merge(Indices indices) {
-            return new Indices(Stream.concat(set.stream(), indices.set.stream()).collect(Collectors.toUnmodifiableSet()));
+            return new Indices(Stream.concat(set.stream(), indices.set.stream())
+                    .collect(Collectors.toCollection(TreeSet::new)));
         }
     }
 
@@ -244,8 +245,10 @@ public class LV implements Comparable<LV> {
             boolean mutable = e.getValue().mutable;
             boolean fromIsAll = e.getKey().equals(ALL_INDICES);
             String f = (fromIsAll ? "*" : "" + e.getKey()) + (mutable ? "M" : "");
-            boolean toIsAll = e.getValue().to.equals(ALL_INDICES);
-            String t = (toIsAll ? "*" : "" + e.getValue().to) + (mutable ? "M" : "");
+            Indices i = e.getValue().to;
+            assert i != null;
+            boolean toIsAll = i.equals(ALL_INDICES);
+            String t = (toIsAll ? "*" : "" + i) + (mutable ? "M" : "");
             assert !(fromIsAll && toIsAll);
             from.add(f);
             to.add(t);
@@ -289,8 +292,11 @@ public class LV implements Comparable<LV> {
             Map<Indices, Link> res = new HashMap<>();
             for (Map.Entry<Integer, Indices> entry : setFrom.getMap().entrySet()) {
                 Indices list = setTo.getMap().get(entry.getKey());
-                res.put(entry.getValue(), new Link(list, false));
+                if(list != null) {
+                    res.put(entry.getValue(), new Link(list, false));
+                }
             }
+            assert !res.isEmpty();
             return new Links(Map.copyOf(res));
         } else throw new UnsupportedOperationException();
     }

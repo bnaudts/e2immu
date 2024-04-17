@@ -536,7 +536,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.MUTABLE_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
-        assertEquals("0,1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("0.0,0.1", methodAnalysis.getHiddenContentSelector().toString());
     }
 
 

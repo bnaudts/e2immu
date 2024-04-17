@@ -139,8 +139,8 @@ public abstract sealed class HiddenContentSelector
         Integer index = hiddenContentTypes.indexOfOrNull(type);
 
         if (type.isTypeParameter()) {
+            assert index != null;
             if (haveArrays) {
-                assert index != null;
                 return new CsSet(Map.of(index, new LV.Indices(index)));
             }
             return new All(index);

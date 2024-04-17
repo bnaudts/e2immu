@@ -57,7 +57,7 @@ public class TestHiddenContentTypes2 {
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(inspectionProvider));
         collection.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.compute(collection.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, collection.typeInspection.get()))
                 .build());
 
         list.typeInspection.set(new TypeInspectionImpl.Builder(list, Inspector.BY_HAND)
@@ -68,7 +68,7 @@ public class TestHiddenContentTypes2 {
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(inspectionProvider));
         list.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.compute(list.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, list.typeInspection.get()))
                 .build());
 
         arrayList.typeInspection.set(new TypeInspectionImpl.Builder(arrayList, Inspector.BY_HAND)
@@ -79,7 +79,7 @@ public class TestHiddenContentTypes2 {
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(inspectionProvider));
         arrayList.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.compute(arrayList.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, arrayList.typeInspection.get()))
                 .build());
     }
 
@@ -97,10 +97,10 @@ public class TestHiddenContentTypes2 {
     @Test
     public void test1() {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
-        ParameterizedType collEA = new ParameterizedType(collection, List.of(tpAl0Pt));
-        ParameterizedType listStr = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
-        // FIXME
-       // Map<Integer, Integer> map = hctAl.translateHcs(inspectionProvider, Set.of(0), collEA, listStr, true);
-       // assertEquals("{0=0}", map.toString());
+        Map<NamedType, Integer> map = hctAl.getTypeToIndex();
+        assertEquals(3, map.size());
+        assertEquals(0, map.get(tpColl0));
+        assertEquals(0, map.get(tpList0));
+        assertEquals(0, map.get(tpAl0));
     }
 }

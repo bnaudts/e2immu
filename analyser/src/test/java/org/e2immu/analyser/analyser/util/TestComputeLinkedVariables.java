@@ -92,7 +92,7 @@ public class TestComputeLinkedVariables {
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
         currentType.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.compute(currentType.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, currentType.typeInspection.get()))
                 .build());
         someTypeWithHC.typeInspection.set(new TypeInspectionImpl.Builder(someTypeWithHC, Inspector.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType())
@@ -100,7 +100,7 @@ public class TestComputeLinkedVariables {
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
         someTypeWithHC.typeResolution.set(new TypeResolution.Builder()
-                .setHiddenContentTypes(HiddenContentTypes.compute(someTypeWithHC.typeInspection.get()))
+                .setHiddenContentTypes(HiddenContentTypes.compute(inspectionProvider, someTypeWithHC.typeInspection.get()))
                 .build());
         location = new LocationImpl(currentMethod, "0-E", newId());
         sa = new StatementAnalysis() {
@@ -174,6 +174,7 @@ public class TestComputeLinkedVariables {
         vicMap.values().forEach(vic -> vic.setValue(valueOfSomeTypeWithoutHc, LinkedVariables.EMPTY, properties, Stage.INITIAL));
 
         LV.Indices i0 = new LV.Indices(Set.of(new LV.Index(List.of(0))));
+        LV.Indices i00 = new LV.Indices(Set.of(new LV.Index(List.of(0, 0))));
         LV hc0ToAll = LV.createHC(new LV.Links(Map.of(i0, new LV.Link(LV.ALL_INDICES, false))));
 
         // corresponds to the fictional statement "return this.set.add(x)", where "add"
@@ -181,10 +182,10 @@ public class TestComputeLinkedVariables {
         // method -2-> this.set <-4-> x; the link from this.set to this will be added
         // this.set <- 2 -> thisVar, because set is mutable
         LV depShare0 = LV.createDependent(new LV.Links(Map.of(i0, new LV.Link(i0, true))));
-
+        LV depShare0to00 = LV.createDependent(new LV.Links(Map.of(i0, new LV.Link(i00, true))));
         Function<Variable, LinkedVariables> lvs = v -> switch (v.fullyQualifiedName()) {
             case X, THIS -> LinkedVariables.EMPTY;
-            case SET -> LinkedVariables.of(x, hc0ToAll, thisVar, depShare0);
+            case SET -> LinkedVariables.of(x, hc0ToAll, thisVar, depShare0to00);
             case METHOD -> LinkedVariables.of(thisSet, depShare0);
             default -> throw new UnsupportedOperationException("Variable " + v.fullyQualifiedName());
         };

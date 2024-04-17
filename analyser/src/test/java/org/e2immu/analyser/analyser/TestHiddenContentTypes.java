@@ -76,7 +76,7 @@ public class TestHiddenContentTypes {
                 .addMethod(staticMethod)
                 .addTypeParameter(tp0)
                 .build(inspectionProvider));
-        barHct = HiddenContentTypes.compute(bar.typeInspection.get());
+        barHct = HiddenContentTypes.compute(inspectionProvider, bar.typeInspection.get());
         bar.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(barHct).build());
         HiddenContentTypes methodHct = HiddenContentTypes.compute(barHct, staticMethod.methodInspection.get());
         staticMethod.methodResolution.set(new MethodResolution.Builder().setHiddenContentTypes(methodHct).build());
@@ -99,7 +99,7 @@ public class TestHiddenContentTypes {
                 .setParentClass(primitives.objectParameterizedType())
                 .setAccess(Inspection.Access.PUBLIC)
                 .build(inspectionProvider));
-        mapMapHct = HiddenContentTypes.compute(mapMap.typeInspection.get());
+        mapMapHct = HiddenContentTypes.compute(inspectionProvider, mapMap.typeInspection.get());
         mapMap.typeResolution.set(new TypeResolution.Builder().setHiddenContentTypes(mapMapHct).build());
     }
 

@@ -29,8 +29,8 @@ parameter. It definitely has hidden content. At the same time, some of its insta
 or without hidden content), e.g. List.of(...), List.copyOf(...).
  */
 public class HiddenContentTypes {
-    public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of());
-    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of());
+    public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of(), Map.of());
+    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of(), Map.of());
 
     private final TypeInfo typeInfo;
     private final boolean typeIsExtensible;
@@ -44,13 +44,16 @@ public class HiddenContentTypes {
 
     private HiddenContentTypes(TypeInfo typeInfo,
                                boolean typeIsExtensible,
-                               Map<NamedType, Integer> typeToIndex) {
+                               Map<NamedType, Integer> myTypeToIndex,
+                               Map<NamedType, Integer> superTypeToIndex) {
         this.typeInfo = typeInfo;
         this.typeIsExtensible = typeIsExtensible;
-        this.typeToIndex = typeToIndex;
-        this.indexToType = typeToIndex.entrySet().stream()
+        Map<NamedType, Integer> combined = new HashMap<>(myTypeToIndex);
+        combined.putAll(superTypeToIndex);
+        this.typeToIndex = Map.copyOf(combined);
+        this.indexToType = myTypeToIndex.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
-        startOfMethodParameters = typeToIndex.size();
+        startOfMethodParameters = myTypeToIndex.size();
         methodInfo = null;
         hcsTypeInfo = null;
     }
@@ -89,8 +92,8 @@ public class HiddenContentTypes {
         return set;
     }
 
-    public static HiddenContentTypes compute(TypeInspection typeInspection) {
-        return compute(typeInspection, true);
+    public static HiddenContentTypes compute(InspectionProvider inspectionProvider, TypeInspection typeInspection) {
+        return compute(inspectionProvider, typeInspection, true);
     }
 
     public static HiddenContentTypes compute(HiddenContentTypes hcsTypeInfo, MethodInspection methodInspection) {
@@ -109,8 +112,22 @@ public class HiddenContentTypes {
 
     //  }
 
-    public static HiddenContentTypes compute(TypeInspection typeInspection, boolean shallow) {
+    public static HiddenContentTypes compute(InspectionProvider inspectionProvider,
+                                             TypeInspection typeInspection,
+                                             boolean shallow) {
         TypeInfo typeInfo = typeInspection.typeInfo();
+
+        int offset;
+        Map<NamedType, Integer> fromEnclosing;
+        if (typeInspection.isInnerClass()) {
+            TypeInfo enclosing = typeInfo.packageNameOrEnclosingType.getRight();
+            HiddenContentTypes hct = getOrCompute(inspectionProvider, enclosing, shallow);
+            offset = hct.size();
+            fromEnclosing = hct.typeToIndex;
+        } else {
+            offset = 0;
+            fromEnclosing = Map.of();
+        }
 
         Set<TypeParameter> typeParametersInFields;
         if (shallow) {
@@ -120,9 +137,50 @@ public class HiddenContentTypes {
                     .flatMap(fi -> typeParameterStream(fi.type))
                     .collect(Collectors.toUnmodifiableSet());
         }
-        Map<NamedType, Integer> typeToIndex = typeParametersInFields.stream()
-                .collect(Collectors.toUnmodifiableMap(tp -> tp, TypeParameter::getIndex));
-        return new HiddenContentTypes(typeInfo, typeInspection.isExtensible(), typeToIndex);
+        Map<NamedType, Integer> fromThis = typeParametersInFields.stream()
+                .collect(Collectors.toMap(tp -> tp, tp -> tp.getIndex() + offset, (tp1, tp2) -> tp1, HashMap::new));
+        fromThis.putAll(fromEnclosing);
+
+        Map<NamedType, Integer> superTypeToIndex = new HashMap<>();
+        if (typeInspection.parentClass() != null && !typeInspection.parentClass().isJavaLangObject()) {
+            addFromSuperType(inspectionProvider, typeInspection.parentClass(), shallow, typeInfo, fromThis,
+                    superTypeToIndex);
+        }
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
+            addFromSuperType(inspectionProvider, interfaceType, shallow, typeInfo, fromThis, superTypeToIndex);
+        }
+        return new HiddenContentTypes(typeInfo, typeInspection.isExtensible(), Map.copyOf(fromThis),
+                Map.copyOf(superTypeToIndex));
+    }
+
+    private static void addFromSuperType(InspectionProvider inspectionProvider,
+                                         ParameterizedType superType,
+                                         boolean shallow,
+                                         TypeInfo typeInfo,
+                                         Map<NamedType, Integer> fromThis,
+                                         Map<NamedType, Integer> superTypeToIndex) {
+        HiddenContentTypes hctParent = getOrCompute(inspectionProvider, superType.typeInfo, shallow);
+        if (!hctParent.isEmpty()) {
+            Map<NamedType, ParameterizedType> fromMeToParent = superType.initialTypeParameterMap(inspectionProvider);
+            assert fromMeToParent != null;
+            // the following include all recursively computed
+            for (Map.Entry<NamedType, Integer> e : hctParent.typeToIndex.entrySet()) {
+                NamedType typeInParent = hctParent.indexToType.get(e.getValue()); // this step is necessary for recursively computed...
+                ParameterizedType typeHere = fromMeToParent.get(typeInParent);
+                assert typeHere != null;
+                Integer indexHere = fromThis.get(typeHere.typeParameter != null ? typeHere.typeParameter : typeHere.typeInfo);
+                if (indexHere != null) {
+                    superTypeToIndex.put(e.getKey(), indexHere);
+                }
+            }
+        }
+    }
+
+    private static HiddenContentTypes getOrCompute(InspectionProvider inspectionProvider, TypeInfo enclosing, boolean shallow) {
+        if (enclosing.typeResolution.isSet() && enclosing.typeResolution.get().hiddenContentTypes() != null) {
+            return enclosing.typeResolution.get().hiddenContentTypes();
+        }
+        return compute(inspectionProvider, inspectionProvider.getTypeInspection(enclosing), shallow);
     }
 
     private static Stream<TypeParameter> typeParameterStream(ParameterizedType type) {
@@ -151,19 +209,19 @@ public class HiddenContentTypes {
     }
 
     public boolean isEmpty() {
-        return (hcsTypeInfo == null || hcsTypeInfo.isEmpty()) && typeToIndex.isEmpty();
+        return (hcsTypeInfo == null || hcsTypeInfo.isEmpty()) && indexToType.isEmpty();
     }
 
     @Override
     public String toString() {
         String s = hcsTypeInfo == null ? "" : hcsTypeInfo + " - ";
         String l = hcsTypeInfo == null ? typeInfo.simpleName : methodInfo.name;
-        return s + l + ":" + typeToIndex.keySet().stream()
+        return s + l + ":" + indexToType.values().stream()
                 .map(NamedType::simpleName).sorted().collect(Collectors.joining(", "));
     }
 
     public int size() {
-        return (hcsTypeInfo == null ? 0 : hcsTypeInfo.size()) + typeToIndex.size();
+        return (hcsTypeInfo == null ? 0 : hcsTypeInfo.size()) + indexToType.size();
     }
 
     /*
@@ -222,13 +280,13 @@ public class HiddenContentTypes {
         return null;
     }
 
-    public Set<NamedType> types() {
-        return typeToIndex.keySet();
+    public Collection<NamedType> types() {
+        return indexToType.values();
     }
 
     public String sortedTypes() {
         String s = forMethod() ? hcsTypeInfo.sortedTypes() + " - " : "";
-        return s + typeToIndex.keySet().stream()
+        return s + indexToType.values().stream()
                 .map(NamedType::simpleName).sorted().collect(Collectors.joining(", "));
     }
 
@@ -337,12 +395,14 @@ public class HiddenContentTypes {
      STEP 3: find where EL sits in 'to''s hidden content
     */
 
-    public record IndicesAndType(LV.Indices indices, ParameterizedType type) {}
+    public record IndicesAndType(LV.Indices indices, ParameterizedType type) {
+    }
+
     public Map<LV.Indices, IndicesAndType> translateHcs(InspectionProvider inspectionProvider,
-                                       HiddenContentSelector hiddenContentSelector,
-                                        ParameterizedType from,
-                                        ParameterizedType to,
-                                        boolean fromFormalToConcrete) {
+                                                        HiddenContentSelector hiddenContentSelector,
+                                                        ParameterizedType from,
+                                                        ParameterizedType to,
+                                                        boolean fromFormalToConcrete) {
         throw new UnsupportedOperationException();
         /*
         ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
@@ -380,6 +440,10 @@ public class HiddenContentTypes {
 
     public TypeInfo getTypeInfo() {
         return typeInfo;
+    }
+
+    public Map<NamedType, Integer> getTypeToIndex() {
+        return typeToIndex;
     }
 
     public boolean isAssignableTo(InspectionProvider inspectionProvider, NamedType namedType, int i) {
