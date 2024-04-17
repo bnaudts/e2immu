@@ -15,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestWeightedGraph_7 extends CommonWG {
 
     /*
-    IMPORTANT: in this example, we're assuming that map is immutable, as is Map.Entry
+    IMPORTANT: in this example, we're assuming that map is immutable, as is Map.Entry.
+    Even then, as of 20240416, these links do not represent the real situation; see Linking_4.
      */
     static class X<T> {
         final Map<Long, T> map = Map.of();
@@ -38,6 +39,7 @@ public class TestWeightedGraph_7 extends CommonWG {
     entries <0-0,0-1> -- 4 -- <0,1> entry     ~ get() method, is part of HC
     l * ------------ 4 ------ <0> entry       ~ get() method, is part of HC, parameter 0
     t * ------------ 4 ------ <1> entry       ~ get() method, is part of HC, parameter 1
+
      */
 
     Variable thisVar, map, entries, entry, l, t;
@@ -76,6 +78,16 @@ public class TestWeightedGraph_7 extends CommonWG {
         wg.addNode(t, Map.of(entry, entry_4_t.reverse()));
 
         shortestPath = wg.shortestPath();
+
+        ShortestPathImpl spi = (ShortestPathImpl) shortestPath;
+        assertEquals("0(5:*-4-0)1(2:1-4-0;3:0,1-4-0,1)2(1:0-4-1)3(1:0,1-4-0,1;5:0,1-4-0,1)4(5:*-4-1)5(0:0-4-*;3:0,1-4-0,1;4:1-4-*)",
+                spi.getCacheKey());
+        assertSame(l, spi.variablesGet(0));
+        assertSame(map, spi.variablesGet(1));
+        assertSame(thisVar, spi.variablesGet(2));
+        assertSame(entries, spi.variablesGet(3));
+        assertSame(t, spi.variablesGet(4));
+        assertSame(entry, spi.variablesGet(5));
     }
 
     @Test
@@ -83,34 +95,63 @@ public class TestWeightedGraph_7 extends CommonWG {
     public void testTV() {
         Map<Variable, LV> links = shortestPath.links(thisVar, null);
         assertEquals(v0, links.get(thisVar)); // start all
-        assertTrue(links.get(map).isCommonHC()); // then <0> of map
-        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
-        assertTrue(links.get(entry).isCommonHC()); // <0> of entry
-        assertTrue(links.get(l).isCommonHC()); // * of l
-        assertTrue(links.get(t).isCommonHC()); // * of t
+        assertEquals(5, links.size());
+        assertEquals("0-4-1", links.get(map).toString());
+        assertEquals("0-4-1", links.get(entries).toString());
+        assertEquals("0-4-1", links.get(entry).toString());
+        assertNull(links.get(l));
+        assertEquals("0-4-*", links.get(t).toString());
     }
 
     @Test
     @DisplayName("starting in l")
     public void testL() {
         Map<Variable, LV> links = shortestPath.links(l, null);
-        assertEquals(5, links.size());
+        assertEquals(4, links.size());
         assertEquals(v0, links.get(l)); // start all
-        assertTrue(links.get(entry).isCommonHC()); // then <0> of entry
+        assertEquals("*-4-0", links.get(entry).toString());
         assertNull(links.get(t)); // not reachable
-        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
-        assertTrue(links.get(map).isCommonHC()); // <0> of map
-        assertTrue(links.get(thisVar).isCommonHC()); // <0> of thisVar
+        assertEquals("*-4-0", links.get(entries).toString());
+        assertEquals("*-4-0", links.get(map).toString()); // <0> of map
+        assertNull(links.get(thisVar));  // nothing, because map links to this via 1, not via 0
     }
 
     @Test
     @DisplayName("starting in t")
     public void testT() {
         Map<Variable, LV> links = shortestPath.links(t, null);
+        assertEquals(5, links.size());
         assertEquals(v0, links.get(t)); // start all
-        assertTrue(links.get(entry).isCommonHC()); // then <0> of entry
+        assertEquals("*-4-1", links.get(entry).toString());
         assertNull(links.get(l)); // not reachable
-        assertTrue(links.get(entries).isCommonHC()); // <0> of entries
+        assertEquals("*-4-1", links.get(entries).toString());
+        assertEquals("*-4-1", links.get(map).toString());
+        assertEquals("*-4-0", links.get(thisVar).toString());
     }
 
+    @Test
+    @DisplayName("starting in map")
+    public void testMap() {
+        Map<Variable, LV> links = shortestPath.links(map, null);
+        assertEquals(v0, links.get(map)); // start all
+        assertEquals("1-4-0", links.get(thisVar).toString());
+        assertEquals("0,1-4-0,1", links.get(entries).toString());
+        assertEquals("0,1-4-0,1", links.get(entry).toString());
+        assertEquals("1-4-*", links.get(t).toString());
+        assertEquals("0-4-*", links.get(l).toString());
+        assertEquals(6, links.size());
+    }
+
+    @Test
+    @DisplayName("starting in entry")
+    public void testEntry() {
+        Map<Variable, LV> links = shortestPath.links(entry, null);
+        assertEquals(v0, links.get(entry)); // start all
+        assertEquals("0,1-4-0,1", links.get(entries).toString());
+        assertEquals("0,1-4-0,1", links.get(map).toString());
+        assertEquals("1-4-*", links.get(t).toString());
+        assertEquals("0-4-*", links.get(l).toString());
+        assertEquals("1-4-0", links.get(thisVar).toString());
+        assertEquals(6, links.size());
+    }
 }

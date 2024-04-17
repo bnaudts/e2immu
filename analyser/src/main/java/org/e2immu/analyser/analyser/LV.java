@@ -95,13 +95,15 @@ public class LV implements Comparable<LV> {
             Map<Indices, Link> res = new HashMap<>();
             for (Map.Entry<Indices, Link> entry : ((Links) current).map.entrySet()) {
                 Link link = this.map.get(entry.getValue().to);
-                if (link == null) {
-                    return null;
+                if (link != null) {
+                    boolean mutable = entry.getValue().mutable || link.mutable;
+                    Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
+                    if (!(entry.getKey().equals(LV.ALL_INDICES) && newLink.to.equals(LV.ALL_INDICES))) {
+                        res.put(entry.getKey(), newLink);
+                    }
                 }
-                boolean mutable = entry.getValue().mutable || link.mutable;
-                Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
-                res.put(entry.getKey(), newLink);
             }
+            if (res.isEmpty()) return null;
             return new Links(res);
         }
 

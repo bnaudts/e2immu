@@ -180,10 +180,12 @@ public class TestComputeLinkedVariables {
         // returns a set dependent on this.set, and "x" becomes hidden content of this.set
         // method -2-> this.set <-4-> x; the link from this.set to this will be added
         // this.set <- 2 -> thisVar, because set is mutable
+        LV depShare0 = LV.createDependent(new LV.Links(Map.of(i0, new LV.Link(i0, true))));
+
         Function<Variable, LinkedVariables> lvs = v -> switch (v.fullyQualifiedName()) {
             case X, THIS -> LinkedVariables.EMPTY;
-            case SET -> LinkedVariables.of(x, hc0ToAll, thisVar, LV.LINK_DEPENDENT);
-            case METHOD -> LinkedVariables.of(thisSet, LV.LINK_DEPENDENT);
+            case SET -> LinkedVariables.of(x, hc0ToAll, thisVar, depShare0);
+            case METHOD -> LinkedVariables.of(thisSet, depShare0);
             default -> throw new UnsupportedOperationException("Variable " + v.fullyQualifiedName());
         };
 

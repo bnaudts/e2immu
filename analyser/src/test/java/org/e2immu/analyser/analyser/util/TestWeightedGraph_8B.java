@@ -42,7 +42,7 @@ public class TestWeightedGraph_8B extends CommonWG {
 
         wg = new WeightedGraphImpl();
 
-        LV map_2_keys = v4;
+        LV map_2_keys = LV.createDependent(new LV.Links(Map.of(i0, new LV.Link(i0, false))));
         LV map_2_values = LV.createDependent(new LV.Links(Map.of(i1, new LV.Link(i0, false))));
         assertEquals("1-2-0", map_2_values.toString());
         assertEquals("0-2-0", map_2_keys.reverse().toString());
