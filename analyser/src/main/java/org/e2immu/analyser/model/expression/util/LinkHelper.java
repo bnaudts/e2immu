@@ -115,7 +115,7 @@ public class LinkHelper {
             });
         } else {
             Map<LV.Indices, HiddenContentTypes.IndicesAndType> targetData = hiddenContentTypes
-                    .translateHcs(inspectionProvider, hcsSource, parameterMethodType, parameterType, true);
+                    .translateHcs(inspectionProvider, hcsSource, parameterMethodType, parameterType);
             linkedVariablesOfParameter.stream().forEach(e -> {
                 LV newLv;
                 LV lv = e.getValue();
@@ -476,7 +476,7 @@ public class LinkHelper {
             hctMethodToHcsTarget = null;
         } else {
             hctMethodToHcsTarget = hiddenContentTypes.translateHcs(inspectionProvider, hiddenContentSelectorOfTarget,
-                    methodTargetType, targetType, true);
+                    methodTargetType, targetType);
         }
 
         DV correctedIndependent = correctIndependent(context.evaluationContext(), immutableOfSource,
@@ -491,7 +491,7 @@ public class LinkHelper {
         }
 
         Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHctSource = hiddenContentTypes
-                .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType, true);
+                .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType);
 
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;

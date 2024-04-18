@@ -162,8 +162,7 @@ public class TestHiddenContentTypes2 {
         ParameterizedType to = new ParameterizedType(collection, List.of(primitives.stringParameterizedType()));
         assertEquals("Type com.foo.Collection<String>", to.toString());
 
-        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to,
-                true);
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to);
         assertEquals(1, map.size());
         HiddenContentTypes.IndicesAndType iat = map.get(i0);
         assertNotNull(iat);
@@ -185,7 +184,7 @@ public class TestHiddenContentTypes2 {
         ParameterizedType to = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
         assertEquals("Type com.foo.List<String>", to.toString());
 
-        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to, true);
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctAl.translateHcs(inspectionProvider, hcs, from, to);
         assertEquals(1, map.size());
         HiddenContentTypes.IndicesAndType iat = map.get(i0);
         assertNotNull(iat);
@@ -213,7 +212,7 @@ public class TestHiddenContentTypes2 {
         ParameterizedType to = new ParameterizedType(collection, List.of(mapSI));
         assertEquals("Type com.foo.Collection<com.foo.Map<String,Integer>>", to.toString());
 
-        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctMap.translateHcs(inspectionProvider, hcs, from, to, true);
+        Map<LV.Indices, HiddenContentTypes.IndicesAndType> map = hctMap.translateHcs(inspectionProvider, hcs, from, to);
         assertEquals(2, map.size());
         HiddenContentTypes.IndicesAndType iat0 = map.get(i00);
         assertNotNull(iat0);

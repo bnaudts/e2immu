@@ -377,7 +377,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // links, 1st: param -> object and param <-> param
         ParameterizedType objectType = methodInfo.isStatic() ? null : object.returnType();
-        LinkHelper linkHelper = new LinkHelper(context, methodInfo, methodAnalysis);
+        LinkHelper linkHelper = new LinkHelper(context, concreteMethod, methodAnalysis);
         LinkHelper.FromParameters fp = linkHelper.linksInvolvingParameters(objectType, concreteReturnType,
                 parameterExpressions, res.evaluationResults());
         LinkedVariables linkedVariablesOfObjectFromParams = fp.intoObject().linkedVariablesOfExpression();

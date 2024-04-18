@@ -110,6 +110,9 @@ public class ShortestPathImpl implements ShortestPath {
         }
         if (l < DELAYED_H) {
             Links links = (Links) lowDc.connection();
+            if (links.map().isEmpty()) {
+                return null;
+            }
             return LV.createHC(links);
         }
         return LV.delay(someDelay);

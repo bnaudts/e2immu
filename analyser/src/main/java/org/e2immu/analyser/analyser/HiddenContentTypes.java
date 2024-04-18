@@ -328,8 +328,7 @@ public class HiddenContentTypes {
     public Map<LV.Indices, IndicesAndType> translateHcs(InspectionProvider inspectionProvider,
                                                         HiddenContentSelector hiddenContentSelector,
                                                         ParameterizedType from,
-                                                        ParameterizedType to,
-                                                        boolean fromFormalToConcrete) {
+                                                        ParameterizedType to) {
         Map<LV.Indices, ParameterizedType> map1 = hiddenContentSelector.extract(inspectionProvider, from);
         Map<LV.Indices, IndicesAndType> result = new HashMap<>();
         for (Map.Entry<LV.Indices, ParameterizedType> entry1 : map1.entrySet()) {
@@ -338,7 +337,7 @@ public class HiddenContentTypes {
                 LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
                 iat = new IndicesAndType(indices, to);
             } else {
-                iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to, fromFormalToConcrete);
+                iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to);
             }
             result.put(entry1.getKey(), iat);
         }
@@ -360,11 +359,10 @@ public class HiddenContentTypes {
                                           LV.Indices indices,
                                           ParameterizedType ptInFrom,
                                           ParameterizedType from,
-                                          ParameterizedType to,
-                                          boolean fromFormalToConcrete) {
+                                          ParameterizedType to) {
         // it does not matter with which index we start
         LV.Index index = indices.set().stream().findFirst().orElseThrow();
-        IndicesAndType res = findAll(inspectionProvider, index, 0, ptInFrom, from, to, fromFormalToConcrete);
+        IndicesAndType res = findAll(inspectionProvider, index, 0, ptInFrom, from, to);
         // but once we have found it, we must make sure that we return all occurrences
         assert res.indices.set().size() == 1;
         assert res.type != null;
@@ -399,8 +397,7 @@ public class HiddenContentTypes {
                                           int pos,
                                           ParameterizedType ptFrom,
                                           ParameterizedType from,
-                                          ParameterizedType to,
-                                          boolean fromFormalToConcrete) {
+                                          ParameterizedType to) {
         int atPos = index.list().get(pos);
         if (pos == index.list().size() - 1) {
             // the last entry
@@ -411,7 +408,13 @@ public class HiddenContentTypes {
                 ParameterizedType concrete = to.parameters.get(atPos);
                 return new IndicesAndType(new LV.Indices(Set.of(index)), concrete);
             }
-            Map<NamedType, ParameterizedType> map1 = to.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, formalFrom);
+            ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
+            Map<NamedType, ParameterizedType> map1;
+            if(formalFrom.isAssignableFrom(inspectionProvider, formalTo)) {
+                map1 = to.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, formalFrom);
+            } else {
+                map1 = from.typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, formalTo);
+            }
             assert map1 != null;
             ParameterizedType ptTo = map1.get(ptFrom.namedType());
             assert ptTo != null;
@@ -426,7 +429,7 @@ public class HiddenContentTypes {
         if (from.typeInfo == to.typeInfo) {
             ParameterizedType inFrom = from.parameters.get(atPos);
             ParameterizedType inTo = to.parameters.get(atPos);
-            return findAll(inspectionProvider, index, pos + 1, ptFrom, inFrom, inTo, fromFormalToConcrete);
+            return findAll(inspectionProvider, index, pos + 1, ptFrom, inFrom, inTo);
         }
         throw new UnsupportedOperationException();
     }
