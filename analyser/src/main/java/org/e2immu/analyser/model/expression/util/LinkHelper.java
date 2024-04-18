@@ -517,27 +517,21 @@ public class LinkHelper {
                         this is the only place during computational analysis where we create common HC links.
                         all other links are created in the ShallowMethodAnalyser.
                          */
-                    if (hiddenContentSelectorOfTarget.isAll()) {
+                    if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.All all) {
                         DV typeImmutable = context.evaluationContext().immutable(targetType);
                         if (typeImmutable.isDelayed()) {
                             causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
                         }
                         boolean mutable = MultiLevel.isMutable(typeImmutable);
-                        if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet csSet) {
-                            assert csSet.getMap().size() == 1;
-                            int i = csSet.getMap().keySet().stream().findFirst().orElseThrow();
-                            NamedType namedType = methodTargetType.isTypeParameter()
-                                    ? methodTargetType.typeParameter : methodTargetType.typeInfo;
-                            boolean accept = hiddenContentTypes.isAssignableTo(inspectionProvider, namedType, i);
-                            if (accept) {
-                                assert hctMethodToHctSource != null;
-                                // the indices contain a single number, the index in the hidden content types of the source.
-                                Indices iInHctSource = hctMethodToHctSource.get(new Indices(i)).indices();
-                                assert iInHctSource != null;
-                                linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
-                            }
-                        } else {
-                            throw new UnsupportedOperationException();
+                        int i = all.getHiddenContentIndex();
+                        NamedType namedType = methodTargetType.namedType();
+                        boolean accept = hiddenContentTypes.isAssignableTo(inspectionProvider, namedType, i);
+                        if (accept) {
+                            assert hctMethodToHctSource != null;
+                            // the indices contain a single number, the index in the hidden content types of the source.
+                            Indices iInHctSource = hctMethodToHctSource.get(new Indices(i)).indices();
+                            assert iInHctSource != null;
+                            linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
                         }
                     } else {
                         // both are CsSet, we'll set mutable what is mutable, in a common way
