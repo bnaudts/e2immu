@@ -34,6 +34,11 @@ public class LV implements Comparable<LV> {
     public static final Links NO_LINKS = new Links(Map.of());
 
     public record Index(List<Integer> list) implements Comparable<Index> {
+        public static Index createZeroes(int arrays) {
+            int[] array = new int[arrays];
+            return new Index(Arrays.stream(array).boxed().toList());
+        }
+
         @Override
         public int compareTo(Index o) {
             return ListUtil.compare(list, o.list);
@@ -72,6 +77,15 @@ public class LV implements Comparable<LV> {
         public Index replaceLast(int v) {
             if (list.get(list.size() - 1) == v) return this;
             return new Index(Stream.concat(list.stream().limit(list.size() - 1), Stream.of(v)).toList());
+        }
+
+        public int countSequentialZeros() {
+            int cnt = 0;
+            for (int i : list) {
+                if (i != 0) return -1;
+                cnt++;
+            }
+            return cnt;
         }
     }
 

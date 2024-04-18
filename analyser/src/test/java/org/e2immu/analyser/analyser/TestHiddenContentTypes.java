@@ -120,7 +120,7 @@ public class TestHiddenContentTypes {
         assertEquals("MapMap:T0, T1, T2", mapMapHct.toString());
         assertEquals(2, mapMapHct.indexOf(mapMap2));
     }
-
+/*
     @Test
     @DisplayName("mapTypes, simple situation")
     public void test1() {
@@ -176,5 +176,5 @@ public class TestHiddenContentTypes {
         Map<Integer, ParameterizedType> map4 = mapMapHct.mapTypesRecursively(inspectionProvider,
                 someTypeOfString.asSimpleParameterizedType(), someType1, false);
         assertEquals("{2=Type String}", map4.toString());
-    }
+    }*/
 }

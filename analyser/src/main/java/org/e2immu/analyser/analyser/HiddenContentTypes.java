@@ -304,80 +304,6 @@ public class HiddenContentTypes {
         return targetTi.typeResolution.get().hiddenContentTypes();
     }
 
-    public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
-                                                               ParameterizedType concreteType,
-                                                               boolean thisContainsConcrete) {
-        ParameterizedType formalType = concreteType.typeInfo.asParameterizedType(inspectionProvider);
-        return mapTypesRecursively(inspectionProvider, concreteType, formalType, thisContainsConcrete);
-    }
-
-    public Map<Integer, ParameterizedType> mapTypesRecursively(InspectionProvider inspectionProvider,
-                                                               ParameterizedType concreteType,
-                                                               ParameterizedType typeInContextOfHCT,
-                                                               boolean thisContainsConcrete) {
-        Map<Integer, ParameterizedType> res = new LinkedHashMap<>(); // keep order, for testing
-        mapTypesRecursively(inspectionProvider, concreteType, typeInContextOfHCT, thisContainsConcrete, res);
-        return res;
-    }
-
-    private void mapTypesRecursively(InspectionProvider inspectionProvider,
-                                     ParameterizedType concrete,
-                                     ParameterizedType formal,
-                                     boolean thisContainsConcrete,
-                                     Map<Integer, ParameterizedType> res) {
-
-        if (thisContainsConcrete) {
-            Integer typeItself = indexOfOrNull(concrete);
-            if (typeItself != null) {
-                res.put(typeItself, formal);
-                return;
-            }
-        } else {
-            Integer typeItself = indexOfOrNull(formal);
-            if (typeItself != null) {
-                res.put(typeItself, concrete);
-                return;
-            }
-        }
-        ParameterizedType c2;
-        if (formal.typeInfo != null && concrete.typeInfo == formal.typeInfo) {
-            c2 = concrete;
-        } else {
-            c2 = concrete.concreteSuperType(inspectionProvider, formal);
-        }
-        assert formal.parameters.size() == concrete.parameters.size() || concrete.parameters.isEmpty();
-        int i = 0;
-        for (ParameterizedType fp : formal.parameters) {
-            ParameterizedType cp = i >= c2.parameters.size()
-                    ? inspectionProvider.getPrimitives().objectParameterizedType()
-                    : c2.parameters.get(i);
-            ParameterizedType cpCorrected;
-            ParameterizedType fpCorrected;
-            if (thisContainsConcrete) {
-                cpCorrected = correctIfAssignable(inspectionProvider, cp);
-                fpCorrected = fp;
-            } else {
-                cpCorrected = cp;
-                fpCorrected = correctIfAssignable(inspectionProvider, fp);
-            }
-            mapTypesRecursively(inspectionProvider, cpCorrected, fpCorrected, thisContainsConcrete, res);
-            i++;
-        }
-    }
-
-    private ParameterizedType correctIfAssignable(InspectionProvider inspectionProvider, ParameterizedType pt) {
-        if (pt.typeParameter != null && !pt.owner().getTypeInfo().equals(typeInfo)) {
-            // FIXME this is one situation, there may be others; we're not checking isAssignable!
-            ParameterizedType thisPt = typeInfo.asParameterizedType(inspectionProvider);
-            Map<NamedType, ParameterizedType> map = pt.owner().getTypeInfo().mapInTermsOfParametersOfSubType(inspectionProvider, thisPt);
-            assert map != null : "We've not verified assignable";
-            ParameterizedType translated = map.get(pt.typeParameter);
-            assert translated != null;
-            return translated;
-        }
-        return pt;
-    }
-
     /*
      The hidden content selector's hct indices (the keys in the map) are computed with respect to 'this'.
      They map to indices (the values in the map) which exist in 'from'.
@@ -407,7 +333,13 @@ public class HiddenContentTypes {
         Map<LV.Indices, ParameterizedType> map1 = hiddenContentSelector.extract(inspectionProvider, from);
         Map<LV.Indices, IndicesAndType> result = new HashMap<>();
         for (Map.Entry<LV.Indices, ParameterizedType> entry1 : map1.entrySet()) {
-            IndicesAndType iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to, fromFormalToConcrete);
+            IndicesAndType iat;
+            if (from.arrays > 0 && hiddenContentSelector.selectArrayElement(from.arrays)) {
+                LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
+                iat = new IndicesAndType(indices, to);
+            } else {
+                iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to, fromFormalToConcrete);
+            }
             result.put(entry1.getKey(), iat);
         }
         return Map.copyOf(result);
@@ -472,6 +404,7 @@ public class HiddenContentTypes {
         int atPos = index.list().get(pos);
         if (pos == index.list().size() - 1) {
             // the last entry
+            assert from.typeInfo != null;
             ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
             assert formalFrom.parameters.get(atPos).equals(ptFrom);
             if (formalFrom.typeInfo == to.typeInfo) {

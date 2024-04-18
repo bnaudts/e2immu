@@ -37,6 +37,10 @@ public abstract sealed class HiddenContentSelector
         throw new UnsupportedOperationException();
     }
 
+    public boolean selectArrayElement(int arrays) {
+        return false;
+    }
+
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
@@ -148,6 +152,16 @@ public abstract sealed class HiddenContentSelector
         public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
             return map.values().stream().collect(Collectors.toUnmodifiableMap(i -> i,
                     i -> i.findInFormal(inspectionProvider, type)));
+        }
+
+        @Override
+        public boolean selectArrayElement(int arrays) {
+            if (map.size() == 1) {
+                LV.Indices indices = map.get(0);
+                return indices.set().size() == 1
+                       && indices.set().stream().findFirst().orElseThrow().countSequentialZeros() == arrays;
+            }
+            return false;
         }
     }
 

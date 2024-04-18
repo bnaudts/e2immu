@@ -80,10 +80,13 @@ public class LinkHelper {
 
     IMPORTANT: these links are meant to be combined with either links to object, or links to other parameters.
     This code is different from the normal linkedVariables(...) method.
+
+    In the case of links between parameters, the "source" becomes the object.
      */
     private LinkedVariables linkedVariablesOfParameter(ParameterizedType parameterMethodType,
                                                        ParameterizedType parameterType,
-                                                       LinkedVariables linkedVariablesOfParameter) {
+                                                       LinkedVariables linkedVariablesOfParameter,
+                                                       HiddenContentSelector hcsSource) {
         InspectionProvider inspectionProvider = context.getAnalyserContext();
         AtomicReference<CausesOfDelay> causes = new AtomicReference<>(CausesOfDelay.EMPTY);
         Map<Variable, LV> map = new HashMap<>();
@@ -226,7 +229,7 @@ public class LinkHelper {
                          */
                         LinkedVariables returnValueLvs = linkedVariablesOfParameter(pi.parameterizedType,
                                 parameterExpressions.get(pi.index).returnType(),
-                                parameterResults.get(pi.index).linkedVariablesOfExpression());
+                                parameterResults.get(pi.index).linkedVariablesOfExpression(), hcsSource);
                         LV valueOfReturnValue = lvsToResult.stream().filter(e -> e.getKey() instanceof ReturnVariable)
                                 .map(Map.Entry::getValue).findFirst().orElseThrow();
                         Map<Variable, LV> map = returnValueLvs.stream().collect(Collectors.toMap(Map.Entry::getKey,
@@ -241,7 +244,7 @@ public class LinkHelper {
                     } else {
                         parameterLvs = linkedVariablesOfParameter(pi.parameterizedType,
                                 parameterExpressions.get(pi.index).returnType(),
-                                parameterResults.get(pi.index).linkedVariablesOfExpression());
+                                parameterResults.get(pi.index).linkedVariablesOfExpression(), hcsSource);
                     }
                     ParameterizedType pt = inResult ? resultPt : objectPt;
                     ParameterizedType methodPt;
@@ -256,11 +259,12 @@ public class LinkHelper {
                         if (inResult) {
                             // parameter -> result
                             HiddenContentSelector hcsSource = methodAnalysis.getHiddenContentSelector();
-                            lv = linkedVariables(parameterType, pi.parameterizedType, hcsTarget, parameterLvs, false,
-                                    formalParameterIndependent, pt, methodPt, hcsSource, false);
+                            lv = linkedVariables(this.hcsSource, parameterType, pi.parameterizedType, hcsTarget,
+                                    parameterLvs, false, formalParameterIndependent, pt, methodPt,
+                                    hcsSource, false);
                         } else {
                             // object -> parameter (rather than the other way around)
-                            lv = linkedVariables(pt, methodPt, hcsSource, parameterLvs, false,
+                            lv = linkedVariables(this.hcsSource, pt, methodPt, this.hcsSource, parameterLvs, false,
                                     formalParameterIndependent, parameterType, pi.parameterizedType, hcsTarget,
                                     true);
                         }
@@ -282,56 +286,40 @@ public class LinkHelper {
                                        List<EvaluationResult> parameterResults) {
         Map<ParameterInfo, LinkedVariables> crossLinks = methodInfo.crossLinks(context.getAnalyserContext());
         if (crossLinks.isEmpty()) return;
-        crossLinks.forEach((pi, lv) -> lv.stream().forEach(e -> {
-            List<LinkedVariables> parameterLvs = new ArrayList<>(parameterResults.size());
-            int parameterIndex = 0;
-            for (EvaluationResult parameterResult : parameterResults) {
-                int index = Math.min(methodAnalysis.getParameterAnalyses().size() - 1, parameterIndex);
-                ParameterInfo p = methodAnalysis.getParameterAnalyses().get(index).getParameterInfo();
-                LinkedVariables lvs = linkedVariablesOfParameter(p.parameterizedType,
-                        parameterExpressions.get(parameterIndex).returnType(),
-                        parameterResult.linkedVariablesOfExpression());
-                parameterLvs.add(lvs);
-                parameterIndex++;
-            }
-            ParameterInfo target = (ParameterInfo) e.getKey();
+        crossLinks.forEach((pi, lv) -> {
             boolean sourceIsVarArgs = pi.parameterInspection.get().isVarArgs();
             assert !sourceIsVarArgs : "Varargs must always be a target";
-            boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
-            if (!targetIsVarArgs || parameterResults.size() > target.index) {
-                ParameterizedType sourceType = parameterExpressions.get(pi.index).returnType();
-                LinkedVariables sourceLvs = parameterLvs.get(pi.index);
-                LV level = e.getValue();
+            HiddenContentSelector hcsSource = methodAnalysis.getParameterAnalyses().get(pi.index).getHiddenContentSelector();
+            ParameterizedType sourceType = parameterExpressions.get(pi.index).returnType();
+            LinkedVariables sourceLvs = linkedVariablesOfParameter(pi.parameterizedType,
+                    parameterExpressions.get(pi.index).returnType(),
+                    parameterResults.get(pi.index).linkedVariablesOfExpression(), hcsSource);
 
-                for (int i = target.index; i < parameterResults.size(); i++) {
-                    ParameterizedType targetType = parameterExpressions.get(target.index).returnType();
-                    HiddenContentSelector hcsTarget = methodAnalysis.getParameterAnalyses().get(target.index).getHiddenContentSelector();
-                    HiddenContentSelector hcsSource = methodAnalysis.getParameterAnalyses().get(pi.index).getHiddenContentSelector();
-                    tryLinkBetweenParameters(builder, i, targetIsVarArgs, hcsTarget, targetType,
-                            target.parameterizedType, level,
-                            hcsSource, sourceType, pi.parameterizedType, sourceLvs, parameterLvs);
-                }
-            } // else: no value... empty varargs
-        }));
-    }
+            lv.stream().forEach(e -> {
+                ParameterInfo target = (ParameterInfo) e.getKey();
 
-    private void tryLinkBetweenParameters(EvaluationResultImpl.Builder builder,
-                                          int targetIndex,
-                                          boolean targetIsVarArgs,
-                                          HiddenContentSelector hcsTarget,
-                                          ParameterizedType targetType,
-                                          ParameterizedType methodTargetType,
-                                          LV level,
-                                          HiddenContentSelector hcsSource,
-                                          ParameterizedType sourceType,
-                                          ParameterizedType methodSourceType,
-                                          LinkedVariables sourceLinkedVariables,
-                                          List<LinkedVariables> parameterLvs) {
-        DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
-        LinkedVariables targetLinkedVariables = parameterLvs.get(targetIndex);
-        LinkedVariables mergedLvs = linkedVariables(targetType, methodTargetType, hcsSource, targetLinkedVariables,
-                targetIsVarArgs, independentDv, sourceType, methodSourceType, hcsTarget, targetIsVarArgs);
-        crossLink(sourceLinkedVariables, mergedLvs, builder);
+                boolean targetIsVarArgs = target.parameterInspection.get().isVarArgs();
+                if (!targetIsVarArgs || parameterResults.size() > target.index) {
+
+                    LV level = e.getValue();
+
+                    for (int i = target.index; i < parameterResults.size(); i++) {
+                        ParameterizedType targetType = parameterExpressions.get(target.index).returnType();
+                        HiddenContentSelector hcsTarget = methodAnalysis.getParameterAnalyses().get(target.index).getHiddenContentSelector();
+
+                        LinkedVariables targetLinkedVariables = linkedVariablesOfParameter(target.parameterizedType,
+                                parameterExpressions.get(i).returnType(),
+                                parameterResults.get(i).linkedVariablesOfExpression(), hcsSource);
+
+                        DV independentDv = level.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
+                        LinkedVariables mergedLvs = linkedVariables(hcsSource, targetType, target.parameterizedType, hcsSource,
+                                targetLinkedVariables, targetIsVarArgs, independentDv, sourceType, pi.parameterizedType,
+                                hcsTarget, targetIsVarArgs);
+                        crossLink(sourceLvs, mergedLvs, builder);
+                    }
+                } // else: no value... empty varargs
+            });
+        });
     }
 
     /*
@@ -397,7 +385,7 @@ public class LinkHelper {
         ParameterizedType methodType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         ParameterizedType methodReturnType = context.getAnalyserContext().getMethodInspection(methodInfo).getReturnType();
 
-        return linkedVariables(objectType,
+        return linkedVariables(hcsSource, objectType,
                 methodType, hcsSource, linkedVariablesOfObject,
                 false,
                 independent, returnType, methodReturnType, methodAnalysis.getHiddenContentSelector(),
@@ -437,7 +425,8 @@ public class LinkHelper {
      *                                      only deal with *->0 in this method, never 0->*,
      * @return the linked values of the target
      */
-    private LinkedVariables linkedVariables(ParameterizedType sourceType,
+    private LinkedVariables linkedVariables(HiddenContentSelector hcsSource,
+                                            ParameterizedType sourceType,
                                             ParameterizedType methodSourceType,
                                             HiddenContentSelector hiddenContentSelectorOfSource,
                                             LinkedVariables sourceLvs,
