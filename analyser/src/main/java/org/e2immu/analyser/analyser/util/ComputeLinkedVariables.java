@@ -24,7 +24,6 @@ import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.DelayedVariableExpression;
 import org.e2immu.analyser.model.variable.*;
-import org.e2immu.analyser.util.Pair;
 import org.e2immu.support.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +71,6 @@ public class ComputeLinkedVariables {
     private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
-    private final Map<Variable, Set<Variable>> reachableInModification;
 
     private ComputeLinkedVariables(StatementAnalysis statementAnalysis,
                                    Stage stage,
@@ -86,8 +84,7 @@ public class ComputeLinkedVariables {
                                    Variable returnVariable,
                                    BreakDelayLevel breakDelayLevel,
                                    boolean oneBranchHasBecomeUnreachable,
-                                   Set<Variable> linkingNotYetSet,
-                                   Map<Variable, Set<Variable>> reachableInModification) {
+                                   Set<Variable> linkingNotYetSet) {
         this.clusters = clusters;
         this.returnValueCluster = returnValueCluster;
         this.returnVariable = returnVariable;
@@ -100,10 +97,9 @@ public class ComputeLinkedVariables {
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
         this.variablesInClusters = variablesInClusters;
         this.weightedGraph = weightedGraph;
-        this.reachableInModification = reachableInModification;
     }
 
-    public static ComputeLinkedVariables create(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis,
+    public static ComputeLinkedVariables create(StatementAnalysis statementAnalysis,
                                                 Stage stage,
                                                 boolean oneBranchHasBecomeUnreachable,
                                                 BiPredicate<VariableInfoContainer, Variable> ignore,
@@ -129,8 +125,8 @@ public class ComputeLinkedVariables {
                     done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     VariableInfo viE = vic.best(EVALUATION);
-                    AddResult ar = add(evaluationContext, statementAnalysis, ignore, reassigned,
-                            externalLinkedVariables, weightedGraph, vi1, viE, variable, stage.equals(Stage.MERGE));
+                    AddResult ar = add(statementAnalysis, ignore, reassigned, externalLinkedVariables, weightedGraph,
+                            vi1, viE, variable, stage.equals(Stage.MERGE));
                     for (Map.Entry<Variable, LV> e : ar.linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
@@ -151,15 +147,13 @@ public class ComputeLinkedVariables {
             iteration1Plus = true;
         }
         ShortestPath shortestPathModification = weightedGraph.shortestPath(true);
-        Map<Variable, Set<Variable>> reachableInModification = computeReachableInModification(shortestPathModification,
-                done);
         leftOverNonMutableHCLinks.forEach(weightedGraph::addNode);
         ShortestPath shortestPath = weightedGraph.shortestPath(false);
         WeightedGraph.ClusterResult cr = weightedGraph.staticClusters();
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, shortestPath,
                 shortestPathModification, cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
                 cr.rv(), breakDelayLevel, oneBranchHasBecomeUnreachable,
-                linkingNotYetSet, reachableInModification);
+                linkingNotYetSet);
     }
 
     private static Map<Variable, LV> mergeMaps(Map<Variable, LV> m1, Map<Variable, LV> m2) {
@@ -168,24 +162,10 @@ public class ComputeLinkedVariables {
         return res;
     }
 
-    private static Map<Variable, Set<Variable>> computeReachableInModification(ShortestPath shortestPathModification,
-                                                                               Set<Variable> variables) {
-        Map<Variable, Set<Variable>> res = new HashMap<>();
-        for (Variable variable : variables) {
-            Map<Variable, LV> shortest = shortestPathModification.links(variable, null);
-            for (Variable target : shortest.keySet()) {
-                res.computeIfAbsent(variable, v -> new HashSet<>()).add(target);
-                res.computeIfAbsent(target, v -> new HashSet<>()).add(variable);
-            }
-        }
-        return res;
-    }
-
     private record AddResult(LinkedVariables linkedVariables, Map<Variable, LV> leftOver) {
     }
 
-    private static AddResult add(EvaluationContext context,
-                                 StatementAnalysis statementAnalysis,
+    private static AddResult add(StatementAnalysis statementAnalysis,
                                  BiPredicate<VariableInfoContainer, Variable> ignore,
                                  Set<Variable> reassigned,
                                  Function<Variable, LinkedVariables> externalLinkedVariables,
@@ -232,11 +212,12 @@ public class ComputeLinkedVariables {
         } else {
             afterChangeToDelay = combined;
         }
-        Map<Variable, LV> variables = afterChangeToDelay.stream()
+        Map<Variable, LV> variables = afterChangeToDelay.variables();
+                /*afterChangeToDelay.stream() FIXME cleanup
                 .map(e -> new Pair<>(e.getKey(), e.getValue().isCommonHC()
                         ? computeMineTheirs(context, variable, e.getKey(), e.getValue(), true)
                         : e.getValue())).filter(p -> p.v != null)
-                .collect(Collectors.toUnmodifiableMap(p -> p.k, p -> p.v));
+                .collect(Collectors.toUnmodifiableMap(p -> p.k, p -> p.v));*/
         weightedGraph.addNode(variable, variables);
         return new AddResult(afterChangeToDelay, setAside);
     }
@@ -466,7 +447,7 @@ public class ComputeLinkedVariables {
      * only used on the CM version (not statically assigned) with the statically assigned variables forming
      * the core.
      */
-    public ProgressAndDelay writeClusteredLinkedVariables(EvaluationContext evaluationContext) {
+    public ProgressAndDelay writeClusteredLinkedVariables() {
         Map<Variable, Set<Variable>> staticallyAssigned = staticallyAssignedVariables();
         CausesOfDelay causes = CausesOfDelay.EMPTY;
         boolean progress = false;
@@ -475,8 +456,8 @@ public class ComputeLinkedVariables {
             VariableInfoContainer vic = statementAnalysis.getVariable(variable.fullyQualifiedName());
 
             Map<Variable, LV> map = shortestPath.links(variable, null);
-            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
-                    staticallyAssigned, variable, map, reachableInModification.getOrDefault(variable, Set.of()));
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
+                    variable, map);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
             vic.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
@@ -487,8 +468,8 @@ public class ComputeLinkedVariables {
         if (returnVariable != null) {
             VariableInfoContainer vicRv = statementAnalysis.getVariable(returnVariable.fullyQualifiedName());
             Map<Variable, LV> map = shortestPath.links(returnVariable, null);
-            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
-                    staticallyAssigned, returnVariable, map, reachableInModification.getOrDefault(returnVariable, Set.of()));
+            LinkedVariables linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssigned,
+                    returnVariable, map);
 
             causes = causes.merge(linkedVariables.causesOfDelay());
             vicRv.ensureLevelForPropertiesLinkedVariables(statementAnalysis.location(stage), stage);
@@ -518,11 +499,9 @@ public class ComputeLinkedVariables {
     }
 
     private LinkedVariables applyStaticallyAssignedAndRemoveSelfReference
-            (EvaluationContext evaluationContext,
-             Map<Variable, Set<Variable>> staticallyAssignedVariables,
+            (Map<Variable, Set<Variable>> staticallyAssignedVariables,
              Variable variable,
-             Map<Variable, LV> map,
-             Set<Variable> reachableFromVariableInMutable) {
+             Map<Variable, LV> map) {
         CausesOfDelay allDelays = map.values().stream()
                 .map(LV::causesOfDelay)
                 .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge)
@@ -543,65 +522,14 @@ public class ComputeLinkedVariables {
             if (allDelays.isDelayed()) return LinkedVariables.NOT_YET_SET;
             return LinkedVariables.EMPTY;
         }
-        /*
-         The clustering algorithm may produce LINK_COMMON_HC links ... without mine, theirs.
-         Here, we compute them again.
-         */
-        Map<Variable, LV> newMap = new HashMap<>();
-        for (Map.Entry<Variable, LV> entry : map.entrySet()) {
-            LV newLv;
-            Variable target = entry.getKey();
-            LV lv = entry.getValue();
-            if (lv.isCommonHC() || lv.isDependent() && lv.haveLinks()) {
-                boolean correctForMutable = reachableFromVariableInMutable.contains(target);
-                newLv = computeMineTheirs(evaluationContext, variable, target, lv, correctForMutable);
-            } else {
-                newLv = lv;
-            }
-            if (newLv != null) {
-                newMap.put(target, newLv);
-            }
-        }
-        return LinkedVariables.of(newMap);
-    }
-
-    private static LV computeMineTheirs(EvaluationContext evaluationContext,
-                                        Variable variable,
-                                        Variable target,
-                                        LV lv,
-                                        boolean correctForMutable) {
-        assert lv.haveLinks();
-  /*      LV newLv;
-        HiddenContentSelector mine = variable instanceof This
-                ? new HiddenContentSelector.CsSet(Map.of(0, false))
-                : lv.mine().correctForMutable(evaluationContext, variable.parameterizedType(),
-                correctForMutable);
-        HiddenContentSelector theirs = target instanceof This
-                ? new HiddenContentSelector.CsSet(Map.of(0, mine.containsMutable()))
-                : lv.theirs().correctForMutable(evaluationContext,
-                target.parameterizedType(), correctForMutable);
-        if (variable instanceof This) {
-            // NOTE: we could not do this 2 statements higher, it relies on theirs
-            mine = mine.ensureMutable(theirs.containsMutable());
-        }
-        if (mine.isDelayed() || theirs.isDelayed()) {
-            newLv = LV.delay(mine.causesOfDelay().merge(theirs.causesOfDelay()));
-        } else if (mine.isAll() && theirs.isAll()) {
-            return null;
-        } else {
-            newLv = theirs.isNone() || mine.isNone() ? null
-                    : lv.isDependent() ? LV.createDependent(mine, theirs) : LV.createHC(mine, theirs);
-        }
-        return newLv;*/
-        return lv; // FIXME to implement!!!
+        return LinkedVariables.of(map);
     }
 
     /**
      * This variant is currently used by copyBackLocalCopies in StatementAnalysisImpl.
      * It touches all variables rather than those in clusters only.
      */
-    public boolean writeLinkedVariables(EvaluationContext evaluationContext,
-                                        ComputeLinkedVariables staticallyAssignedCLV,
+    public boolean writeLinkedVariables(ComputeLinkedVariables staticallyAssignedCLV,
                                         Set<Variable> touched,
                                         Set<Variable> toRemove,
                                         Set<Variable> haveLinkedVariables) {
@@ -618,9 +546,8 @@ public class ComputeLinkedVariables {
                         if (haveLinkedVariables.contains(variable)) {
                             Map<Variable, LV> map = shortestPath.links(variable, null);
                             map.keySet().removeIf(toRemove::contains);
-                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(evaluationContext,
-                                    staticallyAssignedVariables, variable, map,
-                                    reachableInModification.getOrDefault(variable, Set.of()));
+                            linkedVariables = applyStaticallyAssignedAndRemoveSelfReference(staticallyAssignedVariables,
+                                    variable, map);
                         } else {
                             VariableInfo eval = vic.best(EVALUATION);
                             linkedVariables = eval.getLinkedVariables();

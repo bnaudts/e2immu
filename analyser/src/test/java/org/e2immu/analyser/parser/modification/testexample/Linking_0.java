@@ -94,7 +94,7 @@ public class Linking_0 {
     static <X> Map<X, M> m13(Map<X, M> map) {
         return new HashMap<>(map);
     }
-
+/*
     // dependent
     static List<M> m14(List<M> list) {
         return list.subList(0, 1).subList(0, 1);
@@ -156,5 +156,5 @@ public class Linking_0 {
 
     static <X> M m25(Map<X, M> map, X x) {
         return map.get(x);
-    }
+    }*/
 }

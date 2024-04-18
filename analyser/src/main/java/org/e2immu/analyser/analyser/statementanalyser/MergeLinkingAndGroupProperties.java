@@ -73,7 +73,7 @@ class MergeLinkingAndGroupProperties {
         Set<Variable> touched = touchedStream(linkedVariablesMap, newlyCreatedScopeVariables, toRemove,
                 renames.keySet());
         boolean oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable();
-        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(evaluationContext,
+        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(
                 statementAnalysis, MERGE,
                 oneBranchHasBecomeUnreachable,
                 (vic, v) -> !touched.contains(v),
@@ -81,8 +81,8 @@ class MergeLinkingAndGroupProperties {
                 linkedVariablesFromBlocks, evaluationContext.getAnalyserContext().getCache(),
                 evaluationContext.breakDelayLevel());
 
-        boolean progress = computeLinkedVariables.writeLinkedVariables(evaluationContext,
-                computeLinkedVariables, touched, toRemove, linkedVariablesMap.keySet());
+        boolean progress = computeLinkedVariables.writeLinkedVariables(computeLinkedVariables, touched, toRemove,
+                linkedVariablesMap.keySet());
 
         for (Variable variable : touched) {
             if (!linkedVariablesMap.containsKey(variable) &&

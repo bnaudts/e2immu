@@ -190,7 +190,7 @@ public class TestComputeLinkedVariables {
             default -> throw new UnsupportedOperationException("Variable " + v.fullyQualifiedName());
         };
 
-        ComputeLinkedVariables clv = ComputeLinkedVariables.create(evaluationContext, sa, Stage.EVALUATION,
+        ComputeLinkedVariables clv = ComputeLinkedVariables.create(sa, Stage.EVALUATION,
                 false, (vic, v) -> false, Set.of(),
                 lvs, new GraphCacheImpl(10), BreakDelayLevel.NONE);
 
@@ -220,7 +220,7 @@ public class TestComputeLinkedVariables {
                 return currentType;
             }
         };
-        ProgressAndDelay pad = clv.writeClusteredLinkedVariables(evaluationContext);
+        ProgressAndDelay pad = clv.writeClusteredLinkedVariables();
         assertTrue(pad.progress());
         assertFalse(pad.isDelayed());
         assertFalse(brokeDelay.get());

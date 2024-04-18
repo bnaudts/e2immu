@@ -787,7 +787,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
         Set<Variable> reassigned = evaluationResult.changeData().entrySet().stream()
                 .filter(e -> e.getValue().markAssignment()).map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
         EvaluationContext evaluationContext = sharedState.evaluationContext();
-        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(sharedState.evaluationContext(),
+        ComputeLinkedVariables computeLinkedVariables = ComputeLinkedVariables.create(
                 statementAnalysis, EVALUATION,
                 false,
                 (vic, v) -> variableUnknown(v),
@@ -797,7 +797,7 @@ record SAApply(StatementAnalysis statementAnalysis, MethodAnalyser myMethodAnaly
                 evaluationContext.breakDelayLevel());
 
         // we should be able to cache the statically assigned variables, they cannot change anymore after iteration 0
-        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables(evaluationContext);
+        ProgressAndDelay linkDelays = computeLinkedVariables.writeClusteredLinkedVariables();
 
         // 1
         ProgressAndDelay cnnStatus = computeLinkedVariables.write(CONTEXT_NOT_NULL,

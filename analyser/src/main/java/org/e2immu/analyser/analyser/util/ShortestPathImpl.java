@@ -1,7 +1,6 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.CausesOfDelay;
-import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LV;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.graph.op.DijkstraShortestPath;
@@ -55,17 +54,14 @@ public class ShortestPathImpl implements ShortestPath {
     static final long DELAYED = 1L << BITS;
     static final long ASSIGNED = 1L << (2 * BITS);
     static final long DEPENDENT = 1L << (3 * BITS);
-    static final long HC_MUTABLE = 1L << (4 * BITS);
-    static final long INDEPENDENT_HC = 1L << (5 * BITS);
+    static final long COMMON_HC = 1L << (4 * BITS);
 
     public static long toDistanceComponent(LV lv) {
         if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
         if (lv.isDelayed()) return DELAYED;
         if (LINK_ASSIGNED.equals(lv)) return ASSIGNED;
         if (lv.isDependent()) return DEPENDENT;
-        if (lv.isHCMutable()) return HC_MUTABLE;
-        assert lv.isCommonHC() && !lv.containsMutable();
-        return INDEPENDENT_HC;
+        return COMMON_HC;
     }
 
     // used to produce the result.
@@ -78,8 +74,7 @@ public class ShortestPathImpl implements ShortestPath {
             return LV.delay(someDelay);
         }
         if (l < DEPENDENT) return LINK_ASSIGNED;
-        if (l < HC_MUTABLE) return LINK_DEPENDENT;
-        //if (l < INDEPENDENT_HC) return LINK_HC_MUTABLE;
+        if (l < COMMON_HC) return LINK_DEPENDENT;
         return LINK_COMMON_HC;
     }
 
@@ -92,18 +87,14 @@ public class ShortestPathImpl implements ShortestPath {
     static final long ASSIGNED_H = 1L << BITS;
     static final long DEPENDENT_H = 1L << (2 * BITS);
     static final long HC_MUTABLE_H = 1L << (3 * BITS);
-    static final long INDEPENDENT_HC_H = 1L << (4 * BITS);
+    static final long COMMON_HC_H = 1L << (4 * BITS);
     static final long DELAYED_H = 1L << (5 * BITS);
 
     public static long toDistanceComponentHigh(LV lv) {
         if (LINK_STATICALLY_ASSIGNED.equals(lv)) return STATICALLY_ASSIGNED;
         if (LINK_ASSIGNED.equals(lv)) return ASSIGNED_H;
         if (lv.isDependent()) return DEPENDENT_H;
-        if (lv.isHCMutable()) return HC_MUTABLE_H;
-        if (lv.isCommonHC()) {
-            assert !lv.containsMutable();
-            return INDEPENDENT_HC_H;
-        }
+        if (lv.isCommonHC()) return COMMON_HC_H;
         assert lv.isDelayed();
         return DELAYED_H;
     }
@@ -119,10 +110,7 @@ public class ShortestPathImpl implements ShortestPath {
         }
         if (l < DELAYED_H) {
             Links links = (Links) lowDc.connection();
-            if (l < INDEPENDENT_HC_H) {
-                return LV.createHC(links.ensureMutable(true));
-            }
-            return LV.createHC(links.ensureMutable(false));
+            return LV.createHC(links);
         }
         return LV.delay(someDelay);
     }
@@ -131,8 +119,7 @@ public class ShortestPathImpl implements ShortestPath {
         if (l == Long.MAX_VALUE) return null;
         if (l < ASSIGNED_H) return LINK_STATICALLY_ASSIGNED;
         if (l < DEPENDENT_H) return LINK_ASSIGNED;
-        if (l < HC_MUTABLE_H) return LINK_HC_MUTABLE;
-        if (l < INDEPENDENT_HC_H) return LINK_DEPENDENT;
+        if (l < COMMON_HC_H) return LINK_DEPENDENT;
         if (l < DELAYED_H) return LINK_COMMON_HC;
         assert someDelay != null && someDelay.isDelayed();
         return LV.delay(someDelay);

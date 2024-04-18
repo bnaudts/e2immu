@@ -218,7 +218,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                         if (forModification && dv.theirsIsAll()) continue;
 
                         if (dv.containsMutable()) {
-                            correctedLv = LINK_HC_MUTABLE;
+                            correctedLv = dv;//  LINK_HC_MUTABLE;
                         } else if (forModification) {
                             continue; // we can ignore this link at the mutable level
                         } else {

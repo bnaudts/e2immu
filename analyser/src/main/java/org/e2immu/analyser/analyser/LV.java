@@ -86,10 +86,6 @@ public class LV implements Comparable<LV> {
             this(Set.of(new Index(List.of(i))));
         }
 
-        public Indices(Collection<Index> collection) {
-            this(collection.size() == 1 ? Set.copyOf(collection) : new TreeSet<>(collection));
-        }
-
         @Override
         public String toString() {
             return set.stream().map(Object::toString).collect(Collectors.joining(";"));
@@ -136,7 +132,7 @@ public class LV implements Comparable<LV> {
                 Link link = this.map.get(entry.getValue().to);
                 if (link != null) {
                     boolean mutable = entry.getValue().mutable || link.mutable;
-                    Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
+                    Link newLink = mutable == link.mutable ? link : new Link(link.to, true);
                     if (!(entry.getKey().equals(LV.ALL_INDICES) && newLink.to.equals(LV.ALL_INDICES))) {
                         res.put(entry.getKey(), newLink);
                     }
@@ -144,23 +140,6 @@ public class LV implements Comparable<LV> {
             }
             if (res.isEmpty()) return null;
             return new Links(res);
-        }
-
-        public Links ensureMutable(boolean b) {
-            if (map.isEmpty()) return this;
-            Map<Indices, Link> res = new HashMap<>();
-            boolean change = false;
-            for (Map.Entry<Indices, Link> entry : map.entrySet()) {
-                Link link;
-                if (b != entry.getValue().mutable) {
-                    link = new Link(entry.getValue().to, b);
-                    change = true;
-                } else {
-                    link = entry.getValue();
-                }
-                res.put(entry.getKey(), link);
-            }
-            return change ? new Links(Map.copyOf(res)) : this;
         }
 
         public Links theirsToTheirs(Links links) {
@@ -197,7 +176,6 @@ public class LV implements Comparable<LV> {
 
     private static final int DELAY = -1;
     private static final int HC = 4;
-    private static final int HC_MUTABLE = 3;
     private static final int DEPENDENT = 2;
 
     public static final LV LINK_STATICALLY_ASSIGNED = new LV(0, NO_LINKS, "-0-",
@@ -206,10 +184,6 @@ public class LV implements Comparable<LV> {
             MultiLevel.DEPENDENT_DV);
     public static final LV LINK_DEPENDENT = new LV(DEPENDENT, NO_LINKS, "-2-", CausesOfDelay.EMPTY,
             MultiLevel.DEPENDENT_DV);
-
-    // use of this value is severely restricted! Use in ShortestPath, ComputeLinkedVariables
-    public static final LV LINK_HC_MUTABLE = new LV(HC_MUTABLE, NO_LINKS, "-3-",
-            CausesOfDelay.EMPTY, MultiLevel.DEPENDENT_DV);
 
     // do not use for equality! Use LV.isCommonHC()
     public static final LV LINK_COMMON_HC = new LV(HC, NO_LINKS, "-4-", CausesOfDelay.EMPTY,
@@ -235,10 +209,6 @@ public class LV implements Comparable<LV> {
 
     public boolean isCommonHC() {
         return HC == value;
-    }
-
-    public boolean isHCMutable() {
-        return HC_MUTABLE == value;
     }
 
     private LV(int value, Links links, String label, CausesOfDelay causesOfDelay, DV correspondingIndependent) {
@@ -347,7 +317,6 @@ public class LV implements Comparable<LV> {
         if (isCommonHC()) {
             return createHC(links.reverse());
         }
-        assert !isHCMutable() : "Internal use only";
         return this;
     }
 
