@@ -28,7 +28,6 @@ import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static org.e2immu.analyser.parser.VisitorTestSupport.IterationInfo.it;
 import static org.junit.jupiter.api.Assertions.*;
@@ -134,7 +133,7 @@ public class Test_Linking0M extends CommonTestRunner {
                                 it(2, "m:4,this.listM2:4,this:4"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                         // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
-                        // FIXME assertSingleLv(d, 2, 1, "0-4-0");
+                        assertSingleLv(d, 2, 1, "0-4-0");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "listM2".equals(fr.fieldInfo().name)) {
@@ -148,7 +147,7 @@ public class Test_Linking0M extends CommonTestRunner {
                                 it(2, "m:4,this.listM:4,this:4"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                         // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
-                      // FIXME   assertSingleLv(d, 2, 1, "0-4-0");
+                        assertSingleLv(d, 2, 1, "0-4-0");
                     }
                 }
             }
@@ -201,19 +200,19 @@ public class Test_Linking0M extends CommonTestRunner {
                 assertSingleLv(d, lvs, 2, 1, "0M-4-1M"); // map in m4
                 assertSingleLv(d, lvs, 2, 2, "0M-4-1M"); // map in m5
                 assertSingleLv(d, lvs, 2, 3, "0M-4-0M"); // ms
-                // FIXME assertSingleLv(d, lvs, 2, 4, "0-4-0"); // this.listM2
+                assertSingleLv(d, lvs, 2, 4, "0-4-0"); // this.listM2
             }
             if ("listM2".equals(d.fieldInfo().name)) {
                 assertLinked(d, lvs,
                         it(0, 1, "m:-1,this.listM:-1"), it(2, "m:4,this.listM:4"));
                 assertSingleLv(d, lvs, 2, 0, "0M-4-*M");
-                // FIXME assertSingleLv(d, lvs, 2, 1, "0-4-0");
+                assertSingleLv(d, lvs, 2, 1, "0-4-0");
             }
             if ("map".equals(d.fieldInfo().name)) {
                 assertLinked(d, lvs,
                         it(0, 1, "inverse:-1,m:-1,x:-1"),
                         it(2, "inverse:4,x:4"));
-                // FIXME assertSingleLv(d, lvs, 2, 0, "0-4-1");
+                assertSingleLv(d, lvs, 2, 0, "0-4-1");
                 assertSingleLv(d, lvs, 2, 1, "1-4-*");
             }
         };

@@ -172,7 +172,7 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
             REVERSE_STRING_COMPARATOR.compare(v1.fullyQualifiedName(), v2.fullyQualifiedName());
 
     @Override
-    public ShortestPath shortestPath(boolean forModification) {
+    public ShortestPath shortestPath() {
         int n = nodeMap.size();
         Variable[] variables = new Variable[n];
         // -- CACHE --
@@ -208,31 +208,16 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
                 for (Map.Entry<Variable, LV> e2 : dependsOn.entrySet()) {
                     int d2 = variableIndex.get(e2.getKey());
 
-                    LV dv = e2.getValue();
-                    LV correctedLv;
-                    if (dv.isDelayed() && delay == null) {
-                        delay = dv.causesOfDelay();
+                    LV lv = e2.getValue();
+                    if (lv.isDelayed() && delay == null) {
+                        delay = lv.causesOfDelay();
                     }
-                    if (dv.isCommonHC()) {
-                        // we'll be skipping any link that points to All, so *-4-* and 0-4-* will be ignored
-                        if (forModification && dv.theirsIsAll()) continue;
+                    long d = ShortestPathImpl.toDistanceComponent(lv);
+                    edgesOfD1.put(d2, new DijkstraShortestPath.DCP(d, lv.links()));
+                    long dHigh = ShortestPathImpl.toDistanceComponentHigh(lv);
+                    edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, lv.links()));
 
-                        if (dv.containsMutable()) {
-                            correctedLv = dv;//  LINK_HC_MUTABLE;
-                        } else if (forModification) {
-                            continue; // we can ignore this link at the mutable level
-                        } else {
-                            correctedLv = dv;
-                        }
-                    } else {
-                        correctedLv = dv;
-                    }
-                    long d = ShortestPathImpl.toDistanceComponent(correctedLv);
-                    edgesOfD1.put(d2, new DijkstraShortestPath.DCP(d, dv.links()));
-                    long dHigh = ShortestPathImpl.toDistanceComponentHigh(correctedLv);
-                    edgesOfD1High.put(d2, new DijkstraShortestPath.DCP(dHigh, dv.links()));
-
-                    String cacheCode = dv.isDelayed() ? "D" : dv.minimal();
+                    String cacheCode = lv.isDelayed() ? "D" : lv.minimal();
                     unsorted.add(d2 + ":" + cacheCode);
                 }
                 sb.append("(");
@@ -247,14 +232,5 @@ public class WeightedGraphImpl extends Freezable implements WeightedGraph {
         ShortestPathImpl.LinkMap linkMap = (ShortestPathImpl.LinkMap)
                 cache.computeIfAbsent(hash, h -> new ShortestPathImpl.LinkMap(new LinkedHashMap<>(), new AtomicInteger(), cacheKey));
         return new ShortestPathImpl(variableIndex, variables, edges, edgesHigh, delay, linkMap);
-    }
-
-    @Override
-    public LV edgeValueOrNull(Variable v1, Variable v2) {
-        Node n = nodeMap.get(v1);
-        if (n != null && n.dependsOn != null) {
-            return n.dependsOn.get(v2);
-        }
-        return null;
     }
 }

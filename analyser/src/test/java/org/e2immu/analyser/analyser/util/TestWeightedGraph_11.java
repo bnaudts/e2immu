@@ -26,7 +26,7 @@ public class TestWeightedGraph_11 extends CommonWG {
      */
     Variable m, ms, n;
     WeightedGraph wg;
-    ShortestPath shortestPath, shortestPathM;
+    ShortestPath shortestPath;
 
     @BeforeEach
     public void beforeEach() {
@@ -45,8 +45,6 @@ public class TestWeightedGraph_11 extends CommonWG {
         assertEquals("0(2:*M-4-0M)1(2:*M-4-0M)2(0:0M-4-*M;1:0M-4-*M)",
                 ((ShortestPathImpl) shortestPath).getCacheKey());
 
-        shortestPathM = wg.shortestPath(true);
-        assertEquals("0(2:*M-4-0M)1(2:*M-4-0M)2()", ((ShortestPathImpl) shortestPathM).getCacheKey());
     }
 
     @Test
@@ -58,13 +56,6 @@ public class TestWeightedGraph_11 extends CommonWG {
         assertTrue(startAt.get(ms).isCommonHC());
         assertEquals("*M-4-0M", startAt.get(ms).toString());
         assertNull(startAt.get(n));
-
-        Map<Variable, LV> startAtM = shortestPathM.links(m, null);
-        assertEquals(2, startAtM.size());
-        assertEquals(v0, startAtM.get(m));
-        assertTrue(startAtM.get(ms).isCommonHC());
-        assertEquals("*M-4-0M", startAtM.get(ms).toString());
-        assertNull(startAtM.get(n));
     }
 
 
@@ -76,12 +67,6 @@ public class TestWeightedGraph_11 extends CommonWG {
         assertEquals(v0, startAt.get(n));
         assertTrue(startAt.get(ms).isCommonHC());
         assertNull(startAt.get(m));
-
-        Map<Variable, LV> startAtM = shortestPathM.links(n, null);
-        assertEquals(2, startAtM.size());
-        assertEquals(v0, startAtM.get(n));
-        assertTrue(startAtM.get(ms).isCommonHC());
-        assertNull(startAtM.get(m));
     }
 
     @Test
@@ -92,11 +77,5 @@ public class TestWeightedGraph_11 extends CommonWG {
         assertEquals(v0, startAt.get(ms));
         assertTrue(startAt.get(m).isCommonHC());
         assertTrue(startAt.get(n).isCommonHC());
-
-        Map<Variable, LV> startAtM = shortestPathM.links(ms, null);
-        assertEquals(1, startAtM.size());
-        assertEquals(v0, startAtM.get(ms));
-        assertNull(startAtM.get(m));
-        assertNull(startAtM.get(n));
     }
 }

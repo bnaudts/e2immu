@@ -25,7 +25,7 @@ public class TestWeightedGraph_10 extends CommonWG {
      */
     Variable m, ms, selection;
     WeightedGraph wg, wg2;
-    ShortestPath shortestPath, shortestPathM, shortestPathWg2, shortestPathWg2M;
+    ShortestPath shortestPath,  shortestPathWg2;
 
     @BeforeEach
     public void beforeEach() {
@@ -41,10 +41,8 @@ public class TestWeightedGraph_10 extends CommonWG {
 
         wg = new WeightedGraphImpl();
         wg.addNode(m, Map.of(ms, link, selection, link));
-        shortestPathM = wg.shortestPath(true);
-        String cacheKeyModification = "0(1:*M-4-0M;2:*M-4-0M)1()2()";
-        assertEquals(cacheKeyModification, ((ShortestPathImpl) shortestPathM).getCacheKey());
-        shortestPath = wg.shortestPath(false);
+
+        shortestPath = wg.shortestPath();
         assertEquals("0(1:*M-4-0M;2:*M-4-0M)1(0:0M-4-*M)2(0:0M-4-*M)",
                 ((ShortestPathImpl) shortestPath).getCacheKey());
 
@@ -53,9 +51,7 @@ public class TestWeightedGraph_10 extends CommonWG {
         wg2 = new WeightedGraphImpl();
         wg2.addNode(m, Map.of(ms, link, selection, link));
         wg2.addNode(ms, Map.of(selection, hc00));
-        shortestPathWg2M = wg2.shortestPath(true);
-        assertEquals(cacheKeyModification, ((ShortestPathImpl) shortestPathWg2M).getCacheKey());
-        shortestPathWg2 = wg2.shortestPath(false);
+        shortestPathWg2 = wg2.shortestPath();
         assertEquals("0(1:*M-4-0M;2:*M-4-0M)1(0:0M-4-*M;2:0-4-0)2(0:0M-4-*M;1:0-4-0)",
                 ((ShortestPathImpl) shortestPathWg2).getCacheKey());
     }
@@ -70,13 +66,6 @@ public class TestWeightedGraph_10 extends CommonWG {
             assertTrue(startAt.get(ms).isCommonHC());
             assertTrue(startAt.get(selection).isCommonHC());
         }
-        for (ShortestPath sp : new ShortestPath[]{shortestPathM, shortestPathWg2M}) {
-            Map<Variable, LV> startAtM = sp.links(m, null);
-            assertEquals(3, startAtM.size());
-            assertEquals(v0, startAtM.get(m));
-            assertTrue(startAtM.get(ms).isCommonHC());
-            assertTrue(startAtM.get(selection).isCommonHC());
-        }
     }
 
     @Test
@@ -89,13 +78,6 @@ public class TestWeightedGraph_10 extends CommonWG {
             assertTrue(startAt.get(m).isCommonHC());
             assertTrue(startAt.get(selection).isCommonHC());
         }
-        for (ShortestPath sp : new ShortestPath[]{shortestPathM, shortestPathWg2M}) {
-            Map<Variable, LV> startAtM = sp.links(ms, null);
-            assertEquals(1, startAtM.size());
-            assertEquals(v0, startAtM.get(ms));
-            assertNull(startAtM.get(m));
-            assertNull(startAtM.get(selection));
-        }
     }
 
     @Test
@@ -106,12 +88,6 @@ public class TestWeightedGraph_10 extends CommonWG {
         assertEquals(v0, startAt.get(selection));
         assertTrue(startAt.get(m).isCommonHC());
         assertTrue(startAt.get(ms).isCommonHC());
-
-        Map<Variable, LV> startAtM = shortestPathM.links(selection, null);
-        assertEquals(1, startAtM.size());
-        assertEquals(v0, startAtM.get(selection));
-        assertNull(startAtM.get(m));
-        assertNull(startAtM.get(ms));
     }
 
 }

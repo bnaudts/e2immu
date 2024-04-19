@@ -67,7 +67,6 @@ public class ComputeLinkedVariables {
     private final WeightedGraph.Cluster returnValueCluster;
     private final Variable returnVariable;
     private final ShortestPath shortestPath;
-    private final ShortestPath shortestPathForModification;
     private final BreakDelayLevel breakDelayLevel;
     private final Set<Variable> linkingNotYetSet;
     private final boolean oneBranchHasBecomeUnreachable;
@@ -77,7 +76,6 @@ public class ComputeLinkedVariables {
                                    BiPredicate<VariableInfoContainer, Variable> ignore,
                                    WeightedGraph weightedGraph,
                                    ShortestPath shortestPath,
-                                   ShortestPath shortestPathForModification,
                                    Set<Variable> variablesInClusters,
                                    List<WeightedGraph.Cluster> clusters,
                                    WeightedGraph.Cluster returnValueCluster,
@@ -91,7 +89,6 @@ public class ComputeLinkedVariables {
         this.stage = stage;
         this.statementAnalysis = statementAnalysis;
         this.shortestPath = shortestPath;
-        this.shortestPathForModification = shortestPathForModification;
         this.breakDelayLevel = breakDelayLevel;
         this.linkingNotYetSet = linkingNotYetSet;
         this.oneBranchHasBecomeUnreachable = oneBranchHasBecomeUnreachable;
@@ -116,7 +113,6 @@ public class ComputeLinkedVariables {
         Set<VariableInfoContainer> start = statementAnalysis.variableEntryStream(stage)
                 .map(Map.Entry::getValue).collect(Collectors.toUnmodifiableSet());
         boolean iteration1Plus = false;
-        Map<Variable, Map<Variable, LV>> leftOverNonMutableHCLinks = new HashMap<>();
         while (!start.isEmpty()) {
             Set<VariableInfoContainer> linked = new HashSet<>();
             for (VariableInfoContainer vic : start) {
@@ -125,9 +121,9 @@ public class ComputeLinkedVariables {
                     done.add(variable);
                     VariableInfo vi1 = vic.getPreviousOrInitial();
                     VariableInfo viE = vic.best(EVALUATION);
-                    AddResult ar = add(statementAnalysis, ignore, reassigned, externalLinkedVariables, weightedGraph,
-                            vi1, viE, variable, stage.equals(Stage.MERGE));
-                    for (Map.Entry<Variable, LV> e : ar.linkedVariables) {
+                    LinkedVariables linkedVariables = add(statementAnalysis, ignore, reassigned,
+                            externalLinkedVariables, weightedGraph, vi1, viE, variable);
+                    for (Map.Entry<Variable, LV> e : linkedVariables) {
                         Variable v = e.getKey();
                         if (!done.contains(v)) {
                             VariableInfoContainer linkedVic = statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName());
@@ -136,44 +132,31 @@ public class ComputeLinkedVariables {
                             }
                         }
                     }
-                    if (ar.linkedVariables == LinkedVariables.NOT_YET_SET) {
+                    if (linkedVariables == LinkedVariables.NOT_YET_SET) {
                         linkingNotYetSet.add(variable);
                     }
-                    leftOverNonMutableHCLinks.merge(variable, ar.leftOver, ComputeLinkedVariables::mergeMaps);
                 }
             }
             linked.removeIf(vic -> done.contains(vic.current().variable()));
             start = new HashSet<>(linked);
             iteration1Plus = true;
         }
-        ShortestPath shortestPathModification = weightedGraph.shortestPath(true);
-        leftOverNonMutableHCLinks.forEach(weightedGraph::addNode);
-        ShortestPath shortestPath = weightedGraph.shortestPath(false);
+        ShortestPath shortestPath = weightedGraph.shortestPath();
         WeightedGraph.ClusterResult cr = weightedGraph.staticClusters();
         return new ComputeLinkedVariables(statementAnalysis, stage, ignore, weightedGraph, shortestPath,
-                shortestPathModification, cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
+                cr.variablesInClusters(), cr.clusters(), cr.returnValueCluster(),
                 cr.rv(), breakDelayLevel, oneBranchHasBecomeUnreachable,
                 linkingNotYetSet);
     }
 
-    private static Map<Variable, LV> mergeMaps(Map<Variable, LV> m1, Map<Variable, LV> m2) {
-        Map<Variable, LV> res = new HashMap<>(m1);
-        m2.forEach((v, lv) -> res.merge(v, lv, (lv1, lv2) -> lv1));
-        return res;
-    }
-
-    private record AddResult(LinkedVariables linkedVariables, Map<Variable, LV> leftOver) {
-    }
-
-    private static AddResult add(StatementAnalysis statementAnalysis,
-                                 BiPredicate<VariableInfoContainer, Variable> ignore,
-                                 Set<Variable> reassigned,
-                                 Function<Variable, LinkedVariables> externalLinkedVariables,
-                                 WeightedGraph weightedGraph,
-                                 VariableInfo vi1,
-                                 VariableInfo viE,
-                                 Variable variable,
-                                 boolean isMerge) {
+    private static LinkedVariables add(StatementAnalysis statementAnalysis,
+                                       BiPredicate<VariableInfoContainer, Variable> ignore,
+                                       Set<Variable> reassigned,
+                                       Function<Variable, LinkedVariables> externalLinkedVariables,
+                                       WeightedGraph weightedGraph,
+                                       VariableInfo vi1,
+                                       VariableInfo viE,
+                                       Variable variable) {
         boolean isBeingReassigned = reassigned.contains(variable);
         Predicate<Variable> removePredicate = v ->
                 ignore.test(statementAnalysis.getVariableOrDefaultNull(v.fullyQualifiedName()), v);
@@ -183,24 +166,8 @@ public class ComputeLinkedVariables {
                 .remove(removePredicate);
         LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                 : vi1.getLinkedVariables().remove(reassigned);
-        Map<Variable, LV> setAside = new HashMap<>();
-        Map<Variable, LV> combinedMap = new HashMap<>();
-        external.stream().forEach(e -> {
-            LV lv = e.getValue();
-            if (isMerge && lv.isCommonHC() && !lv.containsMutable()) {
-                setAside.put(e.getKey(), e.getValue());
-            } else {
-                combinedMap.put(e.getKey(), e.getValue());
-            }
-        });
-        inVi.stream().forEach(e -> {
-            LV lv = e.getValue();
-            if (lv.isCommonHC() && !lv.containsMutable()) {
-                setAside.put(e.getKey(), e.getValue());
-            } else {
-                combinedMap.merge(e.getKey(), e.getValue(), LV::min);
-            }
-        });
+        Map<Variable, LV> combinedMap = new HashMap<>(external.variables());
+        inVi.stream().forEach(e -> combinedMap.merge(e.getKey(), e.getValue(), LV::min));
         LinkedVariables combined = LinkedVariables.of(combinedMap);
 
         LinkedVariables afterChangeToDelay;
@@ -212,14 +179,8 @@ public class ComputeLinkedVariables {
         } else {
             afterChangeToDelay = combined;
         }
-        Map<Variable, LV> variables = afterChangeToDelay.variables();
-                /*afterChangeToDelay.stream() FIXME cleanup
-                .map(e -> new Pair<>(e.getKey(), e.getValue().isCommonHC()
-                        ? computeMineTheirs(context, variable, e.getKey(), e.getValue(), true)
-                        : e.getValue())).filter(p -> p.v != null)
-                .collect(Collectors.toUnmodifiableMap(p -> p.k, p -> p.v));*/
-        weightedGraph.addNode(variable, variables);
-        return new AddResult(afterChangeToDelay, setAside);
+        weightedGraph.addNode(variable, afterChangeToDelay.variables());
+        return afterChangeToDelay;
     }
 
     public ProgressAndDelay write(Property property, Map<Variable, DV> propertyValues) {
@@ -694,7 +655,7 @@ public class ComputeLinkedVariables {
             finalModified = new HashMap<>();
             for (Variable variable : variablesInClusters) {
                 DV inPropertyMap = potentiallyBreakContextModifiedDelay(variable, propertyMap.get(variable));
-                Map<Variable, LV> map = shortestPathForModification.links(variable, null);
+                Map<Variable, LV> map = shortestPath.links(variable, null);
 
                 LV max = map.values().stream().reduce(LV.initialDelay(), LV::max);
                 CausesOfDelay clusterDelay = max.isInitialDelay() ? CausesOfDelay.EMPTY : max.causesOfDelay();

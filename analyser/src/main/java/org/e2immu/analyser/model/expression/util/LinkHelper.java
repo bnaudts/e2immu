@@ -562,9 +562,13 @@ public class LinkHelper {
                                     correctForVarargsMutable = mutable;
                                 }
 
-                                Indices indicesInSourceWrtMethod = ((HiddenContentSelector.CsSet) hcsSource).getMap().get(entry.getKey());
-                                Indices indicesInSourceWrtType = hctMethodToHctSource.get(indicesInSourceWrtMethod).indices();
-
+                                Indices indicesInSourceWrtMethod = ((HiddenContentSelector.CsSet) hiddenContentSelectorOfSource).getMap().get(entry.getKey());
+                                assert indicesInSourceWrtMethod != null;
+                                HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
+                                assert indicesAndType != null;
+                                Indices indicesInSourceWrtType = indicesAndType.indices();
+                                assert indicesInSourceWrtType != null;
+                                
                                 Indices indicesInTargetWrtType = targetAndType.indices();
                                 Indices correctedIndicesInTargetWrtType;
                                 if (correctForVarargsMutable != null) {

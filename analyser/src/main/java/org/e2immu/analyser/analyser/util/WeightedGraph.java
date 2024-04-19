@@ -52,13 +52,9 @@ public interface WeightedGraph {
     @NotModified
     boolean isEmpty();
 
-    default ShortestPath shortestPath() {
-        return shortestPath(false);
-    }
-
     @Independent(hc = true)
     @NotModified
-    ShortestPath shortestPath(boolean forModification);
+    ShortestPath shortestPath();
 
     @NotModified
     void visit(@NotNull @Independent(hc = true) BiConsumer<Variable, Map<Variable, LV>> consumer);
@@ -67,5 +63,4 @@ public interface WeightedGraph {
     void addNode(@NotNull @Independent(hc = true) Variable v,
                  @NotNull @Independent(hc = true) Map<Variable, LV> dependsOn);
 
-    LV edgeValueOrNull(Variable v1, Variable v2);
 }

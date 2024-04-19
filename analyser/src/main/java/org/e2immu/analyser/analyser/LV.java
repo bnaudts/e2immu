@@ -35,8 +35,9 @@ public class LV implements Comparable<LV> {
 
     public record Index(List<Integer> list) implements Comparable<Index> {
         public static Index createZeroes(int arrays) {
-            int[] array = new int[arrays];
-            return new Index(Arrays.stream(array).boxed().toList());
+            List<Integer> list = new ArrayList<>(arrays);
+            for (int i = 0; i < arrays; i++) list.add(0);
+            return new Index(List.copyOf(list));
         }
 
         @Override
@@ -143,11 +144,14 @@ public class LV implements Comparable<LV> {
             }
             Map<Indices, Link> res = new HashMap<>();
             for (Map.Entry<Indices, Link> entry : ((Links) current).map.entrySet()) {
-                Link link = this.map.get(entry.getValue().to);
+                Indices middle = entry.getValue().to;
+                Link link = this.map.get(middle);
                 if (link != null) {
-                    boolean mutable = entry.getValue().mutable || link.mutable;
-                    Link newLink = mutable == link.mutable ? link : new Link(link.to, true);
-                    if (!(entry.getKey().equals(LV.ALL_INDICES) && newLink.to.equals(LV.ALL_INDICES))) {
+                    boolean fromAllToAll = entry.getKey().equals(LV.ALL_INDICES) && link.to.equals(LV.ALL_INDICES);
+                    if (!fromAllToAll) {
+                        boolean middleIsAll = middle.equals(ALL_INDICES);
+                        boolean mutable = !middleIsAll && (entry.getValue().mutable || link.mutable);
+                        Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
                         res.put(entry.getKey(), newLink);
                     }
                 }
