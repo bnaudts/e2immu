@@ -52,7 +52,7 @@ public class Linking_2 {
         }
         return selection;
     }
-/*
+   /*
     // See Linking_1, but now in the context of a for-loop
     static <X> List<X> m2c(List<X> xs, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {

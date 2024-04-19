@@ -268,8 +268,15 @@ public class Test_Linking2 extends CommonTestRunner {
                         }
                         if ("1.0.1.0.0".equals(d.statementId())) {
                             assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
+                            assertLinked(d, it0("b:-1,ms:-1,selection:-1,selector:-1"),
+                                    it1("ms:-1,selection:-1,selector:-1"),
+                                    it(2, "ms:4,selection:4,selector:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                            assertSingleLv(d, 2, 1, "*M-4-0M");
+                            assertSingleLv(d, 2, 2, "*M-4-0M");
                         }
                         if ("1.0.1".equals(d.statementId())) {
+                            assertDv(d, 2, DV.FALSE_DV, Property.CONTEXT_MODIFIED);
                             assertLinked(d, it0("b:-1,ms:-1,selection:-1,selector:-1"),
                                     it1("ms:-1,selection:-1,selector:-1"),
                                     it(2, "ms:4,selection:4,selector:4"));

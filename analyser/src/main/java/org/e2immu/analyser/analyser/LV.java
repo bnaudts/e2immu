@@ -457,4 +457,17 @@ public class LV implements Comparable<LV> {
     public boolean theirsIsAll() {
         return links.map.size() == 1 && links.map.values().stream().findFirst().orElseThrow().to.equals(ALL_INDICES);
     }
+
+    /*
+    modifications travel the -4- links ONLY when the link is *M--4--xx
+     */
+    public boolean allowModified() {
+        if (value != HC) return true;
+        if (links.map.size() == 1) {
+            Map.Entry<Indices, Link> entry = links.map.entrySet().stream().findFirst().orElseThrow();
+            return entry.getValue().mutable && ALL_INDICES.equals(entry.getKey());
+        }
+        return false;
+    }
+
 }

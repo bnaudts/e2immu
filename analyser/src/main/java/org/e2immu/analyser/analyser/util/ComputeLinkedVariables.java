@@ -663,7 +663,8 @@ public class ComputeLinkedVariables {
                         : CausesOfDelay.EMPTY;
                 CausesOfDelay delays = clusterDelay.merge(extraDelayIn).merge(notYetSet);
 
-                for (Variable reached : map.keySet()) {
+                for (Map.Entry<Variable, LV> entry : map.entrySet()) {
+                    Variable reached = entry.getKey();
                     if (reached == variable && inPropertyMap.valueIsTrue()) {
                         finalModified.put(reached, DV.TRUE_DV);
                     } else {
@@ -673,8 +674,9 @@ public class ComputeLinkedVariables {
                                 // once true, always true; but one delay is a delay for everyone in the path
                                 finalModified.put(reached, delays.merge(inFinal.causesOfDelay()));
                             } else if (inPropertyMap.valueIsTrue()) {
-                                // non-delay linked to a TRUE, so this travels
-                                finalModified.put(reached, DV.TRUE_DV);
+                                // non-delay linked to a TRUE, so this travels, except when we're going into xxM--4--*M
+                                DV value = DV.fromBoolDv(entry.getValue().allowModified());
+                                finalModified.put(reached, value);
                             } else {
                                 // keep delays
                                 DV combined = inPropertyMap.max(inFinal);
