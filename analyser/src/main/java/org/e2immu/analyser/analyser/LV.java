@@ -137,6 +137,10 @@ public class LV implements Comparable<LV> {
                     new LV.Link(new LV.Indices(Set.of(new LV.Index(List.of(to)))), false)));
         }
 
+        /*
+        this method, together with allowModified(), is key to the whole linking + modification process of
+        ComputeLinkedVariables.
+         */
         @Override
         public Links next(DijkstraShortestPath.Connection current) {
             if (current == NO_LINKS || this == NO_LINKS) {
@@ -150,8 +154,8 @@ public class LV implements Comparable<LV> {
                     boolean fromAllToAll = entry.getKey().equals(LV.ALL_INDICES) && link.to.equals(LV.ALL_INDICES);
                     if (!fromAllToAll) {
                         boolean middleIsAll = middle.equals(ALL_INDICES);
-                        boolean mutable = !middleIsAll && (entry.getValue().mutable || link.mutable);
-                        Link newLink = mutable == link.mutable ? link : new Link(link.to, mutable);
+                        boolean mutable = !middleIsAll && entry.getValue().mutable && link.mutable;
+                        Link newLink = mutable == link.mutable ? link : new Link(link.to, false);
                         res.put(entry.getKey(), newLink);
                     }
                 }

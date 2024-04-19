@@ -59,6 +59,10 @@ public class TestCommonJavaUtilStream extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals("Type java.util.stream.Stream<R>", methodInfo.returnType().toString());
+        assertEquals("Stream:T - map:R", methodInfo.methodResolution.get().hiddenContentTypes().toString());
+        /*
+        1=0 means: the index in the hidden content type = 1 (R), 0 = the indices on how to select it from the type Stream<R>
+         */
         assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
 
         // key

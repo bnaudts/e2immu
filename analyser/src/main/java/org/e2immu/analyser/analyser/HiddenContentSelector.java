@@ -100,8 +100,10 @@ public abstract sealed class HiddenContentSelector
     }
 
     public static final class CsSet extends HiddenContentSelector {
-
-        // to boolean 'mutable'
+        /*
+        map key: the index in HCT
+        map value: how to extract from the type
+         */
         private final Map<Integer, LV.Indices> map;
 
         public CsSet(Map<Integer, LV.Indices> map) {

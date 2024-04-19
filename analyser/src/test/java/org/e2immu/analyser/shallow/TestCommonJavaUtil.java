@@ -523,7 +523,7 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
 
-        // important: the 0 is with respect to Collection (V is position 0 in Collection)
+        // important: the 0 is with respect to Collection (V is position 0 in Collection), 1 is the index in the HCT
         assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
     }
 

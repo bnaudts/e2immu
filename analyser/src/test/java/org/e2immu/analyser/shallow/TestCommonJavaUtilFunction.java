@@ -15,6 +15,8 @@
 package org.e2immu.analyser.shallow;
 
 import org.e2immu.analyser.analyser.DV;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
@@ -29,8 +31,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
 
@@ -82,12 +83,21 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("apply", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
+        assertEquals("*", methodAnalysis.getHiddenContentSelector().toString());
+        if (methodAnalysis.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+            assertEquals(1, all.getHiddenContentIndex());
+        } else fail();
 
         // key
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
+        assertEquals("*", p0.getHiddenContentSelector().toString());
+        if (p0.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+            assertEquals(0, all.getHiddenContentIndex());
+        } else fail();
 
-        assertEquals("R, T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
+        HiddenContentTypes hct = typeInfo.typeResolution.get().hiddenContentTypes();
+        assertEquals("R, T", hct.sortedTypes());
     }
 
 
