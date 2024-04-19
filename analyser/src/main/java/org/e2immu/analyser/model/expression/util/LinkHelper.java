@@ -233,12 +233,7 @@ public class LinkHelper {
                         LV valueOfReturnValue = lvsToResult.stream().filter(e -> e.getKey() instanceof ReturnVariable)
                                 .map(Map.Entry::getValue).findFirst().orElseThrow();
                         Map<Variable, LV> map = returnValueLvs.stream().collect(Collectors.toMap(Map.Entry::getKey,
-                                e -> {
-                                    if (e.getValue().isCommonHC() && valueOfReturnValue.isCommonHC()) {
-                                        return e.getValue();
-                                    }
-                                    return e.getValue().min(valueOfReturnValue);
-                                }));
+                                e -> Objects.requireNonNull(follow(valueOfReturnValue, e.getValue()))));
                         parameterLvs = LinkedVariables.of(map);
                         formalParameterIndependent = valueOfReturnValue.isCommonHC() ? INDEPENDENT_HC_DV : DEPENDENT_DV;
                     } else {

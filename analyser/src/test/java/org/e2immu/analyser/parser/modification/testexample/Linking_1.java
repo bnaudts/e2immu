@@ -28,6 +28,12 @@ public class Linking_1 {
         return supplier.get();
     }
 
+    static <X> X m0b(Supplier<X> supplier) {
+        //noinspection ALL
+        Supplier<X> s = () -> supplier.get();
+        return s.get();
+    }
+
     static M m1(Supplier<M> supplier) {
         return supplier.get();
     }
@@ -70,6 +76,12 @@ public class Linking_1 {
         return stream.filter(i -> predicate.test(i));
     }
 
+    static <X> Stream<X> m9b(Stream<X> stream, Predicate<X> predicate) {
+        //noinspection ALL
+        Predicate<X> p = i -> predicate.test(i);
+        return stream.filter(p);
+    }
+
     // lambda is type $8
     static <X> Optional<X> m10(Stream<X> stream, Predicate<X> predicate) {
         //noinspection ALL
@@ -85,13 +97,13 @@ public class Linking_1 {
         //noinspection ALL
         return stream.map(x -> function.apply(x));
     }
-/*
+
     static <X, Y> Stream<Y> m12b(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         Function<X, Y> f = x -> function.apply(x);
         return stream.map(f);
     }
-
+/*
     static <X, Y> Stream<Y> m13(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         return stream.map(function::apply);

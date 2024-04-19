@@ -50,6 +50,14 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "supplier:4"));
                         assertSingleLv(d, 2, 0, "*-4-0");
                     }
+                    case "m0b" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "supplier.get()");
+                     //       assertLinked(d, it(0, "s:4,supplier:4"));
+                     //       assertSingleLv(d, 2, 0, "*-4-0");
+                     //       assertSingleLv(d, 2, 1, "*-4-0");
+                        }
+                    }
                     case "m1" -> {
                         assertCurrentValue(d, 2, "supplier.get()");
                         assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
@@ -98,13 +106,11 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertLinked(d, it(0, "stream:4"));
                     }
                     case "test" -> {
-                        if ("$8".equals(d.methodInfo().typeInfo.simpleName)) {
-                            assertEquals("m10", d.enclosingMethod().name);
+                        if ("m10".equals(d.enclosingMethod().name)) {
                             assertCurrentValue(d, 0, "predicate.test(x)");
                             assertLinked(d, it(0, "")); // important! should not become predicate:4
                         }
-                        if ("$21".equals(d.methodInfo().typeInfo.simpleName)) {
-                            assertEquals("m25", d.enclosingMethod().name);
+                        if ("m25".equals(d.enclosingMethod().name)) {
                             assertCurrentValue(d, 0, "selector.test(x)");
                         }
                     }
@@ -114,12 +120,16 @@ public class Test_Linking1 extends CommonTestRunner {
                     }
                     case "m12" -> {
                         assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
-                        assertLinked(d, it0("function:-1,stream:-1"), it(1, "function:4,stream:2"));
+                        assertLinked(d, it(0, "function:4,stream:2"));
+                        assertSingleLv(d, 0, 0, "0-4-0");
+                        assertSingleLv(d, 0, 1, "0-2-0");
                     }
                     case "m12b" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
-                            assertLinked(d, it0("f:-1,function:-1,stream:-1"), it(1, "f:4,function:4,stream:2"));
+                            assertLinked(d, it0("f:-1,function:-1,stream:-1"),
+                                    it(1, "f:4,function:4,stream:2"));
+                            assertSingleLv(d, 1, 0, "");
                         }
                     }
                     case "m13" -> {
@@ -184,17 +194,17 @@ public class Test_Linking1 extends CommonTestRunner {
                         }
                     }
                     case "m23" -> {
-                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})");
+                        assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})");
                         assertLinked(d, it(0, "list:4"));
                     }
                     case "m23b" -> {
                         if ("2".equals(d.statementId())) {
-                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})");
+                            assertCurrentValue(d, 0, "IntStream.of(3).mapToObj(new $19(){public X apply(int value){return list.get(value);}})");
                             assertLinked(d, it(0, "f:4,intStream:2,list:4"));
                         }
                     }
                     case "m24" -> {
-                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new $20(){public M apply(int value){return list.get(value);}})");
+                        assertCurrentValue(d, 2, "IntStream.of(3).mapToObj(new $21(){public M apply(int value){return list.get(value);}})");
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                         assertSingleLv(d, 2, 0, "0M-4-0M");
                     }
@@ -203,6 +213,13 @@ public class Test_Linking1 extends CommonTestRunner {
                 }
             }
             switch (d.methodInfo().name) {
+                case "m0b" -> {
+                    if ("0".equals(d.statementId()) && "s".equals(d.variableName())) {
+                        assertCurrentValue(d, 0, "/*inline get*/supplier.get()/*{L supplier:4}*/");
+                        assertLinked(d, it(0, "supplier:4"));
+                        assertSingleLv(d, 0, 0, "*-4-0");
+                    }
+                }
                 case "mPredicate" -> {
                     // predicate.test(x) is no different from list.add(x), because Predicate.test is modifying!
                     assert "0".equals(d.statementId());
@@ -215,9 +232,14 @@ public class Test_Linking1 extends CommonTestRunner {
                         assertSingleLv(d, 0, 0, "*-4-0");
                     }
                 }
+                case "m9b" -> {
+                    if ("0".equals(d.statementId()) && "p".equals(d.variableName())) {
+                        assertCurrentValue(d, 1, "/*inline test*/predicate.test(i)");
+                        assertLinked(d, it0("predicate:-1"), it(1, ""));
+                    }
+                }
                 case "test" -> {
                     if ("m10".equals(d.enclosingMethod().name)) {
-                        assertEquals("$8", d.methodInfo().typeInfo.simpleName);
                         if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
                             assertLinked(d, it(0, "predicate:4"));
                         }
@@ -226,6 +248,8 @@ public class Test_Linking1 extends CommonTestRunner {
                 case "m12b" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
                         assertLinked(d, it0("function:-1"), it(1, "function:4"));
+                        // FIXME should this be 1??? the correction should take place here
+                        assertSingleLv(d, 1, 0, "*-4-1");
                     }
                 }
                 case "m15b" -> {
@@ -268,7 +292,7 @@ public class Test_Linking1 extends CommonTestRunner {
             if ("m25".equals(d.methodInfo().name)) {
                 if ("independentSelector".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new $21(){public boolean test(@Independent(contract=true) X x){return selector.test(x);}}",
+                        assertEquals("new $22(){public boolean test(@Independent(contract=true) X x){return selector.test(x);}}",
                                 d.currentValue().toString());
                         // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
                         assertLinked(d, it(0, ""));
@@ -292,7 +316,7 @@ public class Test_Linking1 extends CommonTestRunner {
             if ("m26".equals(d.methodInfo().name)) {
                 if ("independentSelector".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new $22(){public boolean test(X x){return selector.test(x);}}",
+                        assertEquals("new $23(){public boolean test(X x){return selector.test(x);}}",
                                 d.currentValue().toString());
                         // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
                         assertLinked(d, it(0, ""));
@@ -317,7 +341,7 @@ public class Test_Linking1 extends CommonTestRunner {
             if ("m27".equals(d.methodInfo().name)) {
                 if ("independentSelector".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        assertEquals("new $23(){public boolean test(X x){return selector.test(x);}}",
+                        assertEquals("new $24(){public boolean test(X x){return selector.test(x);}}",
                                 d.currentValue().toString());
                         // non-modifying, so linked to result. Result is of type 'boolean', so links are empty.
                         assertLinked(d, it(0, ""));
@@ -353,8 +377,7 @@ public class Test_Linking1 extends CommonTestRunner {
             if ("mPredicate".equals(d.methodInfo().name)) {
                 testPredicateTestCall(d, "mPredicate");
             }
-            if ("test".equals(d.methodInfo().name) && "$8".equals(d.methodInfo().typeInfo.simpleName)) {
-                assertEquals("m10", d.methodInfo().typeInfo.typeInspection.get().enclosingMethod().name);
+            if ("test".equals(d.methodInfo().name) && "m10".equals(d.methodInfo().typeInfo.typeInspection.get().enclosingMethod().name)) {
                 assertEquals("predicate.test(x)", d.evaluationResult().value().toString());
                 assertEquals("", d.evaluationResult().linkedVariablesOfExpression().toString());
                 MethodAnalysis maOfLambdaMethod = d.evaluationResult().evaluationContext()
@@ -370,20 +393,20 @@ public class Test_Linking1 extends CommonTestRunner {
                 testPredicateTestCall(d, "test");
             }
             if ("m23".equals(d.methodInfo().name)) {
-                String expected = "IntStream.of(3).mapToObj(new $17(){public X apply(int value){return list.get(value);}})";
+                String expected = "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
                 assertEquals(expected, d.evaluationResult().value().toString());
                 assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "list:4"));
                 assertSingleLv(d, 0, 0, "0-4-0");
             }
             if ("m23b".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    assertEquals("new $18(){public X apply(int value){return list.get(value);}}",
+                    assertEquals("new $19(){public X apply(int value){return list.get(value);}}",
                             d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:0,list:4"));
                     assertSingleLv(d, 0, 1, "*-4-0");
                 }
                 if ("2".equals(d.statementId())) {
-                    String expected = "IntStream.of(3).mapToObj(new $18(){public X apply(int value){return list.get(value);}})";
+                    String expected = "IntStream.of(3).mapToObj(new $19(){public X apply(int value){return list.get(value);}})";
                     assertEquals(expected, d.evaluationResult().value().toString());
                     assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "f:4,intStream:2"));
                     assertSingleLv(d, 0, 0, "0-4-0");
@@ -393,7 +416,6 @@ public class Test_Linking1 extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "m25".equals(d.enclosingMethod().name)) {
-                assertEquals("$21", d.methodInfo().typeInfo.name());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertTrue(d.methodAnalysis().preventInlining());
                 assertEquals("selector.test(x)", d.methodAnalysis().getSingleReturnValue().toString());
@@ -402,7 +424,6 @@ public class Test_Linking1 extends CommonTestRunner {
                 assertDv(d.p(0), MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("test".equals(d.methodInfo().name) && "m26".equals(d.enclosingMethod().name)) {
-                assertEquals("$22", d.methodInfo().typeInfo.name());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertTrue(d.methodAnalysis().preventInlining());
                 assertEquals("selector.test(x)", d.methodAnalysis().getSingleReturnValue().toString());
@@ -411,7 +432,6 @@ public class Test_Linking1 extends CommonTestRunner {
                 assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
             }
             if ("test".equals(d.methodInfo().name) && "m27".equals(d.enclosingMethod().name)) {
-                assertEquals("$23", d.methodInfo().typeInfo.name());
                 assertDv(d, DV.FALSE_DV, Property.MODIFIED_METHOD);
                 assertFalse(d.methodAnalysis().preventInlining());
                 String expected = d.iteration() == 0 ? "<m:test>" : "/*inline test*/selector.test(x)";
