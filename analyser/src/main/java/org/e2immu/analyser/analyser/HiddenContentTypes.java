@@ -304,6 +304,15 @@ public class HiddenContentTypes {
         return targetTi.typeResolution.get().hiddenContentTypes();
     }
 
+    public Map<Integer, Integer> mapMethodToTypeIndices(ParameterizedType parameterizedType) {
+        // FIXME this is not a good implementation
+        Map<Integer, Integer> result = new HashMap<>();
+        for (int i : indexToType.keySet()) {
+            result.put(i, i - startOfMethodParameters);
+        }
+        return Map.copyOf(result);
+    }
+
     /*
      The hidden content selector's hct indices (the keys in the map) are computed with respect to 'this'.
      They map to indices (the values in the map) which exist in 'from'.
@@ -410,7 +419,7 @@ public class HiddenContentTypes {
             }
             ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);
             Map<NamedType, ParameterizedType> map1;
-            if(formalFrom.isAssignableFrom(inspectionProvider, formalTo)) {
+            if (formalFrom.isAssignableFrom(inspectionProvider, formalTo)) {
                 map1 = to.typeInfo.mapInTermsOfParametersOfSuperType(inspectionProvider, formalFrom);
             } else {
                 map1 = from.typeInfo.mapInTermsOfParametersOfSubType(inspectionProvider, formalTo);

@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -301,6 +302,13 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         Map<Variable, LV> map = variables.entrySet().stream()
                 .filter(e -> !e.getValue().equals(LINK_STATICALLY_ASSIGNED))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return of(map);
+    }
+
+    public LinkedVariables map(Function<LV, LV> function) {
+        if (isEmpty() || this == NOT_YET_SET) return this;
+        Map<Variable, LV> map = variables.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> function.apply(e.getValue())));
         return of(map);
     }
 }

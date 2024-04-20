@@ -41,6 +41,10 @@ public abstract sealed class HiddenContentSelector
         return false;
     }
 
+    public HiddenContentSelector correct(Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
+        return this;
+    }
+
     public static final class Delayed extends HiddenContentSelector {
         private final CausesOfDelay causesOfDelay;
 
@@ -164,6 +168,14 @@ public abstract sealed class HiddenContentSelector
                        && indices.set().stream().findFirst().orElseThrow().countSequentialZeros() == arrays;
             }
             return false;
+        }
+
+        @Override
+        public HiddenContentSelector correct(Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
+            Map<Integer, LV.Indices> newMap = map.entrySet().stream().collect(Collectors.toUnmodifiableMap(
+                    e -> mapMethodHCTIndexToTypeHCTIndex.getOrDefault(e.getKey(), e.getKey()),
+                    Map.Entry::getValue, (i1,i2) -> i1));
+            return new CsSet(newMap);
         }
     }
 

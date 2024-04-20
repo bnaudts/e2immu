@@ -158,6 +158,14 @@ public class LV implements Comparable<LV> {
                         Link newLink = mutable == link.mutable ? link : new Link(link.to, false);
                         res.put(entry.getKey(), newLink);
                     }
+                } else {
+                    Link allLink = this.map.get(ALL_INDICES);
+                    if (allLink != null) {
+                        // start again from *
+                        boolean mutable = entry.getValue().mutable || allLink.mutable;
+                        Link newLink = mutable == allLink.mutable ? allLink : new Link(allLink.to, true);
+                        res.put(entry.getKey(), newLink);
+                    }
                 }
             }
             if (res.isEmpty()) return null;
@@ -194,6 +202,9 @@ public class LV implements Comparable<LV> {
     }
 
     public record Link(Indices to, boolean mutable) {
+        public Link correctTo(Map<Indices, Indices> correctionMap) {
+            return new Link(correctionMap.getOrDefault(to, to), mutable);
+        }
     }
 
     private static final int DELAY = -1;
@@ -474,4 +485,13 @@ public class LV implements Comparable<LV> {
         return false;
     }
 
+
+    public LV correctTo(Map<Indices, Indices> correctionMap) {
+        if (links.map.isEmpty()) return this;
+        boolean isHc = isCommonHC();
+        Map<Indices, Link> updatedMap = links.map.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().correctTo(correctionMap)));
+        Links updatedLinks = new Links(updatedMap);
+        return isHc ? createHC(updatedLinks) : createDependent(updatedLinks);
+    }
 }

@@ -53,9 +53,9 @@ public class Test_Linking1 extends CommonTestRunner {
                     case "m0b" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 0, "supplier.get()");
-                     //       assertLinked(d, it(0, "s:4,supplier:4"));
-                     //       assertSingleLv(d, 2, 0, "*-4-0");
-                     //       assertSingleLv(d, 2, 1, "*-4-0");
+                            assertLinked(d, it(0, "s:4,supplier:4"));
+                            assertSingleLv(d, 2, 0, "*-4-0");
+                            assertSingleLv(d, 2, 1, "*-4-0");
                         }
                     }
                     case "m1" -> {
@@ -129,7 +129,8 @@ public class Test_Linking1 extends CommonTestRunner {
                             assertCurrentValue(d, 1, "stream.map(/*inline apply*/function.apply(x)/*{L function:4}*/)");
                             assertLinked(d, it0("f:-1,function:-1,stream:-1"),
                                     it(1, "f:4,function:4,stream:2"));
-                            assertSingleLv(d, 1, 0, "");
+                            assertSingleLv(d, 1, 0, "0-4-0");
+                            assertSingleLv(d, 1, 1, "0-4-0");
                         }
                     }
                     case "m13" -> {
@@ -248,13 +249,37 @@ public class Test_Linking1 extends CommonTestRunner {
                 case "m12b" -> {
                     if ("0".equals(d.statementId()) && "f".equals(d.variableName())) {
                         assertLinked(d, it0("function:-1"), it(1, "function:4"));
-                        // FIXME should this be 1??? the correction should take place here
-                        assertSingleLv(d, 1, 0, "*-4-1");
+                        assertSingleLv(d, 1, 0, "*-4-0");
+                    }
+                }
+                case "m15" -> {
+                    if ("0".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
+                            assertLinked(d, it(0, "out:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0");
+                        }
+                        if (d.variable() instanceof ParameterInfo pi && "out".equals(pi.name)) {
+                            assertLinked(d, it(0, "in:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0");
+                        }
                     }
                 }
                 case "m15b" -> {
                     if ("0".equals(d.statementId()) && "add".equals(d.variableName())) {
                         assertLinked(d, it(0, "out:4"));
+                        assertSingleLv(d, 0, 0, "0-4-*");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "in".equals(pi.name)) {
+                            assertLinked(d, it(0, "add:4,out:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0");
+                            assertSingleLv(d, 0, 1, "0-4-0"); // FIXME have 0-4-*
+                        }
+                        if (d.variable() instanceof ParameterInfo pi && "out".equals(pi.name)) {
+                            assertLinked(d, it(0, "add:4,in:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0"); // FIXME have *-4-0
+                            assertSingleLv(d, 0, 1, "0-4-0");
+                        }
                     }
                 }
                 case "m16" -> {

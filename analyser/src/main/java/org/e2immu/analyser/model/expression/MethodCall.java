@@ -391,7 +391,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // a parameter is a functional interface returning a value
         LinkedVariables lvsResult1 = objectType == null ? LinkedVariables.EMPTY
                 : linkHelper.linkedVariablesMethodCallObjectToReturnType(objectType, objectResult,
-                res.evaluationResults(), concreteReturnType);
+                res.evaluationResults(), concreteReturnType, fp.correctionMap());
         LinkedVariables lvsResult2 = fp.intoResult() == null ? lvsResult1
                 : lvsResult1.merge(fp.intoResult().linkedVariablesOfExpression());
 

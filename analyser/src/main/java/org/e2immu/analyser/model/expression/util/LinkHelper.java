@@ -172,6 +172,29 @@ public class LinkHelper {
         }
     }
 
+    /*
+    rv = supplier.get()             rv *-4-0 supplier       non-modifying, object to return value
+    s = (() -> supplier.get())      s 0-4-0 supplier
+    s = supplier::get               s 0-4-0 supplier
+
+    consumer.accept(t)              t *-4-0 consumer        modifying, parameter to object
+    s = (t -> consumer.accept(t))   s 0-4-0 consumer
+    sx.foreach(consumer)            sx 0-4-0 consumer
+
+    y = function.get(x)             y *-4-1 function, and/or either 0-4-0 x, or *-4-0 x,  object to return type and/or parameter to return type
+    s = (x -> function.apply(x))    [s 0-4-1 function] and/or [s 0-4-0 function]
+    sy = sx.map(s)                  [sy 0-4-1 s, 0-4-1 function] or [sy 0-4-0 sx, 0-4-0 s, 0-4-0 function]
+
+    In the first case, the X type is an index, much like List.get(index), and the function object holds Y elements.
+    In the second case, the X type holds hidden content that is passed on in the result. Y must have a type common with X.
+    Rule for actual linking:
+    if we cannot compute, we assume
+    - if X and Y share a common HC type, we go for the more obvious mapping function sy 0-4-0 sx
+    - if X and Y do not share a common HC type, we go for the List.get(index) path: sy 0-4-1 function
+    if we can compute, we may, as a 3rd option, end up linking to both: sy 0-4-0 sx, 0-4-0 function
+
+    The limitations of our system will probably not allow us to distinguish between options 1 and 3.
+    */
     public static LambdaResult lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {
 
         MethodAnalysis methodAnalysis = evaluationContext.getAnalyserContext().getMethodAnalysis(concreteMethod);
@@ -191,12 +214,22 @@ public class LinkHelper {
         if (concreteMethod.hasReturnValue()) {
             ReturnVariable returnVariable = new ReturnVariable(concreteMethod);
             VariableInfo vi = lastStatement.getLatestVariableInfo(returnVariable.fqn);
-            return new LambdaResult(result, vi.getLinkedVariables());
+            if (methodInspection.getParameters().isEmpty()) {
+                return new LambdaResult(result, vi.getLinkedVariables());
+            }
+            // link to the input types rather than the output type, see also HCT.mapMethodToTypeIndices
+            Map<Indices, Indices> correctionMap = new HashMap<>();
+            // must be of formal type
+            HiddenContentTypes hct = methodInspection.getMethodInfo().methodResolution.get().hiddenContentTypes();
+            correctionMap.put(new Indices(1), new Indices(0));
+            LinkedVariables corrected = vi.getLinkedVariables().map(lv -> lv.correctTo(correctionMap));
+            return new LambdaResult(result, corrected);
         }
         return new LambdaResult(result, LinkedVariables.EMPTY);
     }
 
-    public record FromParameters(EvaluationResult intoObject, EvaluationResult intoResult) {
+    public record FromParameters(EvaluationResult intoObject, EvaluationResult intoResult,
+                                 Map<Integer, Integer> correctionMap) {
     }
 
     /*
@@ -211,7 +244,7 @@ public class LinkHelper {
                 .setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
         EvaluationResultImpl.Builder intoResultBuilder = resultPt == null || resultPt.isVoid() ? null
                 : new EvaluationResultImpl.Builder(context).setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
-
+        Map<Integer, Integer> correctionMap = new HashMap<>();
         if (!methodInspection.getParameters().isEmpty()) {
             // links between object/return value and parameters
             for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
@@ -248,12 +281,16 @@ public class LinkHelper {
                     } else {
                         methodPt = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
                     }
-                    HiddenContentSelector hcsTarget = parameterAnalysis.getHiddenContentSelector();
+                    Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex = methodInfo.methodResolution.get().hiddenContentTypes()
+                            .mapMethodToTypeIndices(inResult ? methodInspection.getReturnType() : pi.parameterizedType);
+                    correctionMap.putAll(mapMethodHCTIndexToTypeHCTIndex);
+                    HiddenContentSelector hcsTarget = parameterAnalysis.getHiddenContentSelector().correct(mapMethodHCTIndexToTypeHCTIndex);
                     if (pt != null) {
                         LinkedVariables lv;
                         if (inResult) {
                             // parameter -> result
-                            HiddenContentSelector hcsSource = methodAnalysis.getHiddenContentSelector();
+
+                            HiddenContentSelector hcsSource = methodAnalysis.getHiddenContentSelector().correct(mapMethodHCTIndexToTypeHCTIndex);
                             lv = linkedVariables(this.hcsSource, parameterType, pi.parameterizedType, hcsTarget,
                                     parameterLvs, false, formalParameterIndependent, pt, methodPt,
                                     hcsSource, false);
@@ -272,7 +309,7 @@ public class LinkHelper {
             linksBetweenParameters(intoObjectBuilder, methodInfo, parameterExpressions, parameterResults);
         }
         return new FromParameters(intoObjectBuilder.build(), intoResultBuilder == null ? null :
-                intoResultBuilder.build());
+                intoResultBuilder.build(), Map.copyOf(correctionMap));
     }
 
     public void linksBetweenParameters(EvaluationResultImpl.Builder builder,
@@ -341,6 +378,14 @@ public class LinkHelper {
                                                                        EvaluationResult objectResult,
                                                                        List<EvaluationResult> parameterResults,
                                                                        ParameterizedType returnType) {
+        return linkedVariablesMethodCallObjectToReturnType(objectType, objectResult, parameterResults, returnType, Map.of());
+    }
+
+    public LinkedVariables linkedVariablesMethodCallObjectToReturnType(ParameterizedType objectType,
+                                                                       EvaluationResult objectResult,
+                                                                       List<EvaluationResult> parameterResults,
+                                                                       ParameterizedType returnType,
+                                                                       Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
         // RULE 1: void method cannot link
         if (methodInfo.noReturnValue()) return LinkedVariables.EMPTY;
         boolean recursiveCall = recursiveCall(methodInfo, context.evaluationContext());
@@ -380,10 +425,13 @@ public class LinkHelper {
         ParameterizedType methodType = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         ParameterizedType methodReturnType = context.getAnalyserContext().getMethodInspection(methodInfo).getReturnType();
 
+        HiddenContentSelector hcsTarget = Objects.requireNonNullElse(methodAnalysis.getHiddenContentSelector(),
+                HiddenContentSelector.None.INSTANCE).correct(mapMethodHCTIndexToTypeHCTIndex);
+
         return linkedVariables(hcsSource, objectType,
                 methodType, hcsSource, linkedVariablesOfObject,
                 false,
-                independent, returnType, methodReturnType, methodAnalysis.getHiddenContentSelector(),
+                independent, returnType, methodReturnType, hcsTarget,
                 false);
     }
 
@@ -407,6 +455,10 @@ public class LinkHelper {
     }
 
     /**
+     * Important: this method does not deal with hidden content specific to the method, because it has been designed
+     * to connect the object to the return value, as called from <code>linkedVariablesMethodCallObjectToReturnType</code>.
+     * Calls originating from <code>linksInvolvingParameters</code> must take this into account.
+     *
      * @param sourceType                    must be type of object or parameterExpression, return type, non-evaluated
      * @param methodSourceType              the method declaration's type of the source
      * @param hiddenContentSelectorOfSource with respect to the method's HCT and methodSourceType
@@ -461,7 +513,6 @@ public class LinkHelper {
             // delay in method independent
             return sourceLvs.changeToDelay(LV.delay(transferIndependent.causesOfDelay()));
         }
-        boolean targetIsTypeParameter = methodTargetType.isTypeParameter();
         InspectionProvider inspectionProvider = context.getAnalyserContext();
 
         Integer index = hiddenContentTypes.indexOfOrNull(methodTargetType);
@@ -563,7 +614,7 @@ public class LinkHelper {
                                 assert indicesAndType != null;
                                 Indices indicesInSourceWrtType = indicesAndType.indices();
                                 assert indicesInSourceWrtType != null;
-                                
+
                                 Indices indicesInTargetWrtType = targetAndType.indices();
                                 Indices correctedIndicesInTargetWrtType;
                                 if (correctForVarargsMutable != null) {

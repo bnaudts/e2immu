@@ -103,7 +103,7 @@ public class Linking_1 {
         Function<X, Y> f = x -> function.apply(x);
         return stream.map(f);
     }
-/*
+
     static <X, Y> Stream<Y> m13(Stream<X> stream, Function<X, Y> function) {
         //noinspection ALL
         return stream.map(function::apply);
@@ -121,13 +121,14 @@ public class Linking_1 {
         return out;
     }
 
-    static <X> List<X> m15b(List<X> in, List<X> out) {
-        //noinspection ALL
-        Consumer<X> add = out::add;
-        in.forEach(add);
-        return out;
-    }
-
+    /*
+        static <X> List<X> m15b(List<X> in, List<X> out) {
+            //noinspection ALL
+            Consumer<X> add = out::add;
+            in.forEach(add);
+            return out;
+        }
+    */
     static List<M> m16(List<M> in, List<M> out) {
         //noinspection ALL
         in.forEach(out::add);
@@ -210,9 +211,9 @@ public class Linking_1 {
     }
 
 
-   // We're contracting the anonymous type's method (the SAM) to be @NotModified.
-   // As a consequence, we'll prevent creating an inlined method, because that
-   // inlined method will link xx to selector (see m27).
+    // We're contracting the anonymous type's method (the SAM) to be @NotModified.
+    // As a consequence, we'll prevent creating an inlined method, because that
+    // inlined method will link xx to selector (see m27).
 
     static <X> boolean m25(@Independent X xx, Predicate<X> selector) {
         Predicate<X> independentSelector = new Predicate<X>() {
@@ -255,5 +256,60 @@ public class Linking_1 {
     //Corresponds to Linking_2.m4
     static boolean m28(@NotModified M m, @Container(contract = true) Predicate<M> selector) {
         return selector.test(m);
-    }*/
+    }
+
+    interface X {
+    }
+
+    interface Y {
+    }
+
+    // examples of different linkings for actual function implementations
+
+    // y = f1.apply(x)  --> y 0-4-1 f1
+    static class F1 implements Function<X, Y> {
+        List<Y> ys;
+
+        @Override
+        public Y apply(X x) {
+            int index = Math.abs(x.hashCode()) % ys.size();
+            return ys.get(index);
+        }
+    }
+
+    interface T {
+    }
+
+    // y = f2.apply(x)  --> y *-4-0 x
+    static class F2 implements Function<List<T>, T> {
+        private int i;
+
+        @Override
+        public T apply(List<T> ts) {
+            return ts.get((++i) % ts.size());
+        }
+    }
+
+    // y = f3.apply(x)  --> y 0-4-0 x
+    static class F3 implements Function<List<T>, List<T>> {
+        private int i;
+
+        @Override
+        public List<T> apply(List<T> ts) {
+            return List.copyOf(ts.subList(0, ++i % ts.size()));
+        }
+    }
+
+    // y = f3.apply(x)  --> y 0-4-0 x, 0-4-0 f4
+    static class F4 implements Function<List<T>, List<T>> {
+        private int i;
+        private List<T> altList;
+
+        @Override
+        public List<T> apply(List<T> ts) {
+            int index = ++i % ts.size();
+            if (index % 2 == 0) return List.of(altList.get(i % altList.size()));
+            return List.copyOf(ts.subList(0, index));
+        }
+    }
 }
