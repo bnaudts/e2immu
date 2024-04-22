@@ -17,6 +17,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.LinkHelper;
@@ -150,40 +151,27 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         EvaluationResult scopeResult = scope.evaluate(context, scopeForward);
         builder.compose(scopeResult);
 
+        builder.setExpression(this);
 
-        // very similar to MethodCall.evaluation(), because in reality, they do exactly the same
         LinkHelper linkHelper = new LinkHelper(context, methodInfo, methodAnalysis);
+        DV independentOfMethod = methodAnalysis.getProperty(Property.INDEPENDENT);
+        HiddenContentSelector hcsMethod = methodAnalysis.getHiddenContentSelector();
+        Map<NamedType, ParameterizedType> map = concreteReturnType.initialTypeParameterMap(context.getAnalyserContext());
+        ParameterizedType typeOfReturnValue = methodInfo.returnType();
+        ParameterizedType concreteTypeOfReturnValue = typeOfReturnValue.applyTranslation(context.getPrimitives(), map);
         List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
                 .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
                 .toList();
         List<EvaluationResult> parameterResults = parameterExpressions.stream()
                 .map(e -> makeEvaluationResult(context, e)).toList();
+        List<DV> independentOfParameters = methodAnalysis.getParameterAnalyses().stream()
+                .map(pa -> pa.getProperty(Property.INDEPENDENT)).toList();
+        List<HiddenContentSelector> hcsParameters = methodAnalysis.getParameterAnalyses().stream()
+                .map(ParameterAnalysis::getHiddenContentSelector).toList();
 
-        LinkedVariables lvsResult;
-        if (modified.isDelayed()) {
-            lvsResult = scopeResult.linkedVariablesOfExpression().changeToDelay(LV.delay(modified.causesOfDelay()));
-            builder.setExpression(DelayedExpression.forModification(this, modified.causesOfDelay()));
-        } else {
-            if (modified.valueIsTrue()) {
-                /*
-                link the result to the scope's linked variables, with values of the parameters
-                 */
-                LinkHelper.FromParameters from = linkHelper.linksInvolvingParameters(scope.returnType(),
-                        null, parameterExpressions, parameterResults);
-                LV maxOfParameters = from.intoObject().linkedVariablesOfExpression().stream().filter(e -> e.getKey() instanceof ParameterInfo)
-                        .map(Map.Entry::getValue).max(LV::compareTo).orElse(null);
-                if (maxOfParameters == null) {
-                    lvsResult = LinkedVariables.EMPTY;
-                } else {
-                    lvsResult = scopeResult.linkedVariablesOfExpression().maximum(maxOfParameters);
-                }
-            } else {
-                lvsResult = linkHelper.linkedVariablesMethodCallObjectToReturnType(scope.returnType(), scopeResult,
-                        parameterResults, concreteReturnType);
-            }
-            builder.setExpression(this);
-        }
-        builder.setLinkedVariablesOfExpression(lvsResult);
+        LinkedVariables lvs = linkHelper.functional(independentOfMethod, hcsMethod, scopeResult.linkedVariablesOfExpression(),
+                concreteTypeOfReturnValue, independentOfParameters, hcsParameters, parameterResults);
+        builder.setLinkedVariablesOfExpression(lvs);
         return builder.build();
     }
 

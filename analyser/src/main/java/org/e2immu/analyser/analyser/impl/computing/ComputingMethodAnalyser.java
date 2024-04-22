@@ -48,9 +48,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
+import static org.e2immu.analyser.analyser.LV.LINK_INDEPENDENT;
 import static org.e2immu.analyser.analyser.Property.*;
 
 public class ComputingMethodAnalyser extends MethodAnalyserImpl {
@@ -58,6 +61,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
     public static final String OBTAIN_MOST_COMPLETE_PRECONDITION = "obtainMostCompletePrecondition";
+    public static final String COMPUTE_LINKED_VARIABLES = "computeLinkedVariablesIndependentHCS";
     public static final String COMPUTE_MODIFIED = "computeModified";
     public static final String COMPUTE_MODIFIED_CYCLES = "computeModifiedCycles";
     public static final String COMPUTE_RETURN_VALUE = "computeReturnValue";
@@ -150,6 +154,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         };
 
         builder.add(STATEMENT_ANALYSER, statementAnalyser)
+                .add(COMPUTE_LINKED_VARIABLES, this::computeLinkedVariables)
                 .add(COMPUTE_MODIFIED, this::computeModified)
                 .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor() ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
@@ -165,7 +170,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 })
                 .add(EVENTUAL_PREP_WORK, this::eventualPrepWork)
                 .add(ANNOTATE_EVENTUAL, this::annotateEventual)
-                .add(COMPUTE_INDEPENDENT, this::analyseIndependent)
                 .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInInheritedContainer);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
@@ -183,10 +187,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     private AnalysisStatus markFirstIteration(SharedState sharedState) {
         methodAnalysis.markFirstIteration();
-        HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
-        ParameterizedType returnType = methodInspection.getReturnType();
-        // FIXME this is very temporary 20240322
-        methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
         return DONE;
     }
 
@@ -276,6 +276,88 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return true;
         }
         return false;
+    }
+
+    /*
+    we return field references to this or to a variable in the closure, and variables from any closure.
+    "this" is not included; neither are parameters of the current method.
+     */
+    private AnalysisStatus computeLinkedVariables(SharedState sharedState) {
+        assert !methodAnalysis.linkedVariablesIsFinal();
+        if (methodInfo.isConstructor() || !methodInfo.hasReturnValue()) {
+            methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+            methodAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
+            return DONE;
+        }
+
+        VariableInfo variableInfo = getReturnAsVariable();
+        boolean factoryMethod = methodInspection.isFactoryMethod();
+
+        Map<Variable, LV> lvMap = variableInfo.getLinkedVariables().stream()
+                .filter(e -> acceptVariable(factoryMethod, sharedState, e))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        LinkedVariables lvs = lvMap.isEmpty() ? LinkedVariables.EMPTY : LinkedVariables.of(lvMap);
+        methodAnalysis.setLinkedVariables(lvs);
+
+        CausesOfDelay linkDelays = lvs.causesOfDelay();
+        DV independent;
+        if (linkDelays.isDelayed()) {
+            independent = linkDelays;
+        } else {
+            independent = independent(lvs, sharedState.evaluationContext);
+        }
+        methodAnalysis.setProperty(INDEPENDENT, independent);
+        CausesOfDelay allDelays = linkDelays.merge(independent.causesOfDelay());
+
+        if (!methodAnalysis.hiddenContentSelectorIsSet()) {
+            HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
+            ParameterizedType returnType = variableInfo.getValue().returnType();
+            HiddenContentSelector hcs = HiddenContentSelector.selectAll(hctMethod, returnType);
+            methodAnalysis.setHiddenContentSelector(hcs);
+        }
+        return AnalysisStatus.of(linkDelays);
+    }
+
+    private DV independent(LinkedVariables linkedVariables, EvaluationContext evaluationContext) {
+        if (linkedVariables == LinkedVariables.NOT_YET_SET) return LinkedVariables.NOT_YET_SET_DELAY;
+        if (linkedVariables.isDelayed()) return linkedVariables.causesOfDelay();
+        if (linkedVariables.isEmpty()) return MultiLevel.INDEPENDENT_DV;
+        List<CausesOfDelay> causeOfDelays = new ArrayList<>();
+        int min = linkedVariables.stream().mapToInt(e -> {
+            DV immutable = evaluationContext.immutable(e.getKey().parameterizedType());
+            if (immutable.isDelayed()) {
+                causeOfDelays.add(immutable.causesOfDelay());
+                return LINK_INDEPENDENT.value();
+            }
+            if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
+                return LINK_INDEPENDENT.value();
+            }
+            return e.getValue().value();
+        }).min().orElseThrow();
+        if (!causeOfDelays.isEmpty()) {
+            return causeOfDelays.stream().reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
+        }
+        if (min >= LINK_INDEPENDENT.value()) return MultiLevel.INDEPENDENT_DV;
+        return min <= LINK_DEPENDENT.value() ? MultiLevel.DEPENDENT_DV : MultiLevel.INDEPENDENT_HC_DV;
+    }
+
+    private boolean acceptVariable(boolean factoryMethod, SharedState sharedState, Map.Entry<Variable, LV> e) {
+        if (factoryMethod) {
+            return e.getKey() instanceof ParameterInfo;
+        }
+        return e.getKey() instanceof FieldReference fr
+               && (connectedToMyTypeHierarchy(fr).valueIsTrue() ||
+                   fr.scopeVariable() != null && inClosure(fr.scopeVariable(), sharedState))
+               || inClosure(e.getKey(), sharedState);
+    }
+
+    private boolean inClosure(Variable variable, SharedState sharedState) {
+        EvaluationContext closure = sharedState.evaluationContext.getClosure();
+        if (closure == null) return false;
+        StatementAnalyser analyzer = closure.getCurrentStatement();
+        if (analyzer == null) return false;
+        return analyzer.getStatementAnalysis().variableIsSet(variable.fullyQualifiedName());
     }
 
     private AnalysisStatus setPostCondition() {
@@ -1147,86 +1229,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             return fieldInMyTypeHierarchy(fieldInfo, parentClass.typeInfo);
         }
         return typeInfo.primaryType() == fieldInfo.owner.primaryType();
-    }
-
-    /*
-     Independence of a method is always with respect to the return value, NOT the parameters.
-     As a consequence, void methods, constructors, and methods that always throw an exception,
-     are always INDEPENDENT without hidden content.
-     */
-    private AnalysisStatus analyseIndependent(SharedState sharedState) {
-        if (methodAnalysis.getProperty(INDEPENDENT).isDone()) {
-            return DONE;
-        }
-
-        // e.g. constructors
-        if (methodInfo.noReturnValue()) {
-            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            return DONE;
-        }
-
-        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        if (lastStatement == null) {
-            // the method always throws an exception
-            methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            return DONE;
-        }
-
-        DV immutable = methodAnalysis.getPropertyFromMapDelayWhenAbsent(IMMUTABLE);
-        DV independent;
-        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-            // computational shortcut: a recursively immutable type cannot be dependent, or have changes to hidden content
-            independent = MultiLevel.INDEPENDENT_DV;
-        } else {
-            // normal computation
-            VariableInfo variableInfo = getReturnAsVariable();
-            LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
-            if (linkedVariables.isDelayed()) {
-                if (sharedState.breakDelayLevel.acceptMethodOverride()) {
-                    methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
-                    return DONE;
-                }
-                LOGGER.debug("Delaying independent of {}, linked variables not known", methodInfo);
-                methodAnalysis.setProperty(INDEPENDENT, linkedVariables.causesOfDelay());
-                return linkedVariables.causesOfDelay();
-            }
-            ParameterizedType concreteReturnType = variableInfo.getValue().returnType();
-            if (concreteReturnType == ParameterizedType.NULL_CONSTANT) {
-                methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.bestDv);
-                return DONE;
-            }
-            boolean factoryMethod = methodInspection.isFactoryMethod();
-            DV computed;
-            if (factoryMethod) {
-                computed = linkedVariables.stream()
-                        .filter(e -> e.getKey() instanceof ParameterInfo pi && pi.owner == methodInfo)
-                        .map(e -> e.getValue().toIndependent())
-                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
-            } else {
-                computed = linkedVariables.stream()
-                        .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsRecursivelyThis())
-                        .map(e -> {
-                            if (e.getKey() instanceof This && e.getValue().le(LV.LINK_ASSIGNED)) {
-                                // return this
-                                return MultiLevel.INDEPENDENT_DV;
-                            }
-                            return e.getValue().toIndependent();
-                        })
-                        .reduce(MultiLevel.INDEPENDENT_DV, DV::min);
-            }
-            /*
-            there is extensive code to potentially upgrade the immutable value of a method call (see MethodCall.dynamicImmutable())
-            so when this happens, we have to go along.
-             */
-            DV fromImmutable = MultiLevel.independentCorrespondingToImmutable(immutable);
-            independent = computed.max(fromImmutable);
-        }
-        if (sharedState.breakDelayLevel.acceptMethodOverride() && independent.isDelayed()) {
-            methodAnalysis.setProperty(INDEPENDENT, INDEPENDENT.falseDv);
-            return DONE;
-        }
-        methodAnalysis.setProperty(INDEPENDENT, independent);
-        return AnalysisStatus.of(independent);
     }
 
     private AnalysisStatus computeStaticSideEffects(SharedState sharedState) {

@@ -63,7 +63,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final AnalysisMode analysisMode;
     public final ParSeq<ParameterInfo> parallelGroups;
     public final CommutableData commutableData; // methods in a type
-
+    public final LinkedVariables linkedVariables;
     public final FieldInfo getSet;
     public final GetSetEquivalent getSetEquivalent;
     public final Set<String> indicesOfEscapesNotInPreOrPostConditions;
@@ -90,7 +90,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                GetSetEquivalent getSetEquivalent,
                                CommutableData commutableData,
                                HiddenContentSelector hiddenContentSelector,
-                               boolean preventInlining) {
+                               boolean preventInlining,
+                               LinkedVariables linkedVariables) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -112,6 +113,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         assert !(getSetEquivalent != null && getSet != null) : "GetSet and GetSetEquivalent cannot go together";
         this.hiddenContentSelector = hiddenContentSelector;
         this.preventInlining = preventInlining;
+        this.linkedVariables = linkedVariables;
+    }
+
+    @Override
+    public LinkedVariables getLinkedVariables() {
+        return linkedVariables;
     }
 
     @Override
@@ -298,6 +305,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final SetOnce<GetSetEquivalent> getSetEquivalent = new SetOnce<>();
         private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
         private final SetOnce<Boolean> contractedNonModified = new SetOnce<>();
+        private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -465,7 +473,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getSetEquivalent(),
                     getCommutableData(),
                     getHiddenContentSelector(),
-                    preventInlining());
+                    preventInlining(),
+                    getLinkedVariables());
         }
 
         /*
@@ -901,6 +910,23 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         protected void contractedNonModified() {
             contractedNonModified.set(true);
+        }
+
+        @Override
+        public LinkedVariables getLinkedVariables() {
+            return linkedVariables.get();
+        }
+
+        public boolean linkedVariablesIsFinal() {
+            return linkedVariables.isFinal();
+        }
+
+        public void setLinkedVariables(LinkedVariables linkedVariables) {
+            if (linkedVariables.isDone()) {
+                this.linkedVariables.setFinal(linkedVariables);
+            } else {
+                this.linkedVariables.setVariable(linkedVariables);
+            }
         }
     }
 

@@ -120,7 +120,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-
+/*
     // predicate
 
     static <X> boolean p0(X x, Predicate<X> predicate) {
@@ -200,7 +200,7 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-/*
+
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {
@@ -374,6 +374,8 @@ public class Linking_1A {
         return f.apply(m);
     }
 
+    // equivalent to List.add(), where we'd return the size rather than boolean
+
     static <X> Integer f3(X x, Function<X, Integer> function) {
         return function.apply(x);
     }
@@ -399,6 +401,8 @@ public class Linking_1A {
         };
         return f.apply(x);
     }
+
+    // equivalent to List.get(index)
 
     static <Y> Y f4(int i, Function<Integer, Y> function) {
         return function.apply(i);
@@ -452,6 +456,8 @@ public class Linking_1A {
         return function.apply(n);
     }
 
+    // equivalent to Map.get(string), List.get(...)
+
     static M f6(String s, Function<String, M> function) {
         return function.apply(s);
     }
@@ -477,6 +483,8 @@ public class Linking_1A {
         };
         return f.apply(s);
     }
+
+    // equivalent to List.add(), where we'd return some String rather than boolean
 
     static String f7(M m, Function<M, String> function) {
         return function.apply(m);

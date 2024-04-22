@@ -86,9 +86,11 @@ public class HiddenContentTypes {
         return methodInfo != null;
     }
 
+    // accessible, not accessible
+
     public Set<Integer> selectAll() {
         Set<Integer> set = new HashSet<>(indexToType.keySet());
-        if (!forMethod()) set.addAll(hcsTypeInfo.indexToType.keySet());
+        if (forMethod()) set.addAll(hcsTypeInfo.indexToType.keySet());
         return set;
     }
 
@@ -120,11 +122,20 @@ public class HiddenContentTypes {
         int offset;
         Map<NamedType, Integer> fromEnclosing;
         if (typeInspection.isInnerClass()) {
-            TypeInfo enclosing = typeInfo.packageNameOrEnclosingType.getRight();
-            HiddenContentTypes hct = getOrCompute(inspectionProvider, enclosing, shallow);
+            HiddenContentTypes hct;
+            MethodInfo enclosingMethod = typeInspection.enclosingMethod();
+            Stream<Map.Entry<Integer, NamedType>> indexToTypeStream;
+            if (enclosingMethod != null) {
+                hct = getOrCompute(inspectionProvider, enclosingMethod, shallow);
+                indexToTypeStream = Stream.concat(hct.hcsTypeInfo.indexToType.entrySet().stream(),
+                        hct.indexToType.entrySet().stream());
+            } else {
+                TypeInfo enclosing = typeInfo.packageNameOrEnclosingType.getRight();
+                hct = getOrCompute(inspectionProvider, enclosing, shallow);
+                indexToTypeStream = hct.indexToType.entrySet().stream();
+            }
             offset = hct.size();
-            fromEnclosing = hct.indexToType.entrySet().stream()
-                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+            fromEnclosing = indexToTypeStream.collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
         } else {
             offset = 0;
             fromEnclosing = Map.of();
@@ -182,6 +193,14 @@ public class HiddenContentTypes {
             return enclosing.typeResolution.get().hiddenContentTypes();
         }
         return compute(inspectionProvider, inspectionProvider.getTypeInspection(enclosing), shallow);
+    }
+
+    private static HiddenContentTypes getOrCompute(InspectionProvider inspectionProvider, MethodInfo enclosing, boolean shallow) {
+        if (enclosing.methodResolution.isSet() && enclosing.methodResolution.get().hiddenContentTypes() != null) {
+            return enclosing.methodResolution.get().hiddenContentTypes();
+        }
+        HiddenContentTypes hctTypeInfo = getOrCompute(inspectionProvider, enclosing.typeInfo, shallow);
+        return compute(hctTypeInfo, inspectionProvider.getMethodInspection(enclosing));
     }
 
     private static Stream<TypeParameter> typeParameterStream(ParameterizedType type) {
@@ -412,6 +431,7 @@ public class HiddenContentTypes {
             // the last entry
             assert from.typeInfo != null;
             ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
+            assert atPos < formalFrom.parameters.size();
             assert formalFrom.parameters.get(atPos).equals(ptFrom);
             if (formalFrom.typeInfo == to.typeInfo) {
                 ParameterizedType concrete = to.parameters.get(atPos);

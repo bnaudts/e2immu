@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
@@ -174,7 +175,7 @@ public abstract sealed class HiddenContentSelector
         public HiddenContentSelector correct(Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
             Map<Integer, LV.Indices> newMap = map.entrySet().stream().collect(Collectors.toUnmodifiableMap(
                     e -> mapMethodHCTIndexToTypeHCTIndex.getOrDefault(e.getKey(), e.getKey()),
-                    Map.Entry::getValue, (i1,i2) -> i1));
+                    Map.Entry::getValue, (i1, i2) -> i1));
             return new CsSet(newMap);
         }
     }
@@ -184,8 +185,15 @@ public abstract sealed class HiddenContentSelector
      of the current type or method.
      Set<Map.Entry<K, V>> will return the indices of K and V mapped to their position in the formal type,
      i.e., 0 -> 0.0, 1 -> 0.1
+     Collection<V> will return 1 -> 0
+
+     in the following context:
+     static <X> X method(...) { Supplier<X> s = new Supplier<>() { ... }}
+     the anonymous type $1 has no direct type parameters, but its enclosing method does. We'll replace $2 by
+     Supplier<X>.
      */
-    public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes, ParameterizedType typeIn) {
+    public static HiddenContentSelector selectAll(HiddenContentTypes hiddenContentTypes,
+                                                  ParameterizedType typeIn) {
         assert hiddenContentTypes != null;
         boolean haveArrays = typeIn.arrays > 0;
         ParameterizedType type = typeIn.copyWithoutArrays();
@@ -206,8 +214,16 @@ public abstract sealed class HiddenContentSelector
             // assert type.parameters.isEmpty(); // not doing the combination
             return None.INSTANCE;
         }
-        Map<Integer, LV.Indices> map = new HashMap<>();
-        recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
+        Map<Integer, LV.Indices> map;
+        if (type.typeInfo.equals(hiddenContentTypes.getTypeInfo())) {
+            map = hiddenContentTypes.selectAll().stream()
+                    .collect(Collectors.toUnmodifiableMap(i -> i, i-> {
+                        return new LV.Indices(i);
+                    }));
+        } else {
+            map = new HashMap<>();
+            recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
+        }
         if (map.isEmpty()) {
             return None.INSTANCE;
         }

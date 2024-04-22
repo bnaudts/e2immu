@@ -161,6 +161,63 @@ public class LinkHelper {
         return lvs;
     }
 
+    public LinkedVariables functional(DV independentOfMethod,
+                                      HiddenContentSelector hcsMethod,
+                                      LinkedVariables linkedVariablesOfObject,
+                                      ParameterizedType concreteReturnType,
+                                      List<DV> independentOfParameter,
+                                      List<HiddenContentSelector> hcsParameters,
+                                      List<EvaluationResult> parameterResults) {
+        LinkedVariables lvs = functional(independentOfMethod, hcsMethod, linkedVariablesOfObject, concreteReturnType);
+        int i = 0;
+        for (EvaluationResult er : parameterResults) {
+            int index = Math.min(hcsParameters.size() - 1, i);
+            DV independent = independentOfParameter.get(index);
+            HiddenContentSelector hcs = hcsParameters.get(index);
+            LinkedVariables lvsParameter = functional(independent, hcs, er.linkedVariablesOfExpression(),
+                    er.getExpression().returnType());
+            lvs = lvs.merge(lvsParameter);
+            i++;
+        }
+        return lvs;
+    }
+
+    private LinkedVariables functional(DV independent,
+                                       HiddenContentSelector hcs,
+                                       LinkedVariables linkedVariables,
+                                       ParameterizedType type) {
+        if (INDEPENDENT_DV.equals(independent)) return LinkedVariables.EMPTY;
+        boolean independentHC = INDEPENDENT_HC_DV.equals(independent);
+        Map<Variable, LV> map = new HashMap<>();
+        List<CausesOfDelay> causesOfDelays = new ArrayList<>();
+        linkedVariables.forEach(e -> {
+            DV mutable = context.evaluationContext().immutable(type);
+            if (mutable.isDelayed()) {
+                causesOfDelays.add(mutable.causesOfDelay());
+                mutable = MUTABLE_DV;
+            }
+            if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(mutable)) {
+                Links links;
+                if (hcs instanceof HiddenContentSelector.All all) {
+                    Indices indices = new Indices(all.getHiddenContentIndex());
+                    Link link = new Link(indices, MultiLevel.isMutable(mutable));
+                    links = new Links(Map.of(indices, link));
+
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+                LV lv = independentHC ? LV.createHC(links) : LV.createDependent(links);
+                map.put(e.getKey(), lv);
+            }
+        });
+        if (map.isEmpty()) return LinkedVariables.EMPTY;
+        if (!causesOfDelays.isEmpty()) {
+            LV delay = LV.delay(causesOfDelays.stream().reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge));
+            return LinkedVariables.of(map).changeToDelay(delay);
+        }
+        return LinkedVariables.of(map);
+    }
+
     public record LambdaResult(List<LinkedVariables> linkedToParameters, LinkedVariables linkedToReturnValue) {
         public LinkedVariables delay(CausesOfDelay causesOfDelay) {
             return linkedToParameters.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge)
@@ -173,27 +230,58 @@ public class LinkHelper {
     }
 
     /*
+    SITUATION 0: both return value and all parameters @Independent
+    no linking
+
+    predicate is the typical example
+
+    SITUATION 1: interesting return value, no parameters, or all parameters @Independent
+
     rv = supplier.get()             rv *-4-0 supplier       non-modifying, object to return value
-    s = (() -> supplier.get())      s 0-4-0 supplier
+    s = () -> supplier.get()        s 0-4-0 supplier
     s = supplier::get               s 0-4-0 supplier
+
+    rv = iterator.next()            rv *-4-0 iterator (it is not relevant if the method is modifying, or not)
+    s = () -> iterator.next()       s 0-4-0 iterator
+    s = iterator::next              s 0-4-0 iterator
+    t = s.get()                     t *-4-0 s, *-0-4 iterator
+
+    rv = biSupplier.get()           rv *-4-0.0;0.1
+    s = () -> biSupplier.get()      s 0.0;0.1-4-0.0;0.1
+    pair = s.get()                  pair 0.0;0.1-4-0.0;0.1 biSupplier,s
+    x = pair.x                      x *-4-0.0 pair, *-4-0.0 biSupplier
+
+    -4- links depending on the HCS of the method (@Independent(hc), @Dependent?)
+    -4-M links depending on the concrete type of rv when computing
+    -2- links are also possible, e.g. subList(0, 2)
+
+    sub = list.subList(0, 3)        sub 0-2-0 list
+    s = i -> list.subList(0, i)     s 0-2-0 list
+
+    conclusion:
+     - irrespective of method modification.
+     - @Independent of method is primary selector (-2-,-4-,no link)
+     - * gets upgraded to the value in method HCS
+
+    SITUATION 2: no return value, or an @Independent return value; at least one interesting parameter
 
     consumer.accept(t)              t *-4-0 consumer        modifying, parameter to object
     s = (t -> consumer.accept(t))   s 0-4-0 consumer
     sx.foreach(consumer)            sx 0-4-0 consumer
 
-    y = function.get(x)             y *-4-1 function, and/or either 0-4-0 x, or *-4-0 x,  object to return type and/or parameter to return type
-    s = (x -> function.apply(x))    [s 0-4-1 function] and/or [s 0-4-0 function]
-    sy = sx.map(s)                  [sy 0-4-1 s, 0-4-1 function] or [sy 0-4-0 sx, 0-4-0 s, 0-4-0 function]
+    list.add(t)                     t *-4-0 list
+    s = t -> list.add(t)            s 0-4-0 list
 
-    In the first case, the X type is an index, much like List.get(index), and the function object holds Y elements.
-    In the second case, the X type holds hidden content that is passed on in the result. Y must have a type common with X.
-    Rule for actual linking:
-    if we cannot compute, we assume
-    - if X and Y share a common HC type, we go for the more obvious mapping function sy 0-4-0 sx
-    - if X and Y do not share a common HC type, we go for the List.get(index) path: sy 0-4-1 function
-    if we can compute, we may, as a 3rd option, end up linking to both: sy 0-4-0 sx, 0-4-0 function
+    conclusion:
+    - identical to situation 1, where the parameter(s) takes the role of the return value; each independently of the other
 
-    The limitations of our system will probably not allow us to distinguish between options 1 and 3.
+    SITUATION 3: neither return value, nor at least one parameter is @Independent
+    (the return value links to the object, and at least one parameter links to the object)
+
+    do both of 1 and 2, and take union. 0.0-4-0.1 and 0.0-4-0.0 may result in 0.0;0.1-4-0.0;0.1
+    example??
+
+    FIXME split method so that it can be called from MR as well
     */
     public static LambdaResult lambdaLinking(EvaluationContext evaluationContext, MethodInfo concreteMethod) {
 

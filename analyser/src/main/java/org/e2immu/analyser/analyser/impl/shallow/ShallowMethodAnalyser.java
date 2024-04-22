@@ -124,6 +124,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (!methodAnalysis.hiddenContentSelectorIsSet()) {
             HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, methodInspection.getReturnType());
             methodAnalysis.setHiddenContentSelector(hcs);
+            methodAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
         }
 
         parameterAnalyses.forEach(parameterAnalysis -> {

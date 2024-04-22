@@ -183,4 +183,9 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
     public boolean preventInlining() {
         return true;
     }
+
+    @Override
+    public LinkedVariables getLinkedVariables() {
+        return LinkedVariables.EMPTY;
+    }
 }

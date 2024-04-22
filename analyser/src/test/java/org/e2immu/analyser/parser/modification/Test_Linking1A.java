@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.parser.modification;
 
-import org.e2immu.analyser.analyser.ChangeData;
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
@@ -43,6 +41,16 @@ public class Test_Linking1A extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            switch (d.methodInfo().name) {
+                case "s0m" -> {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("supplier::get", d.evaluationResult().value().toString());
+                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:0,supplier:4"));
+                    }
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (d.variable() instanceof ReturnVariable) {
                 switch (d.methodInfo().name) {
@@ -62,13 +70,13 @@ public class Test_Linking1A extends CommonTestRunner {
                     case "s0m" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 0, "nullable instance 1 type X");
-                            // assertLinked(d, it(0, "s:4,supplier:4")); //FIXME no link to supplier
+                            assertLinked(d, it(0, "s:4,supplier:4"));
                         }
                     }
                     case "s0a" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 0, "supplier.get()");
-                            //assertLinked(d, it(0, "s:4,supplier:4")); //FIXME no link at all, even though s-4-supplier
+                            assertLinked(d, it(0, "s:4,supplier:4")); //FIXME no link at all, even though s-4-supplier
                         }
                     }
                     case "s1" -> {
@@ -107,8 +115,8 @@ public class Test_Linking1A extends CommonTestRunner {
                 case "s0m" -> {
                     if ("0".equals(d.statementId()) && "s".equals(d.variableName())) {
                         assertCurrentValue(d, 0, "supplier::get");
-                        //assertLinked(d, it(0, "supplier:4")); //FIXME no link at all
-                        //assertSingleLv(d, 0, 0, "*-4-0");
+                        assertLinked(d, it(0, "supplier:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0");
                     }
                 }
                 case "s0a" -> {
@@ -121,10 +129,24 @@ public class Test_Linking1A extends CommonTestRunner {
             }
         };
 
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && "s0a".equals(d.enclosingMethod().name)) {
+                LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
+                assertLinked(d, lvs, it(0, "supplier:4"));
+                assertSingleLv(d, lvs, 0, 0, "*-4-0");
+                assertDv(d, 0, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertEquals("$2:X - get:", d.methodInfo().methodResolution.get().hiddenContentTypes().toString());
+                if( d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+                    assertEquals(0, all.getHiddenContentIndex());
+                } else fail();
+            }
+        };
 
         // finalizer on a parameter
         testClass("Linking_1A", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

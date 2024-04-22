@@ -285,4 +285,11 @@ public interface MethodAnalysis extends Analysis {
     the hidden content selector of the return value
      */
     HiddenContentSelector getHiddenContentSelector();
+
+    /*
+    Linked variables in a method are only relevant for lambda's and methods in anonymous subtypes, because there
+    they can link to variables in the closure.
+    The shallow method analyser always sets the EMPTY value.
+     */
+    LinkedVariables getLinkedVariables();
 }
