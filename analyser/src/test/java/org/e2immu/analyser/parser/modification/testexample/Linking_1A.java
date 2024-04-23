@@ -126,13 +126,13 @@ public class Linking_1A {
     static <X> boolean p0(X x, Predicate<X> predicate) {
         return predicate.test(x);
     }
-/*
+
     static <X> boolean p0l(X x, Predicate<X> predicate) {
         //noinspection ALL
         Predicate<X> p = t -> predicate.test(t);
         return p.test(x);
     }
-*/
+
     static <X> boolean p0m(X x, Predicate<X> predicate) {
         //noinspection ALL
         Predicate<X> p = predicate::test;
@@ -152,13 +152,13 @@ public class Linking_1A {
     static boolean p1(M x, Predicate<M> predicate) {
         return predicate.test(x);
     }
-/*
+
     static boolean p1l(M x, Predicate<M> predicate) {
         //noinspection ALL
         Predicate<M> p = t -> predicate.test(t);
         return p.test(x);
     }
-*/
+
     static boolean p1m(M x, Predicate<M> predicate) {
         //noinspection ALL
         Predicate<M> p = predicate::test;
@@ -178,13 +178,13 @@ public class Linking_1A {
     static boolean p2(Integer x, Predicate<Integer> predicate) {
         return predicate.test(x);
     }
-/*
+
     static boolean p2l(Integer x, Predicate<Integer> predicate) {
         //noinspection ALL
         Predicate<Integer> p = t -> predicate.test(t);
         return p.test(x);
     }
-*/
+
     static boolean p2m(Integer x, Predicate<Integer> predicate) {
         //noinspection ALL
         Predicate<Integer> p = predicate::test;
@@ -200,28 +200,28 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-
+*/
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {
         consumer.accept(x);
         return consumer;
     }
-
+/*
     static <X> Consumer<X> c0l(X x, Consumer<X> consumer) {
         //noinspection ALL
         Consumer<X> c = xx -> consumer.accept(xx);
         c.accept(x);
         return consumer;
     }
-
+*/
     static <X> Consumer<X> c0m(X x, Consumer<X> consumer) {
         //noinspection ALL
         Consumer<X> c = consumer::accept;
         c.accept(x);
         return consumer;
     }
-
+/*
     static <X> Consumer<X> c0a(X x, Consumer<X> consumer) {
         Consumer<X> c = new Consumer<X>() {
             @Override
@@ -232,26 +232,26 @@ public class Linking_1A {
         c.accept(x);
         return consumer;
     }
-
+*/
     static Consumer<M> c1(M m, Consumer<M> consumer) {
         consumer.accept(m);
         return consumer;
     }
-
+/*
     static Consumer<M> c1l(M m, Consumer<M> consumer) {
         //noinspection ALL
         Consumer<M> c = mm -> consumer.accept(mm);
         c.accept(m);
         return consumer;
     }
-
+*/
     static Consumer<M> c1m(M m, Consumer<M> consumer) {
         //noinspection ALL
         Consumer<M> c = consumer::accept;
         c.accept(m);
         return consumer;
     }
-
+/*
     static Consumer<M> c1a(M m, Consumer<M> consumer) {
         Consumer<M> c = new Consumer<>() {
             @Override
@@ -262,26 +262,26 @@ public class Linking_1A {
         c.accept(m);
         return consumer;
     }
-
+*/
     static Consumer<Integer> c2(int i, Consumer<Integer> consumer) {
         consumer.accept(i);
         return consumer;
     }
-
+/*
     static Consumer<Integer> c2l(int i, Consumer<Integer> consumer) {
         //noinspection ALL
         Consumer<Integer> c = ii -> consumer.accept(ii);
         c.accept(i);
         return consumer;
     }
-
+*/
     static Consumer<Integer> c2m(int i, Consumer<Integer> consumer) {
         //noinspection ALL
         Consumer<Integer> c = consumer::accept;
         c.accept(i);
         return consumer;
     }
-
+/*
     static Consumer<Integer> c2a(int i, Consumer<Integer> consumer) {
         Consumer<Integer> c = new Consumer<Integer>() {
             @Override

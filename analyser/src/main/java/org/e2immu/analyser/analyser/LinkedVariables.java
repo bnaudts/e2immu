@@ -190,8 +190,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
         if (isEmpty() || this == NOT_YET_SET) return this;
         assert delay.isDelayed();
         Map<Variable, LV> map = variables.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue().equals(LINK_STATICALLY_ASSIGNED) ? LINK_STATICALLY_ASSIGNED : delay.min(e.getValue())));
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> delay.min(e.getValue())));
         return of(map);
     }
 

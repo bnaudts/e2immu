@@ -167,15 +167,14 @@ public class LinkHelper {
                                       ParameterizedType concreteReturnType,
                                       List<DV> independentOfParameter,
                                       List<HiddenContentSelector> hcsParameters,
-                                      List<EvaluationResult> parameterResults) {
+                                      List<ParameterizedType> expressionTypes) {
         LinkedVariables lvs = functional(independentOfMethod, hcsMethod, linkedVariablesOfObject, concreteReturnType);
         int i = 0;
-        for (EvaluationResult er : parameterResults) {
+        for (ParameterizedType expressionType : expressionTypes) {
             int index = Math.min(hcsParameters.size() - 1, i);
             DV independent = independentOfParameter.get(index);
             HiddenContentSelector hcs = hcsParameters.get(index);
-            LinkedVariables lvsParameter = functional(independent, hcs, er.linkedVariablesOfExpression(),
-                    er.getExpression().returnType());
+            LinkedVariables lvsParameter = functional(independent, hcs, linkedVariablesOfObject, expressionType);
             lvs = lvs.merge(lvsParameter);
             i++;
         }
@@ -498,7 +497,7 @@ public class LinkHelper {
                     .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
             return linkedVariablesOfObject
                     .merge(allParams)
-                    .changeNonStaticallyAssignedToDelay(identity.causesOfDelay());
+                    .changeToDelay(LV.delay(identity.causesOfDelay()));
         }
 
         // RULE 3: @Fluent simply returns the same object, hence, the same linked variables

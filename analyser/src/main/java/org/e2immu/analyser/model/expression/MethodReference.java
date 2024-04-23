@@ -162,15 +162,16 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
                 .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
                 .toList();
-        List<EvaluationResult> parameterResults = parameterExpressions.stream()
-                .map(e -> makeEvaluationResult(context, e)).toList();
+        MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
+        List<ParameterizedType> concreteParameterTypes = methodInspection.getParameters().stream()
+                .map(pi -> pi.parameterizedType.applyTranslation(context.getPrimitives(), map)).toList();
         List<DV> independentOfParameters = methodAnalysis.getParameterAnalyses().stream()
                 .map(pa -> pa.getProperty(Property.INDEPENDENT)).toList();
         List<HiddenContentSelector> hcsParameters = methodAnalysis.getParameterAnalyses().stream()
                 .map(ParameterAnalysis::getHiddenContentSelector).toList();
 
         LinkedVariables lvs = linkHelper.functional(independentOfMethod, hcsMethod, scopeResult.linkedVariablesOfExpression(),
-                concreteTypeOfReturnValue, independentOfParameters, hcsParameters, parameterResults);
+                concreteTypeOfReturnValue, independentOfParameters, hcsParameters, concreteParameterTypes);
         builder.setLinkedVariablesOfExpression(lvs);
         return builder.build();
     }

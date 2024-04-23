@@ -357,6 +357,7 @@ public class HiddenContentTypes {
                                                         HiddenContentSelector hiddenContentSelector,
                                                         ParameterizedType from,
                                                         ParameterizedType to) {
+        if (hiddenContentSelector.isNone()) return Map.of();
         Map<LV.Indices, ParameterizedType> map1 = hiddenContentSelector.extract(inspectionProvider, from);
         Map<LV.Indices, IndicesAndType> result = new HashMap<>();
         for (Map.Entry<LV.Indices, ParameterizedType> entry1 : map1.entrySet()) {
