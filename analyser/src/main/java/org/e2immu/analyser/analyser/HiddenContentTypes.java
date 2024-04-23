@@ -431,7 +431,11 @@ public class HiddenContentTypes {
             // the last entry
             assert from.typeInfo != null;
             ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
-            assert atPos < formalFrom.parameters.size();
+            if (atPos >= formalFrom.parameters.size()) {
+                // we must use ptFrom, rather than formalFrom.parameters...
+                int posOfPtFrom = indexOf(ptFrom, to);
+                return new IndicesAndType(new LV.Indices(posOfPtFrom), ptFrom);
+            }
             assert formalFrom.parameters.get(atPos).equals(ptFrom);
             if (formalFrom.typeInfo == to.typeInfo) {
                 ParameterizedType concrete = to.parameters.get(atPos);
@@ -459,6 +463,15 @@ public class HiddenContentTypes {
             ParameterizedType inFrom = from.parameters.get(atPos);
             ParameterizedType inTo = to.parameters.get(atPos);
             return findAll(inspectionProvider, index, pos + 1, ptFrom, inFrom, inTo);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    private static int indexOf(ParameterizedType what, ParameterizedType in) {
+        int i = 0;
+        for (ParameterizedType pt : in.parameters) {
+            if (what.equals(pt)) return i;
+            i++;
         }
         throw new UnsupportedOperationException();
     }

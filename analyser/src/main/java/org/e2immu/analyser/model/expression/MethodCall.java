@@ -700,10 +700,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodInfo method;
-        if (objectValue instanceof InlinedMethod ico) {
+        InlinedMethod ico;
+        if ((ico = objectValue.asInstanceOf(InlinedMethod.class)) != null) {
             method = ico.methodInfo();
         } else {
             method = concreteMethod;
+        }
+
+        TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(concreteMethod.typeInfo);
+        if (typeInspection.isFunctionalInterface()) {
+            // see e.g. Linking_1A, s0l()... this is not definite code, we must refine when to raise an error
+            return;
         }
 
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(method);

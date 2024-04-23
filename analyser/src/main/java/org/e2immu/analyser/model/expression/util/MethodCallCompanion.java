@@ -39,6 +39,7 @@ public class MethodCallCompanion {
             Expression original,
             DV modified) {
         if (modified.valueIsFalse()) return null;
+        if (objectValue.isInstanceOf(InlinedMethod.class)) return null;
 
         CausesOfDelay delayMarker = DelayFactory.createDelay(new SimpleCause(context.evaluationContext().getLocation(Stage.EVALUATION),
                 CauseOfDelay.Cause.CONSTRUCTOR_TO_INSTANCE));

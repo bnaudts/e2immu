@@ -56,7 +56,7 @@ public class Linking_1A {
         Supplier<X> s = supplier::get;
         return s.get();
     }
-
+/*
     static <X> X s0a(Supplier<X> supplier) {
         //noinspection ALL
         Supplier<X> s = new Supplier<X>() {
@@ -67,7 +67,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-
+*/
     static M s1(Supplier<M> supplier) {
         return supplier.get();
     }
@@ -83,7 +83,7 @@ public class Linking_1A {
         Supplier<M> s = supplier::get;
         return s.get();
     }
-
+/*
     static M s1a(Supplier<M> supplier) {
         //noinspection ALL
         Supplier<M> s = new Supplier<>() {
@@ -94,7 +94,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-
+*/
     static Integer s2(Supplier<Integer> supplier) {
         return supplier.get();
     }
@@ -110,7 +110,7 @@ public class Linking_1A {
         Supplier<Integer> s = supplier::get;
         return s.get();
     }
-
+/*
     static Integer s2a(Supplier<Integer> supplier) {
         Supplier<Integer> s = new Supplier<>() {
             @Override
@@ -120,25 +120,25 @@ public class Linking_1A {
         };
         return s.get();
     }
-/*
+*/
     // predicate
 
     static <X> boolean p0(X x, Predicate<X> predicate) {
         return predicate.test(x);
     }
-
+/*
     static <X> boolean p0l(X x, Predicate<X> predicate) {
         //noinspection ALL
         Predicate<X> p = t -> predicate.test(t);
         return p.test(x);
     }
-
+*/
     static <X> boolean p0m(X x, Predicate<X> predicate) {
         //noinspection ALL
         Predicate<X> p = predicate::test;
         return p.test(x);
     }
-
+/*
     static <X> boolean p0a(X x, Predicate<X> predicate) {
         Predicate<X> p = new Predicate<>() {
             @Override
@@ -148,23 +148,23 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-
+*/
     static boolean p1(M x, Predicate<M> predicate) {
         return predicate.test(x);
     }
-
+/*
     static boolean p1l(M x, Predicate<M> predicate) {
         //noinspection ALL
         Predicate<M> p = t -> predicate.test(t);
         return p.test(x);
     }
-
+*/
     static boolean p1m(M x, Predicate<M> predicate) {
         //noinspection ALL
         Predicate<M> p = predicate::test;
         return p.test(x);
     }
-
+/*
     static boolean p1a(M x, Predicate<M> predicate) {
         Predicate<M> p = new Predicate<>() {
             @Override
@@ -174,23 +174,23 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-
+*/
     static boolean p2(Integer x, Predicate<Integer> predicate) {
         return predicate.test(x);
     }
-
+/*
     static boolean p2l(Integer x, Predicate<Integer> predicate) {
         //noinspection ALL
         Predicate<Integer> p = t -> predicate.test(t);
         return p.test(x);
     }
-
+*/
     static boolean p2m(Integer x, Predicate<Integer> predicate) {
         //noinspection ALL
         Predicate<Integer> p = predicate::test;
         return p.test(x);
     }
-
+/*
     static boolean p2a(Integer x, Predicate<Integer> predicate) {
         Predicate<Integer> p = new Predicate<>() {
             @Override

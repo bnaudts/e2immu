@@ -49,6 +49,17 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:0,supplier:4"));
                     }
                 }
+                case "s0l" -> {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("/*inline get*/supplier.get()/*{L supplier:4}*/",
+                                d.evaluationResult().value().toString());
+                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:0,supplier:4"));
+                    }
+                    if ("1".equals(d.statementId())) {
+                        assertEquals("supplier.get()", d.evaluationResult().value().toString());
+                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:4"));
+                    }
+                }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -63,8 +74,8 @@ public class Test_Linking1A extends CommonTestRunner {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 0, "supplier.get()");
                             assertLinked(d, it(0, "s:4,supplier:4"));
-                            assertSingleLv(d, 2, 0, "*-4-0");
-                            assertSingleLv(d, 2, 1, "*-4-0");
+                            assertSingleLv(d, 0, 0, "*-4-0");
+                            assertSingleLv(d, 0, 1, "*-4-0");
                         }
                     }
                     case "s0m" -> {
@@ -87,7 +98,17 @@ public class Test_Linking1A extends CommonTestRunner {
                     case "s1l" -> {
                         if ("1".equals(d.statementId())) {
                             assertCurrentValue(d, 2, "supplier.get()");
-                            assertLinked(d, it(0, 1, "s:-1,supplier:-1"), it(2, "s:4,supplier:4"));
+                            assertLinked(d, it(0, 1, "s:-1,supplier:-1"),
+                                    it(2, "s:4,supplier:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                            assertSingleLv(d, 2, 1, "*M-4-0M");
+                        }
+                    }
+                    case "s1m" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type M");
+                            assertLinked(d, it(0, 1, "s:-1,supplier:-1"),
+                                    it(0, "s:4,supplier:4"));
                             assertSingleLv(d, 2, 0, "*M-4-0M");
                             assertSingleLv(d, 2, 1, "*M-4-0M");
                         }
@@ -102,21 +123,69 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it(0, ""));
                         }
                     }
+                    case "s2m" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "nullable instance 1 type Integer");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
+
+                    case "p0", "p1", "p2" -> {
+                        assertCurrentValue(d, 0, "predicate.test(x)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "p0l" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 1, "???");
+                            // FIXME never x:0
+                            assertLinked(d, it0("p:-1,predicate:-1,x:0"), it(1, "s:4,supplier:4"));
+                        }
+                    }
+                    case "p0m", "p2m" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "instance 1 type boolean");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
+                    case "p1m" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 2, "instance 1 type boolean");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
                 }
             }
             switch (d.methodInfo().name) {
                 case "s0l" -> {
-                    if ("0".equals(d.statementId()) && "s".equals(d.variableName())) {
+                    if (d.variable() instanceof ParameterInfo pi && "supplier".equals(pi.name)) {
+                        if ("0".equals(d.statementId())) {
+                            assertCurrentValue(d, 0,
+                                    "nullable instance type Supplier<X>/*@Identity*//*@IgnoreMods*/");
+                            assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                            assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+                        }
+                    }
+                    if ("s".equals(d.variableName())) {
+                        // both statements "0" and "1"
                         assertCurrentValue(d, 0, "/*inline get*/supplier.get()/*{L supplier:4}*/");
                         assertLinked(d, it(0, "supplier:4"));
                         assertSingleLv(d, 0, 0, "*-4-0");
+                        assertDv(d, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                        assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                     }
                 }
                 case "s0m" -> {
-                    if ("0".equals(d.statementId()) && "s".equals(d.variableName())) {
-                        assertCurrentValue(d, 0, "supplier::get");
-                        assertLinked(d, it(0, "supplier:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0");
+                    if ("s".equals(d.variableName())) {
+                        if ("0".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "supplier::get");
+                            assertLinked(d, it(0, "supplier:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0");
+                        }
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "instance 1 type Supplier<X>");
+                            assertLinked(d, it(0, "supplier:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0");
+                        }
                     }
                 }
                 case "s0a" -> {
@@ -126,17 +195,47 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertSingleLv(d, 0, 0, "*-4-0");
                     }
                 }
+                case "s1m" -> {
+                    if ("s".equals(d.variableName())) {
+                        if ("0".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "supplier::get");
+                            assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
+                            assertSingleLv(d, 2, 0, "0M-4-0M");
+                        }
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "instance 1 type Supplier<M>");
+                            assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
+                            assertSingleLv(d, 2, 0, "0M-4-0M");
+                        }
+                    }
+                }
+                case "s2m" -> {
+                    if ("s".equals(d.variableName())) {
+                        if ("0".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "supplier::get");
+                            assertLinked(d, it(0, ""));
+                        }
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "instance 1 type Supplier<Integer>");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
+                }
             }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("get".equals(d.methodInfo().name) && "s0l".equals(d.enclosingMethod().name)) {
+                // () -> supplier.get() ~ public X get() { return supplier.get(); }
+                assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
             if ("get".equals(d.methodInfo().name) && "s0a".equals(d.enclosingMethod().name)) {
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
                 assertLinked(d, lvs, it(0, "supplier:4"));
                 assertSingleLv(d, lvs, 0, 0, "*-4-0");
                 assertDv(d, 0, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 assertEquals("$2:X - get:", d.methodInfo().methodResolution.get().hiddenContentTypes().toString());
-                if( d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+                if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
                     assertEquals(0, all.getHiddenContentIndex());
                 } else fail();
             }

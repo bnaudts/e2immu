@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.ListUtil;
@@ -62,6 +63,13 @@ public class LV implements Comparable<LV> {
         private ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type, int pos) {
             if (type.parameters.isEmpty()) {
                 // no generics, so substitute "Object"
+                if(type.typeInfo != null) {
+                    HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
+                    NamedType byIndex = hct.typeByIndex(pos);
+                    if (byIndex != null) {
+                        return byIndex.asParameterizedType(inspectionProvider);
+                    }
+                }
                 return inspectionProvider.getPrimitives().objectParameterizedType();
             }
             int index = list.get(pos);
