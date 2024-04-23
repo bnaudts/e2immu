@@ -167,14 +167,17 @@ public class LinkHelper {
                                       ParameterizedType concreteReturnType,
                                       List<DV> independentOfParameter,
                                       List<HiddenContentSelector> hcsParameters,
-                                      List<ParameterizedType> expressionTypes) {
-        LinkedVariables lvs = functional(independentOfMethod, hcsMethod, linkedVariablesOfObject, concreteReturnType);
+                                      List<ParameterizedType> expressionTypes,
+                                      ParameterizedType concreteFunctionalType) {
+        LinkedVariables lvs = functional(independentOfMethod, hcsMethod, linkedVariablesOfObject, concreteReturnType,
+                concreteFunctionalType);
         int i = 0;
         for (ParameterizedType expressionType : expressionTypes) {
             int index = Math.min(hcsParameters.size() - 1, i);
             DV independent = independentOfParameter.get(index);
             HiddenContentSelector hcs = hcsParameters.get(index);
-            LinkedVariables lvsParameter = functional(independent, hcs, linkedVariablesOfObject, expressionType);
+            LinkedVariables lvsParameter = functional(independent, hcs, linkedVariablesOfObject, expressionType,
+                    concreteFunctionalType);
             lvs = lvs.merge(lvsParameter);
             i++;
         }
@@ -184,7 +187,8 @@ public class LinkHelper {
     private LinkedVariables functional(DV independent,
                                        HiddenContentSelector hcs,
                                        LinkedVariables linkedVariables,
-                                       ParameterizedType type) {
+                                       ParameterizedType type,
+                                       ParameterizedType concreteFunctionalType) {
         if (INDEPENDENT_DV.equals(independent)) return LinkedVariables.EMPTY;
         boolean independentHC = INDEPENDENT_HC_DV.equals(independent);
         Map<Variable, LV> map = new HashMap<>();
@@ -199,9 +203,10 @@ public class LinkHelper {
                 Links links;
                 if (hcs instanceof HiddenContentSelector.All all) {
                     Indices indices = new Indices(all.getHiddenContentIndex());
+                    // see e.g. Linking_1A,f9m(): we correct 0 to 0;1, and 1 to 0;1
+                    Indices corrected = indices.allOccurrencesOf(context.getAnalyserContext(), concreteFunctionalType);
                     Link link = new Link(indices, MultiLevel.isMutable(mutable));
-                    links = new Links(Map.of(indices, link));
-
+                    links = new Links(Map.of(corrected, link));
                 } else {
                     throw new UnsupportedOperationException();
                 }

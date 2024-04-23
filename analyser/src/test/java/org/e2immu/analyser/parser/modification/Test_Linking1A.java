@@ -43,22 +43,23 @@ public class Test_Linking1A extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
+            final LinkedVariables lvs = d.evaluationResult().linkedVariablesOfExpression();
             switch (d.methodInfo().name) {
                 case "s0m" -> {
                     if ("0".equals(d.statementId())) {
                         assertEquals("supplier::get", d.evaluationResult().value().toString());
-                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:0,supplier:4"));
+                        assertLinked(d, lvs, it(0, "s:0,supplier:4"));
                     }
                 }
                 case "s0l" -> {
                     if ("0".equals(d.statementId())) {
                         assertEquals("/*inline get*/supplier.get()/*{L supplier:4}*/",
                                 d.evaluationResult().value().toString());
-                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:0,supplier:4"));
+                        assertLinked(d, lvs, it(0, "s:0,supplier:4"));
                     }
                     if ("1".equals(d.statementId())) {
                         assertEquals("supplier.get()", d.evaluationResult().value().toString());
-                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(), it(0, "s:4"));
+                        assertLinked(d, lvs, it(0, "s:4"));
                     }
                 }
                 case "p0l" -> {
@@ -66,13 +67,27 @@ public class Test_Linking1A extends CommonTestRunner {
                         // p.test(x)
                         String expected = d.iteration() == 0 ? "<m:test>" : "predicate.test(x)";
                         assertEquals(expected, d.evaluationResult().value().toString());
-                        assertLinked(d, d.evaluationResult().linkedVariablesOfExpression(),
+                        assertLinked(d, lvs,
                                 it0("p:-1,x:-1"), it(1, ""));
+                    }
+                }
+                case "f9m" -> {
+                    if ("0".equals(d.statementId())) {
+                        assertEquals("function::apply", d.evaluationResult().value().toString());
+                        assertLinked(d, lvs, it(0, "f:0,function:4"));
+                        assertSingleLv(d, lvs, 0, 1, "0;1-4-0;1");
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // f.apply(t)
+                        assertEquals("nullable instance 1 type T", d.evaluationResult().value().toString());
+                        assertLinked(d, lvs, it(0, "f:4"));
                     }
                 }
             }
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            boolean isStatement0 = "0".equals(d.statementId());
+            boolean isStatement1 = "1".equals(d.statementId());
             if (d.variable() instanceof ReturnVariable) {
                 switch (d.methodInfo().name) {
                     case "s0" -> {
@@ -81,7 +96,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertSingleLv(d, 2, 0, "*-4-0");
                     }
                     case "s0l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "supplier.get()");
                             assertLinked(d, it(0, "s:4,supplier:4"));
                             assertSingleLv(d, 0, 0, "*-4-0");
@@ -89,13 +104,13 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                     case "s0m" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "nullable instance 1 type X");
                             assertLinked(d, it(0, "s:4,supplier:4"));
                         }
                     }
                     case "s0a" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "supplier.get()");
                             assertLinked(d, it(0, "s:4,supplier:4")); //FIXME no link at all, even though s-4-supplier
                         }
@@ -106,7 +121,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
                     case "s1l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 2, "supplier.get()");
                             assertLinked(d, it(0, 1, "s:-1,supplier:-1"),
                                     it(2, "s:4,supplier:4"));
@@ -115,7 +130,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                     case "s1m" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 2, "nullable instance 1 type M");
                             assertLinked(d, it(0, 1, "s:-1,supplier:-1"),
                                     it(0, "s:4,supplier:4"));
@@ -128,13 +143,13 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, ""));
                     }
                     case "s2l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "supplier.get()");
                             assertLinked(d, it(0, ""));
                         }
                     }
-                    case "s2m" -> {
-                        if ("1".equals(d.statementId())) {
+                    case "s2m", "f3m" -> {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "nullable instance 1 type Integer");
                             assertLinked(d, it(0, ""));
                         }
@@ -145,37 +160,37 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, ""));
                     }
                     case "p0l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 1, "predicate.test(x)");
                             assertLinked(d, it0("p:-1,predicate:-1,x:-1"), it(1, ""));
                         }
                     }
                     case "p0m", "p2m" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "instance 1 type boolean");
                             assertLinked(d, it(0, ""));
                         }
                     }
                     case "p1l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 1, "p$0.test(x)");
                             assertLinked(d, it(0, ""));
                         }
                     }
                     case "p1m" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 2, "instance 1 type boolean");
                             assertLinked(d, it(0, ""));
                         }
                     }
                     case "p2l" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 1, "predicate.test(x)");
                             assertLinked(d, it(0, ""));
                         }
                     }
                     case "c0" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "consumer");
                             assertLinked(d, it(0, "consumer:0,x:4"));
                             assertSingleLv(d, 0, 1, "0-4-*");
@@ -197,7 +212,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                     case "c1" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 2, "consumer");
                             assertLinked(d, it(0, 1, "consumer:0,m:-1"), it(2, "consumer:0,m:4"));
                             assertSingleLv(d, 2, 1, "0M-4-*M");
@@ -212,7 +227,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                     case "c2" -> {
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "consumer");
                             assertLinked(d, it(0, "consumer:0"));
                         }
@@ -229,11 +244,27 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-1");
                     }
+                    case "f0m", "f4m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 0, "nullable instance 1 type Y");
+                            assertLinked(d, it(0, "f:4,function:4"));
+                            assertSingleLv(d, 0, 0, "*-4-1");
+                            assertSingleLv(d, 0, 1, "*-4-1");
+                        }
+                    }
                     case "f1" -> {
                         // X, M
                         assertCurrentValue(d, 2, "function.apply(x)");
                         assertLinked(d, it(0, 1, "function:-1,x:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
+                    }
+                    case "f1m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type M");
+                            assertLinked(d, it(0, 1, "f:-1,function:-1,x:-1"), it(2, "f:4,function:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-1M");
+                            assertSingleLv(d, 2, 1, "*M-4-1M");
+                        }
                     }
                     case "f2" -> {
                         // M, Y
@@ -241,22 +272,40 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, 1, "function:-1,m:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*-4-1");
                     }
+                    case "f2m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type Y");
+                            assertLinked(d, it(0, 1, "f:-1,function:-1,m:-1"), it(2, "f:4,function:4"));
+                            assertSingleLv(d, 2, 0, "*-4-1");
+                            assertSingleLv(d, 2, 1, "*-4-1");
+                        }
+                    }
                     case "f3" -> {
                         // X, Integer
                         assertCurrentValue(d, 0, "function.apply(x)");
                         assertLinked(d, it(0, ""));
                     }
+                    // f3m ~ s2m
                     case "f4" -> {
                         // Integer, Y
                         assertCurrentValue(d, 0, "function.apply(i)");
                         assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-1");
                     }
+                    // f4m ~ f0m
                     case "f5" -> {
                         // N, M
                         assertCurrentValue(d, 2, "function.apply(n)");
                         assertLinked(d, it(0, 1, "function:-1,n:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
+                    }
+                    case "f5m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type M");
+                            assertLinked(d, it(0, 1, "f:-1,function:-1,n:-1"), it(2, "f:4,function:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-1M");
+                            assertSingleLv(d, 2, 1, "*M-4-1M");
+                        }
                     }
                     case "f6" -> {
                         // String, M
@@ -264,21 +313,49 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, 1, "function:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
                     }
+                    case "f6m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type M");
+                            assertLinked(d, it(0, 1, "f:-1,function:-1"), it(2, "f:4,function:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-1M");
+                            assertSingleLv(d, 2, 1, "*M-4-1M");
+                        }
+                    }
                     case "f7" -> {
                         // M, String
                         assertCurrentValue(d, 0, "function.apply(m)");
                         assertLinked(d, it(0, ""));
+                    }
+                    case "f7m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 2, "nullable instance 1 type String");
+                            assertLinked(d, it(0, ""));
+                        }
                     }
                     case "f8" -> {
                         // Integer, String
                         assertCurrentValue(d, 0, "function.apply(i)");
                         assertLinked(d, it(0, ""));
                     }
+                    case "f8m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 0, "nullable instance 1 type String");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
                     case "f9" -> {
                         // T, T -- function links to t, but the result does not (*-..-*)
                         assertCurrentValue(d, 0, "function.apply(t)");
                         assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-0;1");
+                    }
+                    case "f9m" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 0, "nullable instance 1 type T");
+                            assertLinked(d, it(0, "f:4,function:4"));
+                            assertSingleLv(d, 0, 0, "*-4-0;1");
+                            assertSingleLv(d, 0, 1, "*-4-0;1");
+                        }
                     }
                     case "f10" -> {
                         // List<T>, T
@@ -329,7 +406,7 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it(0, "supplier:4"));
                             assertSingleLv(d, 0, 0, "0-4-0");
                         }
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "instance 1 type Supplier<X>");
                             assertLinked(d, it(0, "supplier:4"));
                             assertSingleLv(d, 0, 0, "0-4-0");
@@ -350,7 +427,7 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
                             assertSingleLv(d, 2, 0, "0M-4-0M");
                         }
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "instance 1 type Supplier<M>");
                             assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
                             assertSingleLv(d, 2, 0, "0M-4-0M");
@@ -363,7 +440,7 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 0, "supplier::get");
                             assertLinked(d, it(0, ""));
                         }
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 0, "instance 1 type Supplier<Integer>");
                             assertLinked(d, it(0, ""));
                         }
@@ -383,7 +460,7 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 1, "/*inline test*/predicate.test(t)");
                             assertLinked(d, it0("predicate:-1"), it(1, ""));
                         }
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 1, "/*inline test*/predicate.test(t)");
                             assertLinked(d, it0("predicate:-1,x:-1"), it(1, ""));
                         }
@@ -403,7 +480,7 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 1, "instance 0 type $5");
                             assertLinked(d, it0("predicate:-1"), it(1, ""));
                         }
-                        if ("1".equals(d.statementId())) {
+                        if (isStatement1) {
                             assertCurrentValue(d, 3, "instance 0 type $5");
                             assertLinked(d, it0("predicate:-1,x:-1"),
                                     it(1, 2, "x:-1"),
@@ -474,6 +551,13 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, "x:4"));
                         assertSingleLv(d, 0, 0, "0-4-*");
                     }
+                    if ("f".equals(d.variableName())) {
+                        if (isStatement0) {
+                            assertCurrentValue(d, 0, "function::apply");
+                            assertLinked(d, it(0, "function:4"));
+                            assertSingleLv(d, 0, 0, "0,1-4-0,1");
+                        }
+                    }
                 }
                 case "f1" -> {
                     if (vIsFunction) {
@@ -534,6 +618,15 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertCurrentValue(d, 0, "nullable instance type Function<T,T>/*@IgnoreMods*/");
                         assertLinked(d, it(0, "t:4"));
                         assertSingleLv(d, 0, 0, "0;1-4-*");
+                    }
+                }
+                case "f9m" -> {
+                    if ("f".equals(d.variableName())) {
+                        if (isStatement0) {
+                            assertCurrentValue(d, 0, "function::apply");
+                            assertLinked(d, it(0, "function:4"));
+                            assertSingleLv(d, 0, 0, "0;1-4-0;1");
+                        }
                     }
                 }
                 case "f10" -> {

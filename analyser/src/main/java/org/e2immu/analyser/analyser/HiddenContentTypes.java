@@ -395,31 +395,10 @@ public class HiddenContentTypes {
         // but once we have found it, we must make sure that we return all occurrences
         assert res.indices.set().size() == 1;
         assert res.type != null;
-        LV.Indices findAll = allOccurrencesOf(res.type, to);
+        LV.Indices findAll = LV.Indices.allOccurrencesOf(res.type, to);
         return new IndicesAndType(findAll, res.type);
     }
 
-    public static LV.Indices allOccurrencesOf(ParameterizedType what, ParameterizedType where) {
-        Set<LV.Index> set = new TreeSet<>();
-        allOccurrencesOf(what, where, set, new Stack<>());
-        assert !set.isEmpty();
-        return new LV.Indices(set);
-    }
-
-    private static void allOccurrencesOf(ParameterizedType what, ParameterizedType where, Set<LV.Index> set, Stack<Integer> pos) {
-        if (what.equals(where)) {
-            LV.Index index = new LV.Index(List.copyOf(pos));
-            set.add(index);
-            return;
-        }
-        int i = 0;
-        for (ParameterizedType pt : where.parameters) {
-            pos.push(i);
-            allOccurrencesOf(what, pt, set, pos);
-            pos.pop();
-            i++;
-        }
-    }
 
     private static IndicesAndType findAll(InspectionProvider inspectionProvider,
                                           LV.Index index,

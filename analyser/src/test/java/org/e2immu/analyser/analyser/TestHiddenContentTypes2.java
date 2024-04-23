@@ -142,10 +142,10 @@ public class TestHiddenContentTypes2 {
     @DisplayName("allOccurrencesOf")
     public void test3() {
         ParameterizedType pt = new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt));
-        assertEquals("1;2", HiddenContentTypes.allOccurrencesOf(tpList0Pt, pt).toString());
+        assertEquals("1;2", LV.Indices.allOccurrencesOf(tpList0Pt, pt).toString());
 
         ParameterizedType pt2 = new ParameterizedType(list, List.of(new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt))));
-        assertEquals("0.1;0.2", HiddenContentTypes.allOccurrencesOf(tpList0Pt, pt2).toString());
+        assertEquals("0.1;0.2", LV.Indices.allOccurrencesOf(tpList0Pt, pt2).toString());
     }
 
     @Test

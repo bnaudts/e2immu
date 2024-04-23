@@ -159,9 +159,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         Map<NamedType, ParameterizedType> map = concreteReturnType.initialTypeParameterMap(context.getAnalyserContext());
         ParameterizedType typeOfReturnValue = methodInfo.returnType();
         ParameterizedType concreteTypeOfReturnValue = typeOfReturnValue.applyTranslation(context.getPrimitives(), map);
-        List<Expression> parameterExpressions = methodAnalysis.getParameterAnalyses().stream()
-                .map(pa -> (Expression) new VariableExpression(pa.getParameterInfo().identifier, pa.getParameterInfo()))
-                .toList();
         MethodInspection methodInspection = context.getAnalyserContext().getMethodInspection(methodInfo);
         List<ParameterizedType> concreteParameterTypes = methodInspection.getParameters().stream()
                 .map(pi -> pi.parameterizedType.applyTranslation(context.getPrimitives(), map)).toList();
@@ -171,7 +168,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 .map(ParameterAnalysis::getHiddenContentSelector).toList();
 
         LinkedVariables lvs = linkHelper.functional(independentOfMethod, hcsMethod, scopeResult.linkedVariablesOfExpression(),
-                concreteTypeOfReturnValue, independentOfParameters, hcsParameters, concreteParameterTypes);
+                concreteTypeOfReturnValue, independentOfParameters, hcsParameters, concreteParameterTypes,
+                concreteReturnType);
         builder.setLinkedVariablesOfExpression(lvs);
         return builder.build();
     }

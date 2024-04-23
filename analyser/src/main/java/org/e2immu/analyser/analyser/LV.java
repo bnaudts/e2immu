@@ -57,13 +57,19 @@ public class LV implements Comparable<LV> {
          Set<Map.Entry<A,B>>, with indices 0.1, will return V in Map.Entry.
          */
         public ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type) {
-            return findInFormal(inspectionProvider, type, 0);
+            return findInFormal(inspectionProvider, type, 0, true);
         }
 
-        private ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type, int pos) {
+        public ParameterizedType find(InspectionProvider inspectionProvider, ParameterizedType type) {
+            return findInFormal(inspectionProvider, type, 0, false);
+        }
+
+        private ParameterizedType findInFormal(InspectionProvider inspectionProvider, ParameterizedType type,
+                                               int pos,
+                                               boolean switchToFormal) {
             if (type.parameters.isEmpty()) {
                 // no generics, so substitute "Object"
-                if(type.typeInfo != null) {
+                if (type.typeInfo != null) {
                     HiddenContentTypes hct = type.typeInfo.typeResolution.get().hiddenContentTypes();
                     NamedType byIndex = hct.typeByIndex(pos);
                     if (byIndex != null) {
@@ -75,12 +81,12 @@ public class LV implements Comparable<LV> {
             int index = list.get(pos);
             if (pos == list.size() - 1) {
                 assert type.typeInfo != null;
-                ParameterizedType formal = type.typeInfo.asParameterizedType(inspectionProvider);
+                ParameterizedType formal = switchToFormal ? type.typeInfo.asParameterizedType(inspectionProvider) : type;
                 return formal.parameters.get(index);
             }
             ParameterizedType nextType = type.parameters.get(index);
             assert nextType != null;
-            return findInFormal(inspectionProvider, nextType, pos + 1);
+            return findInFormal(inspectionProvider, nextType, pos + 1, switchToFormal);
         }
 
         public Index replaceLast(int v) {
@@ -136,6 +142,34 @@ public class LV implements Comparable<LV> {
             // in theory, they all should map to the same type... so we pick one
             Index first = set.stream().findFirst().orElseThrow();
             return first.findInFormal(inspectionProvider, type);
+        }
+
+        public LV.Indices allOccurrencesOf(InspectionProvider inspectionProvider, ParameterizedType where) {
+            Index first = set.stream().findFirst().orElseThrow();
+            ParameterizedType what = first.find(inspectionProvider, where);
+            return allOccurrencesOf(what, where);
+        }
+
+        public static LV.Indices allOccurrencesOf(ParameterizedType what, ParameterizedType where) {
+            Set<LV.Index> set = new TreeSet<>();
+            allOccurrencesOf(what, where, set, new Stack<>());
+            assert !set.isEmpty();
+            return new LV.Indices(set);
+        }
+
+        private static void allOccurrencesOf(ParameterizedType what, ParameterizedType where, Set<LV.Index> set, Stack<Integer> pos) {
+            if (what.equals(where)) {
+                LV.Index index = new LV.Index(List.copyOf(pos));
+                set.add(index);
+                return;
+            }
+            int i = 0;
+            for (ParameterizedType pt : where.parameters) {
+                pos.push(i);
+                allOccurrencesOf(what, pt, set, pos);
+                pos.pop();
+                i++;
+            }
         }
     }
 
@@ -212,6 +246,10 @@ public class LV implements Comparable<LV> {
     public record Link(Indices to, boolean mutable) {
         public Link correctTo(Map<Indices, Indices> correctionMap) {
             return new Link(correctionMap.getOrDefault(to, to), mutable);
+        }
+
+        public Link merge(Link l2) {
+            return new Link(to.merge(l2.to), mutable || l2.mutable);
         }
     }
 
@@ -387,6 +425,7 @@ public class LV implements Comparable<LV> {
         if (other.isDelayed()) return other;
         if (value > other.value) return other;
         if (isCommonHC() && other.isCommonHC()) {
+            // IMPORTANT: the union only "compacts" on the "to" side for now, see Linking_1A.f9m()
             Links union = union(other.links);
             return createHC(union);
         }
@@ -396,7 +435,7 @@ public class LV implements Comparable<LV> {
     private Links union(Links other) {
         Map<Indices, Link> res = new HashMap<>(links.map);
         for (Map.Entry<Indices, Link> e : other.map.entrySet()) {
-            res.putIfAbsent(e.getKey(), e.getValue());
+            res.merge(e.getKey(), e.getValue(), Link::merge);
         }
         return new Links(Map.copyOf(res));
     }
