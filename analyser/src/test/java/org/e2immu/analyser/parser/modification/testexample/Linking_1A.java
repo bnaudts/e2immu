@@ -292,13 +292,13 @@ public class Linking_1A {
         c.accept(i);
         return consumer;
     }
-
+*/
     // function, X Y do not obviously share hidden content
 
     static <X, Y> Y f0(X x, Function<X, Y> function) {
         return function.apply(x);
     }
-
+/*
     static <X, Y> Y f0l(X x, Function<X, Y> function) {
         //noinspection ALL
         Function<X, Y> f = xx -> function.apply(xx);
@@ -321,11 +321,11 @@ public class Linking_1A {
         };
         return f.apply(x);
     }
-
+*/
     static <X> M f1(X x, Function<X, M> function) {
         return function.apply(x);
     }
-
+/*
     static <X> M f1l(X x, Function<X, M> function) {
         //noinspection ALL
         Function<X, M> f = xx -> function.apply(xx);
@@ -347,11 +347,11 @@ public class Linking_1A {
         };
         return f.apply(x);
     }
-
+*/
     static <Y> Y f2(M m, Function<M, Y> function) {
         return function.apply(m);
     }
-
+/*
     static <Y> Y f2l(M m, Function<M, Y> function) {
         //noinspection ALL
         Function<M, Y> f = mm -> function.apply(mm);
@@ -375,11 +375,11 @@ public class Linking_1A {
     }
 
     // equivalent to List.add(), where we'd return the size rather than boolean
-
+*/
     static <X> Integer f3(X x, Function<X, Integer> function) {
         return function.apply(x);
     }
-
+/*
     static <X> Integer f3l(X x, Function<X, Integer> function) {
         //noinspection ALL
         Function<X, Integer> f = xx -> function.apply(xx);
@@ -403,11 +403,11 @@ public class Linking_1A {
     }
 
     // equivalent to List.get(index)
-
+*/
     static <Y> Y f4(int i, Function<Integer, Y> function) {
         return function.apply(i);
     }
-
+/*
     static <Y> Y f4l(int i, Function<Integer, Y> function) {
         //noinspection ALL
         Function<Integer, Y> f = ii -> function.apply(ii);
@@ -429,11 +429,11 @@ public class Linking_1A {
         };
         return f.apply(i);
     }
-
+*/
     static M f5(N n, Function<N, M> function) {
         return function.apply(n);
     }
-
+/*
     static M f5l(N n, Function<N, M> function) {
         //noinspection ALL
         Function<N, M> f = nn -> function.apply(nn);
@@ -457,11 +457,11 @@ public class Linking_1A {
     }
 
     // equivalent to Map.get(string), List.get(...)
-
+*/
     static M f6(String s, Function<String, M> function) {
         return function.apply(s);
     }
-
+/*
     static M f6l(String s, Function<String, M> function) {
         //noinspection ALL
         Function<String, M> f = t -> function.apply(t);
@@ -485,11 +485,11 @@ public class Linking_1A {
     }
 
     // equivalent to List.add(), where we'd return some String rather than boolean
-
+*/
     static String f7(M m, Function<M, String> function) {
         return function.apply(m);
     }
-
+/*
     static String f7s(M m, Function<M, String> function) {
         //noinspection ALL
         Function<M, String> f = mm -> function.apply(mm);
@@ -512,11 +512,11 @@ public class Linking_1A {
         };
         return f.apply(m);
     }
-
+*/
     static String f8(int i, Function<Integer, String> function) {
         return function.apply(i);
     }
-
+/*
     static String f8l(int i, Function<Integer, String> function) {
         //noinspection ALL
         Function<Integer, String> f = ii -> function.apply(ii);
@@ -540,11 +540,11 @@ public class Linking_1A {
     }
 
     // function, types that share hidden content
-
+*/
     static <T> T f9(T t, Function<T, T> function) {
         return function.apply(t);
     }
-
+/*
     static <T> T f9l(T t, Function<T, T> function) {
         //noinspection ALL
         Function<T, T> f = tt -> function.apply(tt);
@@ -566,11 +566,11 @@ public class Linking_1A {
         };
         return f.apply(t);
     }
-
+*/
     static <T> T f10(List<T> ts, Function<List<T>, T> function) {
         return function.apply(ts);
     }
-
+/*
     static <T> T f10l(List<T> ts, Function<List<T>, T> function) {
         //noinspection ALL
         Function<List<T>, T> f = t -> function.apply(t);
@@ -592,11 +592,11 @@ public class Linking_1A {
         };
         return f.apply(ts);
     }
-
+*/
     static <T> List<T> f11(T t, Function<T, List<T>> function) {
         return function.apply(t);
     }
-
+/*
     static <T> List<T> f11l(T t, Function<T, List<T>> function) {
         //noinspection ALL
         Function<T, List<T>> f = tt -> function.apply(tt);
@@ -618,11 +618,11 @@ public class Linking_1A {
         };
         return f.apply(t);
     }
-
+*/
     static <T> Set<T> f12(List<T> ts, Function<List<T>, Set<T>> function) {
         return function.apply(ts);
     }
-
+/*
     static <T> Set<T> f12l(List<T> ts, Function<List<T>, Set<T>> function) {
         //noinspection ALL
         Function<List<T>, Set<T>> f = t -> function.apply(t);

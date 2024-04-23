@@ -71,8 +71,6 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Function.class);
         assertTrue(typeInfo.isInterface());
         assertTrue(typeInfo.typeInspection.get().isFunctionalInterface());
-
-        TypeAnalysis typeAnalysis = typeInfo.typeAnalysis.get();
         assertEquals("R, T", typeInfo.typeResolution.get().hiddenContentTypes().sortedTypes());
     }
 
@@ -87,8 +85,13 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         if (methodAnalysis.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
             assertEquals(1, all.getHiddenContentIndex());
         } else fail();
+        HiddenContentTypes hct = methodInfo.methodResolution.get().hiddenContentTypes();
+        assertEquals("R, T - ", hct.sortedTypes());
 
-        // key
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
+
+        // parameter
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
         assertEquals("*", p0.getHiddenContentSelector().toString());
@@ -96,8 +99,8 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
             assertEquals(0, all.getHiddenContentIndex());
         } else fail();
 
-        HiddenContentTypes hct = typeInfo.typeResolution.get().hiddenContentTypes();
-        assertEquals("R, T", hct.sortedTypes());
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
+        assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));
     }
 
 

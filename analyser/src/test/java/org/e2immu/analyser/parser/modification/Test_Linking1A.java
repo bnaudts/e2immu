@@ -15,13 +15,12 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -182,6 +181,13 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertSingleLv(d, 0, 1, "0-4-*");
                         }
                     }
+                    case "c0l" -> {
+                        if ("2".equals(d.statementId())) {
+                            assertCurrentValue(d, 1, "consumer");
+                            // FIXME
+                            assertLinked(d, it0("c:-1,consumer:0,x:-1"), it(1, "c:4,consumer:0,x:4"));
+                        }
+                    }
                     case "c0m" -> {
                         if ("2".equals(d.statementId())) {
                             assertCurrentValue(d, 0, "consumer");
@@ -216,6 +222,76 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 0, "consumer");
                             assertLinked(d, it(0, "consumer:0"));
                         }
+                    }
+                    case "f0" -> {
+                        assertCurrentValue(d, 0, "function.apply(x)");
+                        assertLinked(d, it(0, "function:4,x:4"));
+                        assertSingleLv(d, 0, 0, "*-4-1");
+                        assertSingleLv(d, 0, 1, "*-4-1"); // FIXME technically incorrect, x does not have a '1'
+                    }
+                    case "f1" -> {
+                        assertCurrentValue(d, 2, "function.apply(x)");
+                        assertLinked(d, it(0, 1, "function:-1,x:-1"), it(2, "function:4,x:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
+                        assertSingleLv(d, 2, 1, "*M-4-1M");
+                    }
+                    case "f2" -> {
+                        assertCurrentValue(d, 2, "function.apply(m)");
+                        assertLinked(d, it(0, 1, "function:-1,m:-1"), it(2, "function:4,m:4"));
+                        assertSingleLv(d, 2, 0, "*-4-1");
+                        assertSingleLv(d, 2, 1, "*-4-1");
+                    }
+                    case "f3" -> {
+                        assertCurrentValue(d, 0, "function.apply(x)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "f4" -> {
+                        assertCurrentValue(d, 0, "function.apply(i)");
+                        assertLinked(d, it(0, "function:4"));
+                        assertSingleLv(d, 0, 0, "*-4-1");
+                    }
+                    case "f5" -> {
+                        assertCurrentValue(d, 2, "function.apply(n)");
+                        assertLinked(d, it(0, 1, "function:-1,n:-1"), it(2, "function:4,n:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
+                        assertSingleLv(d, 2, 1, "*M-4-1M");
+                    }
+                    case "f6" -> {
+                        assertCurrentValue(d, 2, "function.apply(s)");
+                        assertLinked(d, it(0, 1, "function:-1"), it(2, "function:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-1M");
+                    }
+                    case "f7" -> {
+                        assertCurrentValue(d, 0, "function.apply(m)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "f8" -> {
+                        assertCurrentValue(d, 0, "function.apply(i)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "f9" -> {
+                        assertCurrentValue(d, 0, "function.apply(t)");
+                        assertLinked(d, it(0, "function:4,t:4"));
+                        assertSingleLv(d, 0, 0, "*-4-0;1");
+                        assertSingleLv(d, 0, 1, "*-4-0;1");
+                    }
+                    case "f10" -> {
+                        assertCurrentValue(d, 0, "function.apply(ts)");
+                        assertLinked(d, it(0, "function:4,ts:4"));
+                        assertSingleLv(d, 0, 0, "*-4-0.0;1");
+                        assertSingleLv(d, 0, 1, "*-4-0.0;1");
+                    }
+                    case "f11" -> {
+                        assertCurrentValue(d, 0, "function.apply(t)");
+                        assertLinked(d, it(0, "function:4,t:4"));
+                        assertSingleLv(d, 0, 0, "*M-4-1M"); // M because List is mutable
+                        assertSingleLv(d, 0, 1, "*M-4-1M");
+                    }
+                    case "f12" -> {
+                        assertCurrentValue(d, 0, "function.apply(ts)");
+                        assertLinked(d, it(0, "function:4,ts:4"));
+                        assertSingleLv(d, 0, 0, "*M-4-1M"); // M because List is mutable
+                        assertSingleLv(d, 0, 1, "*M-4-1M");
                     }
                 }
             }
@@ -324,6 +400,15 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it0("predicate:-1,x:-1"),
                                     it(1, 2, "x:-1"),
                                     it(3, ""));
+                        }
+                    }
+                }
+                case "c0l" -> {
+                    if ("c".equals(d.variableName())) {
+                        if ("0".equals(d.statementId())) {
+                            assertCurrentValue(d, 0, "instance 0 type $7/*{L consumer:4}*/");
+                            assertLinked(d, it(0, "consumer:4"));
+                            assertSingleLv(d, 0, 0, "0-4-0"); // FIXME here we go wrong... so must use new method!
                         }
                     }
                 }
