@@ -224,77 +224,85 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                     case "f0" -> {
+                        // X, Y
                         assertCurrentValue(d, 0, "function.apply(x)");
-                        assertLinked(d, it(0, "function:4,x:4"));
+                        assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-1");
-                        assertSingleLv(d, 0, 1, "*-4-1"); // FIXME technically incorrect, x does not have a '1'
                     }
                     case "f1" -> {
+                        // X, M
                         assertCurrentValue(d, 2, "function.apply(x)");
-                        assertLinked(d, it(0, 1, "function:-1,x:-1"), it(2, "function:4,x:4"));
+                        assertLinked(d, it(0, 1, "function:-1,x:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
-                        assertSingleLv(d, 2, 1, "*M-4-1M");
                     }
                     case "f2" -> {
+                        // M, Y
                         assertCurrentValue(d, 2, "function.apply(m)");
-                        assertLinked(d, it(0, 1, "function:-1,m:-1"), it(2, "function:4,m:4"));
+                        assertLinked(d, it(0, 1, "function:-1,m:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*-4-1");
-                        assertSingleLv(d, 2, 1, "*-4-1");
                     }
                     case "f3" -> {
+                        // X, Integer
                         assertCurrentValue(d, 0, "function.apply(x)");
                         assertLinked(d, it(0, ""));
                     }
                     case "f4" -> {
+                        // Integer, Y
                         assertCurrentValue(d, 0, "function.apply(i)");
                         assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-1");
                     }
                     case "f5" -> {
+                        // N, M
                         assertCurrentValue(d, 2, "function.apply(n)");
-                        assertLinked(d, it(0, 1, "function:-1,n:-1"), it(2, "function:4,n:4"));
+                        assertLinked(d, it(0, 1, "function:-1,n:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
-                        assertSingleLv(d, 2, 1, "*M-4-1M");
                     }
                     case "f6" -> {
+                        // String, M
                         assertCurrentValue(d, 2, "function.apply(s)");
                         assertLinked(d, it(0, 1, "function:-1"), it(2, "function:4"));
                         assertSingleLv(d, 2, 0, "*M-4-1M");
                     }
                     case "f7" -> {
+                        // M, String
                         assertCurrentValue(d, 0, "function.apply(m)");
                         assertLinked(d, it(0, ""));
                     }
                     case "f8" -> {
+                        // Integer, String
                         assertCurrentValue(d, 0, "function.apply(i)");
                         assertLinked(d, it(0, ""));
                     }
                     case "f9" -> {
+                        // T, T -- function links to t, but the result does not (*-..-*)
                         assertCurrentValue(d, 0, "function.apply(t)");
-                        assertLinked(d, it(0, "function:4,t:4"));
+                        assertLinked(d, it(0, "function:4"));
                         assertSingleLv(d, 0, 0, "*-4-0;1");
-                        assertSingleLv(d, 0, 1, "*-4-0;1");
                     }
                     case "f10" -> {
+                        // List<T>, T
                         assertCurrentValue(d, 0, "function.apply(ts)");
                         assertLinked(d, it(0, "function:4,ts:4"));
-                        assertSingleLv(d, 0, 0, "*-4-0.0;1");
-                        assertSingleLv(d, 0, 1, "*-4-0.0;1");
+                        assertSingleLv(d, 0, 0, "*-4-0;1");
+                        assertSingleLv(d, 0, 1, "*-4-0");
                     }
                     case "f11" -> {
+                        // T, List<T>
                         assertCurrentValue(d, 0, "function.apply(t)");
                         assertLinked(d, it(0, "function:4,t:4"));
-                        assertSingleLv(d, 0, 0, "*M-4-1M"); // M because List is mutable
-                        assertSingleLv(d, 0, 1, "*M-4-1M");
+                        assertSingleLv(d, 0, 0, "0-2-1");
+                        assertSingleLv(d, 0, 1, "0-4-*");
                     }
                     case "f12" -> {
                         assertCurrentValue(d, 0, "function.apply(ts)");
                         assertLinked(d, it(0, "function:4,ts:4"));
                         assertSingleLv(d, 0, 0, "*M-4-1M"); // M because List is mutable
-                        assertSingleLv(d, 0, 1, "*M-4-1M");
+                        assertSingleLv(d, 0, 1, "0-4-0"); // possibility to share HC
                     }
                 }
             }
+            final boolean vIsFunction = d.variable() instanceof ParameterInfo pi && "function".equals(pi.name);
             switch (d.methodInfo().name) {
                 case "s0l" -> {
                     if (d.variable() instanceof ParameterInfo pi && "supplier".equals(pi.name)) {
@@ -460,6 +468,98 @@ public class Test_Linking1A extends CommonTestRunner {
                         }
                     }
                 }
+                case "f0" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<X,Y>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "x:4"));
+                        assertSingleLv(d, 0, 0, "0-4-*");
+                    }
+                }
+                case "f1" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 2, "nullable instance type Function<X,M>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "x:4"));
+                        assertSingleLv(d, 0, 0, "0-4-*");
+                    }
+                }
+                case "f2" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 2, "nullable instance type Function<M,Y>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, 1, "m:-1"), it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                }
+                case "f3" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<X,Integer>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "x:4"));
+                        assertSingleLv(d, 0, 0, "0-4-*");
+                    }
+                }
+                case "f4" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<Integer,Y>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+                case "f5" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 2, "nullable instance type Function<N,M>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, 1, "n:-1"), it(2, "n:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                }
+                case "f6" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 2, "nullable instance type Function<String,M>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+                case "f7" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 2, "nullable instance type Function<M,String>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, 1, "m:-1"), it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                }
+                case "f8" -> {
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<Integer,String>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, ""));
+                    }
+                }
+                case "f9" -> {
+                    // T, T
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<T,T>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "t:4"));
+                        assertSingleLv(d, 0, 0, "0;1-4-*");
+                    }
+                }
+                case "f10" -> {
+                    // List<T>, T
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<List<T>,T>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "ts:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0");
+                    }
+                }
+                case "f11" -> {
+                    // T, List<T>
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<T,List<T>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "t:4"));
+                        assertSingleLv(d, 0, 0, "0-4-*");
+                    }
+                }
+                case "f12" -> {
+                    // List<T>, Set<T>
+                    if (vIsFunction) {
+                        assertCurrentValue(d, 0, "nullable instance type Function<List<T>,Set<T>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "ts:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0");
+                    }
+                }
             }
         };
 
@@ -494,6 +594,9 @@ public class Test_Linking1A extends CommonTestRunner {
                 // result is a boolean, so 'none'
                 assertEquals("$5: - test:", hct.toString());
                 assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
+            }
+            if ("f10".equals(d.methodInfo().name)) {
+                assertEquals("Linking_1A: - f10:T", hct.toString());
             }
         };
 

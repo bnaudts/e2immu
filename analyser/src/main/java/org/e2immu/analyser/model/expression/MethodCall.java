@@ -404,7 +404,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 lvs.stream().forEach(e2 -> {
                     boolean skipAllToAll = e2.getValue().isCommonHC() && e.getValue().isCommonHC()
                                            && !e2.getKey().equals(e.getKey())
-                                           && e.getValue().mineIsAll() && e2.getValue().mineIsAll();
+                                           && e.getValue().mineIsAll() && e2.getValue().theirsIsAll();
                     if (!skipAllToAll) {
                         LV follow = LinkHelper.follow(e2.getValue(), e.getValue());
                         if (follow != null) {
