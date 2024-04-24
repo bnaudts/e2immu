@@ -53,15 +53,25 @@ public class LinkHelper {
      */
     public LinkHelper(EvaluationResult context, MethodInfo methodInfoIn, MethodAnalysis methodAnalysis) {
         this.context = context;
-        HiddenContentSelector methodHcs = Objects.requireNonNullElse(methodAnalysis.getHiddenContentSelector(),
-                HiddenContentSelector.None.INSTANCE);
-        hiddenContentTypes = Objects.requireNonNullElseGet(methodHcs.hiddenContentTypes(),
-                () -> methodInfoIn.methodResolution.get().hiddenContentTypes());
-        this.methodInfo = hiddenContentTypes.getMethodInfo();
+        hiddenContentTypes = bestHiddenContentTypes(methodInfoIn, methodAnalysis);
+        this.methodInfo = Objects.requireNonNullElse(hiddenContentTypes.getMethodInfo(), methodInfoIn);
         this.methodAnalysis = this.methodInfo == methodInfoIn ? methodAnalysis
                 : context.getAnalyserContext().getMethodAnalysis(this.methodInfo);
         ParameterizedType formalObject = this.methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes, formalObject);
+    }
+
+    private static HiddenContentTypes bestHiddenContentTypes(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        HiddenContentSelector methodHcs = methodAnalysis.getHiddenContentSelector();
+        if (methodHcs != null && !methodHcs.isNone()) return methodHcs.hiddenContentTypes();
+        for (ParameterAnalysis pa : methodAnalysis.getParameterAnalyses()) {
+            HiddenContentSelector paramHcs = pa.getHiddenContentSelector();
+            if (paramHcs != null && !paramHcs.isNone()) {
+                return paramHcs.hiddenContentTypes();
+            }
+        }
+        // fall back
+        return methodInfo.methodResolution.get().hiddenContentTypes();
     }
 
     /*
@@ -227,6 +237,7 @@ public class LinkHelper {
                 LV lv = independentHC ? LV.createHC(links) : LV.createDependent(links);
                 map.put(e.getKey(), lv);
             }
+            if (e.getValue().isDelayed()) causesOfDelays.add(e.getValue().causesOfDelay());
         });
         if (map.isEmpty()) return LinkedVariables.EMPTY;
         if (!causesOfDelays.isEmpty()) {

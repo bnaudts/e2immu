@@ -106,11 +106,15 @@ public class GlobalAnalyserContext implements AnalyserContext {
     }
 
     public static final String INTEGER_TO_STRING = "java.lang.Integer.toString(int)";
+    public static final String STRING_LENGTH = "java.lang.String.length()";
+    public static final String CHAR_SEQUENCE_LENGTH = "java.lang.CharSequence.length()";
 
     public static Map<String, List<String>> PARAMETER_ANALYSES = Map.of(
             TypeInfo.IS_KNOWN_FQN, List.of(TypeInfo.IS_KNOWN_FQN + ":0:test"),
             TypeInfo.IS_FACT_FQN, List.of(TypeInfo.IS_FACT_FQN + ":0:b"),
-            INTEGER_TO_STRING, List.of(INTEGER_TO_STRING + ":0:i"));
+            INTEGER_TO_STRING, List.of(INTEGER_TO_STRING + ":0:i"),
+            STRING_LENGTH, List.of(),
+            CHAR_SEQUENCE_LENGTH, List.of());
 
     private static final Set<String> HARDCODED_METHODS = Set.of(
             TypeInfo.IS_FACT_FQN,

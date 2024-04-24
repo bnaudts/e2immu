@@ -39,7 +39,7 @@ public class Linking_1A {
         }
     }
 
-    /* supplier **/
+    // supplier
 
     static <X> X s0(Supplier<X> supplier) {
         return supplier.get();
@@ -251,7 +251,7 @@ public class Linking_1A {
         c.accept(m);
         return consumer;
     }
-/*
+
     static Consumer<M> c1a(M m, Consumer<M> consumer) {
         Consumer<M> c = new Consumer<>() {
             @Override
@@ -262,7 +262,7 @@ public class Linking_1A {
         c.accept(m);
         return consumer;
     }
-*/
+
     static Consumer<Integer> c2(int i, Consumer<Integer> consumer) {
         consumer.accept(i);
         return consumer;
@@ -281,7 +281,7 @@ public class Linking_1A {
         c.accept(i);
         return consumer;
     }
-/*
+
     static Consumer<Integer> c2a(int i, Consumer<Integer> consumer) {
         Consumer<Integer> c = new Consumer<Integer>() {
             @Override
@@ -292,7 +292,7 @@ public class Linking_1A {
         c.accept(i);
         return consumer;
     }
-*/
+
     // function, X Y do not obviously share hidden content
 
     static <X, Y> Y f0(X x, Function<X, Y> function) {

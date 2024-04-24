@@ -467,9 +467,7 @@ public class LV implements Comparable<LV> {
     }
 
     public DV toIndependent() {
-        if (value == HC && (containsMutable())) {
-            return MultiLevel.DEPENDENT_DV;
-        }
+        // no correction for the "M" links in independent_hc down to dependent!
         return correspondingIndependent;
     }
 

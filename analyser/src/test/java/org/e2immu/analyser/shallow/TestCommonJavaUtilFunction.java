@@ -140,5 +140,8 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
         assertEquals(MultiLevel.CONTAINER_DV, p0.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.NOT_CONTAINER_DV, p0.getProperty(Property.CONTAINER_RESTRICTION));
+
+        // this technically the correct value; however, INDEPENDENT would be more to the spirit of a predicate
+        assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
     }
 }

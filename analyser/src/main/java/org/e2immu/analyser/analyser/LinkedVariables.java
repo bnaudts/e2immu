@@ -36,6 +36,7 @@ Convention for spotting delays:
 public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Map.Entry<Variable, LV>> {
 
 
+    public static final String NOT_YET_SET_STR = "NOT_YET_SET";
     private final Map<Variable, LV> variables;
 
     private LinkedVariables(Map<Variable, LV> variables) {
@@ -127,7 +128,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
 
     @Override
     public String toString() {
-        if (this == NOT_YET_SET) return "NOT_YET_SET";
+        if (this == NOT_YET_SET) return NOT_YET_SET_STR;
         if (this == EMPTY || variables.isEmpty()) return "";
         return variables.entrySet().stream()
                 .map(e -> e.getKey().minimalOutput() + ":" + e.getValue().value())
@@ -237,6 +238,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     }
 
     public LV value(Variable variable) {
+        if (this == NOT_YET_SET) return LV.delay(NOT_YET_SET_DELAY);
         return variables.get(variable);
     }
 

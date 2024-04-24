@@ -170,7 +170,7 @@ public class ComputeLinkedVariables {
         } else {
             LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
                     : vi1.getLinkedVariables().remove(reassigned);
-            if(inVi == NOT_YET_SET) {
+            if (inVi == NOT_YET_SET) {
                 combined = NOT_YET_SET;
             } else {
                 Map<Variable, LV> combinedMap = new HashMap<>(external.variables());
@@ -485,6 +485,9 @@ public class ComputeLinkedVariables {
         Set<Variable> staticallyAssigned = staticallyAssignedVariables.get(variable);
         if (staticallyAssigned != null) {
             staticallyAssigned.forEach(v -> map.put(v, LINK_STATICALLY_ASSIGNED));
+        }
+        if (!Collections.disjoint(staticallyAssigned, linkingNotYetSet)) {
+            return NOT_YET_SET;
         }
         map.remove(variable); // no self references
         if (map.isEmpty()) {
