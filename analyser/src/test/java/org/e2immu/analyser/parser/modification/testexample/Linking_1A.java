@@ -56,7 +56,7 @@ public class Linking_1A {
         Supplier<X> s = supplier::get;
         return s.get();
     }
-/*
+
     static <X> X s0a(Supplier<X> supplier) {
         //noinspection ALL
         Supplier<X> s = new Supplier<X>() {
@@ -67,7 +67,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-*/
+
     static M s1(Supplier<M> supplier) {
         return supplier.get();
     }
@@ -83,7 +83,7 @@ public class Linking_1A {
         Supplier<M> s = supplier::get;
         return s.get();
     }
-/*
+
     static M s1a(Supplier<M> supplier) {
         //noinspection ALL
         Supplier<M> s = new Supplier<>() {
@@ -94,7 +94,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-*/
+
     static Integer s2(Supplier<Integer> supplier) {
         return supplier.get();
     }
@@ -110,7 +110,7 @@ public class Linking_1A {
         Supplier<Integer> s = supplier::get;
         return s.get();
     }
-/*
+
     static Integer s2a(Supplier<Integer> supplier) {
         Supplier<Integer> s = new Supplier<>() {
             @Override
@@ -120,7 +120,7 @@ public class Linking_1A {
         };
         return s.get();
     }
-*/
+
     // predicate
 
     static <X> boolean p0(X x, Predicate<X> predicate) {
@@ -138,7 +138,7 @@ public class Linking_1A {
         Predicate<X> p = predicate::test;
         return p.test(x);
     }
-/*
+
     static <X> boolean p0a(X x, Predicate<X> predicate) {
         Predicate<X> p = new Predicate<>() {
             @Override
@@ -148,7 +148,7 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-*/
+
     static boolean p1(M x, Predicate<M> predicate) {
         return predicate.test(x);
     }
@@ -164,7 +164,7 @@ public class Linking_1A {
         Predicate<M> p = predicate::test;
         return p.test(x);
     }
-/*
+
     static boolean p1a(M x, Predicate<M> predicate) {
         Predicate<M> p = new Predicate<>() {
             @Override
@@ -174,7 +174,7 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-*/
+
     static boolean p2(Integer x, Predicate<Integer> predicate) {
         return predicate.test(x);
     }
@@ -190,7 +190,7 @@ public class Linking_1A {
         Predicate<Integer> p = predicate::test;
         return p.test(x);
     }
-/*
+
     static boolean p2a(Integer x, Predicate<Integer> predicate) {
         Predicate<Integer> p = new Predicate<>() {
             @Override
@@ -200,7 +200,7 @@ public class Linking_1A {
         };
         return p.test(x);
     }
-*/
+
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {
@@ -221,18 +221,18 @@ public class Linking_1A {
         c.accept(x);
         return consumer;
     }
-/*
+
     static <X> Consumer<X> c0a(X x, Consumer<X> consumer) {
         Consumer<X> c = new Consumer<X>() {
             @Override
-            public void accept(X x) {
-                consumer.accept(x);
+            public void accept(X xx) {
+                consumer.accept(xx);
             }
         };
         c.accept(x);
         return consumer;
     }
-*/
+
     static Consumer<M> c1(M m, Consumer<M> consumer) {
         consumer.accept(m);
         return consumer;

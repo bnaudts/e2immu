@@ -47,13 +47,20 @@ public class LinkHelper {
         this(context, methodInfo, context.getAnalyserContext().getMethodAnalysis(methodInfo));
     }
 
-    public LinkHelper(EvaluationResult context, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    /*
+    we move from 'methodIn' to the method actually used by the hidden content selector of 'methodIn'.
+    This is relevant in case of anonymous implementations of functional interfaces, see e.g. Linking_1A.s1a()
+     */
+    public LinkHelper(EvaluationResult context, MethodInfo methodInfoIn, MethodAnalysis methodAnalysis) {
         this.context = context;
-        this.methodInfo = methodInfo;
-        this.methodAnalysis = methodAnalysis;
-        hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
-        assert hiddenContentTypes != null : "For method " + methodInfo;
-        ParameterizedType formalObject = methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
+        HiddenContentSelector methodHcs = Objects.requireNonNullElse(methodAnalysis.getHiddenContentSelector(),
+                HiddenContentSelector.None.INSTANCE);
+        hiddenContentTypes = Objects.requireNonNullElseGet(methodHcs.hiddenContentTypes(),
+                () -> methodInfoIn.methodResolution.get().hiddenContentTypes());
+        this.methodInfo = hiddenContentTypes.getMethodInfo();
+        this.methodAnalysis = this.methodInfo == methodInfoIn ? methodAnalysis
+                : context.getAnalyserContext().getMethodAnalysis(this.methodInfo);
+        ParameterizedType formalObject = this.methodInfo.typeInfo.asParameterizedType(context.getAnalyserContext());
         hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes, formalObject);
     }
 

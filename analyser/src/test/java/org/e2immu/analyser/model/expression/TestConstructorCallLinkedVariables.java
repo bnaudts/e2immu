@@ -98,9 +98,9 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, independent HC, 2")
     public void test2cb() {
-        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
         MethodInfo constructor = constructorOneArgument(mutablePtWithOneTypeParameter, tp0Pt,
-                MultiLevel.INDEPENDENT_HC_DV, select0, new HiddenContentSelector.All(0));
+                MultiLevel.INDEPENDENT_HC_DV, select0, new HiddenContentSelector.All(null, 0));
 
         ParameterInfo p0 = constructor.methodInspection.get().getParameters().get(0);
         assertEquals("Type param T", p0.parameterizedType.toString());

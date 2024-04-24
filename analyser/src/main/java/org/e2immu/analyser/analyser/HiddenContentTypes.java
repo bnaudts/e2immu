@@ -332,6 +332,10 @@ public class HiddenContentTypes {
         return Map.copyOf(result);
     }
 
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
+    }
+
     /*
      The hidden content selector's hct indices (the keys in the map) are computed with respect to 'this'.
      They map to indices (the values in the map) which exist in 'from'.
@@ -365,6 +369,8 @@ public class HiddenContentTypes {
             if (from.arrays > 0 && hiddenContentSelector.selectArrayElement(from.arrays)) {
                 LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
                 iat = new IndicesAndType(indices, to);
+            } else if(LV.ALL_INDICES.equals(entry1.getKey())) {
+                     iat = new IndicesAndType(entry1.getKey(), to);
             } else {
                 iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to);
             }
@@ -474,6 +480,7 @@ public class HiddenContentTypes {
 
     public boolean isAssignableTo(InspectionProvider inspectionProvider, NamedType namedType, int i) {
         NamedType nt = typeByIndex(i);
+        assert nt != null;
         if (namedType.equals(nt)) return true;
         if (nt instanceof TypeParameter tp && namedType instanceof TypeParameter tp2) {
             assert !tp.isMethodTypeParameter() && !tp2.isMethodTypeParameter() : "Not implemented";

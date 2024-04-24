@@ -28,7 +28,9 @@ import org.e2immu.analyser.analyser.statementanalyser.StatementSimplifier;
 import org.e2immu.analyser.analyser.util.*;
 import org.e2immu.analyser.analysis.*;
 import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
+import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.TypeAnalysisImpl;
+import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -36,6 +38,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
@@ -70,7 +73,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     public static final String DETECT_MISSING_STATIC_MODIFIER = "detectMissingStaticModifier";
     public static final String EVENTUAL_PREP_WORK = "eventualPrepWork";
     public static final String ANNOTATE_EVENTUAL = "annotateEventual";
-    public static final String COMPUTE_INDEPENDENT = "methodIsIndependent";
     public static final String SET_POST_CONDITION = "setPostCondition";
     public static final String COMPUTE_SSE = "computeStaticSideEffects";
 
@@ -173,6 +175,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .add(DETECT_ILLEGAL_MODIFICATION_IN_CONTAINER, this::detectIllegalModificationInInheritedContainer);
 
         analyserComponents = builder.setLimitCausesOfDelay(true).build();
+
+        // must do this before statement analysis, is guaranteed to run
+        computeHiddenContentSelector(analyserContextInput);
     }
 
     @Override
@@ -278,6 +283,42 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         return false;
     }
 
+    private void computeHiddenContentSelector(AnalyserContext analyserContext) {
+        MethodResolution methodResolution = methodInfo.methodResolution.get();
+        MethodInfo overrideWithMostHiddenContent = overloadWithMostHiddenContent(methodInfo, methodResolution);
+        MethodInspection overrideInspection = analyserContext.getMethodInspection(overrideWithMostHiddenContent);
+        ParameterizedType returnType = overrideInspection.getReturnType();
+        HiddenContentTypes hctOverride = overrideWithMostHiddenContent.methodResolution.get().hiddenContentTypes();
+        HiddenContentSelector hcs = HiddenContentSelector.selectAll(hctOverride, returnType);
+        methodAnalysis.setHiddenContentSelector(hcs);
+        methodAnalysis.parameterAnalyses.forEach(pa -> {
+            if (pa instanceof ParameterAnalysisImpl.Builder builder) {
+                if (!builder.hiddenContentSelectorIsSet()) {
+                    ParameterizedType pt = overrideInspection.getParameters().get(pa.getParameterInfo().index).parameterizedType;
+                    HiddenContentSelector hcsPa = HiddenContentSelector.selectAll(hctOverride, pt);
+                    builder.setHiddenContentSelector(hcsPa);
+                }
+            } else throw new UnsupportedOperationException();
+        });
+    }
+
+    private MethodInfo overloadWithMostHiddenContent(MethodInfo methodInfo, MethodResolution methodResolution) {
+        Set<MethodInfo> overrides = methodResolution.overrides();
+        if (overrides.isEmpty()) return methodInfo;
+        if (overrides.size() == 1) return overrides.stream().findFirst().orElseThrow();
+        Map<MethodInfo, Integer> map = overrides.stream().collect(Collectors.toUnmodifiableMap(m -> m,
+                m -> countHiddenContent(analyserContext, m)));
+        return overrides.stream().min((o1, o2) -> map.get(o2) - map.get(o1)).orElseThrow();
+    }
+
+    private int countHiddenContent(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
+        HiddenContentTypes hiddenContentTypes = methodInfo.methodResolution.get().hiddenContentTypes();
+        MethodInspection mi = inspectionProvider.getMethodInspection(methodInfo);
+        Stream<ParameterizedType> types = Stream.concat(Stream.of(mi.getReturnType()),
+                mi.getParameters().stream().map(pi -> pi.parameterizedType));
+        return (int) types.filter(t -> hiddenContentTypes.indexOfOrNull(t) != null).count();
+    }
+
     /*
     we return field references to this or to a variable in the closure, and variables from any closure.
     "this" is not included; neither are parameters of the current method.
@@ -285,7 +326,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private AnalysisStatus computeLinkedVariables(SharedState sharedState) {
         assert !methodAnalysis.linkedVariablesIsFinal();
         if (methodInfo.isConstructor() || !methodInfo.hasReturnValue()) {
-            methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+            if (!methodAnalysis.hiddenContentSelectorIsSet()) {
+                methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+            }
             methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             methodAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
             return DONE;
@@ -309,14 +352,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
         CausesOfDelay allDelays = linkDelays.merge(independent.causesOfDelay());
-
-        if (!methodAnalysis.hiddenContentSelectorIsSet()) {
-            HiddenContentTypes hctMethod = methodInfo.methodResolution.get().hiddenContentTypes();
-            ParameterizedType returnType = variableInfo.getValue().returnType();
-            HiddenContentSelector hcs = HiddenContentSelector.selectAll(hctMethod, returnType);
-            methodAnalysis.setHiddenContentSelector(hcs);
-        }
-        return AnalysisStatus.of(linkDelays);
+        return AnalysisStatus.of(allDelays);
     }
 
     private DV independent(LinkedVariables linkedVariables, EvaluationContext evaluationContext) {

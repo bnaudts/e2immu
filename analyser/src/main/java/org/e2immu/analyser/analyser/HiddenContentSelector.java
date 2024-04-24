@@ -59,11 +59,17 @@ public abstract sealed class HiddenContentSelector
         }
     }
 
+    public HiddenContentTypes hiddenContentTypes() {
+        return null;
+    }
+
     public static final class All extends HiddenContentSelector {
         private final int hiddenContentIndex;
+        private final HiddenContentTypes hiddenContentTypes;
 
-        public All(int hiddenContentIndex) {
+        public All(HiddenContentTypes hiddenContentTypes, int hiddenContentIndex) {
             this.hiddenContentIndex = hiddenContentIndex;
+            this.hiddenContentTypes = hiddenContentTypes;
         }
 
         @Override
@@ -83,6 +89,11 @@ public abstract sealed class HiddenContentSelector
         @Override
         public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
             return Map.of(LV.ALL_INDICES, type);
+        }
+
+        @Override
+        public HiddenContentTypes hiddenContentTypes() {
+            return hiddenContentTypes;
         }
     }
 
@@ -110,14 +121,21 @@ public abstract sealed class HiddenContentSelector
         map value: how to extract from the type
          */
         private final Map<Integer, LV.Indices> map;
+        private final HiddenContentTypes hiddenContentTypes;
 
-        public CsSet(Map<Integer, LV.Indices> map) {
+        public CsSet(HiddenContentTypes hiddenContentTypes, Map<Integer, LV.Indices> map) {
             this.map = map;
+            this.hiddenContentTypes = hiddenContentTypes;
+        }
+
+        @Override
+        public HiddenContentTypes hiddenContentTypes() {
+            return hiddenContentTypes;
         }
 
         // for testing
-        public static HiddenContentSelector selectTypeParameter(int i) {
-            return new CsSet(Map.of(i, new LV.Indices(i)));
+        public static HiddenContentSelector selectTypeParameter(HiddenContentTypes hiddenContentTypes, int i) {
+            return new CsSet(hiddenContentTypes, Map.of(i, new LV.Indices(i)));
         }
 
         @Override
@@ -176,7 +194,7 @@ public abstract sealed class HiddenContentSelector
             Map<Integer, LV.Indices> newMap = map.entrySet().stream().collect(Collectors.toUnmodifiableMap(
                     e -> mapMethodHCTIndexToTypeHCTIndex.getOrDefault(e.getKey(), e.getKey()),
                     Map.Entry::getValue, (i1, i2) -> i1));
-            return new CsSet(newMap);
+            return new CsSet(hiddenContentTypes, newMap);
         }
     }
 
@@ -202,13 +220,13 @@ public abstract sealed class HiddenContentSelector
         if (type.isTypeParameter()) {
             assert index != null;
             if (haveArrays) {
-                return new CsSet(Map.of(index, new LV.Indices(index)));
+                return new CsSet(hiddenContentTypes, Map.of(index, new LV.Indices(index)));
             }
-            return new All(index);
+            return new All(hiddenContentTypes, index);
         }
         if (type.typeInfo == null) {
             // ?, equivalent to ? extends Object; 0 for now
-            return new All(0);
+            return new All(hiddenContentTypes, 0);
         }
         if (type.arrays > 0) {
             // assert type.parameters.isEmpty(); // not doing the combination
@@ -217,7 +235,7 @@ public abstract sealed class HiddenContentSelector
         Map<Integer, LV.Indices> map;
         if (type.typeInfo.equals(hiddenContentTypes.getTypeInfo())) {
             map = hiddenContentTypes.selectAll().stream()
-                    .collect(Collectors.toUnmodifiableMap(i -> i, i-> {
+                    .collect(Collectors.toUnmodifiableMap(i -> i, i -> {
                         return new LV.Indices(i);
                     }));
         } else {
@@ -227,7 +245,7 @@ public abstract sealed class HiddenContentSelector
         if (map.isEmpty()) {
             return None.INSTANCE;
         }
-        return new CsSet(map);
+        return new CsSet(hiddenContentTypes, map);
     }
 
     private static void recursivelyCollectHiddenContentParameters(HiddenContentTypes hiddenContentTypes,

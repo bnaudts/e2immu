@@ -122,7 +122,7 @@ public class TestHiddenContentTypes2 {
 
     @Test
     public void test2() {
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(0)));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, new LV.Indices(0)));
         assertEquals("0", hcs.toString());
         ParameterizedType pt = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
         assertEquals("Type com.foo.List<String>", pt.toString());
@@ -131,7 +131,7 @@ public class TestHiddenContentTypes2 {
 
     @Test
     public void test2b() {
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(Set.of(new LV.Index(List.of(0, 0))))));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, new LV.Indices(Set.of(new LV.Index(List.of(0, 0))))));
         assertEquals("0=0.0", hcs.toString());
         ParameterizedType pt = new ParameterizedType(list, List.of(new ParameterizedType(arrayList, List.of(primitives.stringParameterizedType()))));
         assertEquals("Type com.foo.List<com.foo.ArrayList<String>>", pt.toString());
@@ -153,7 +153,7 @@ public class TestHiddenContentTypes2 {
     public void test4a() {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
         LV.Indices i0 = new LV.Indices(0);
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i0));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i0));
         // from is expressed in terms of the hidden content of hctAl
         ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
         assertEquals("Type com.foo.Collection<EA>", from.toString());
@@ -175,7 +175,7 @@ public class TestHiddenContentTypes2 {
     public void test4b() {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
         LV.Indices i0 = new LV.Indices(0);
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i0));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i0));
         // from is expressed in terms of the hidden content of hctAl
         ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
         assertEquals("Type com.foo.Collection<EA>", from.toString());
@@ -198,7 +198,7 @@ public class TestHiddenContentTypes2 {
         HiddenContentTypes hctMap = map.typeResolution.get().hiddenContentTypes();
         LV.Indices i00 = new LV.Indices(Set.of(new LV.Index(List.of(0, 0))));
         LV.Indices i01 = new LV.Indices(Set.of(new LV.Index(List.of(0, 1))));
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(Map.of(0, i00, 1, i01));
+        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i00, 1, i01));
         assertEquals("0=0.0,1=0.1", hcs.toString());
 
         // from is expressed in terms of the hidden content of hctMap

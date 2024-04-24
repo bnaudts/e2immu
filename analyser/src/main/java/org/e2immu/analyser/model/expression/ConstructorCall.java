@@ -20,6 +20,7 @@ import org.e2immu.analyser.analyser.delay.DelayFactory;
 import org.e2immu.analyser.analyser.impl.context.EvaluationResultImpl;
 import org.e2immu.analyser.analysis.FieldAnalysis;
 import org.e2immu.analyser.analysis.MethodAnalysis;
+import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.*;
@@ -470,32 +471,27 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
             EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
             LinkedVariables lvs;
             TypeInspection typeInspection = context.getAnalyserContext().getTypeInspection(anonymousClass);
-            Expression expression;
 
             MethodInspection sami = typeInspection.anonymousTypeImplementsFunctionalInterface(context.getAnalyserContext());
             if (sami != null) {
-                // we follow the same rules as in MethodReference and Lambda: if modifying, then the result
-                // links to the parameters of the SAM; if non-modifying, the result links to the result of the SAM.
                 MethodAnalysis sama = context.getAnalyserContext().getMethodAnalysis(sami.getMethodInfo());
-                DV modified = sama.getProperty(Property.MODIFIED_METHOD);
-                LinkHelper.LambdaResult lr = LinkHelper.lambdaLinking(context.evaluationContext(),
-                        sami.getMethodInfo());
-                if (modified.isDelayed()) {
-                    expression = DelayedExpression.forModification(this, modified.causesOfDelay());
-                    lvs = lr.delay(modified.causesOfDelay());
-                } else {
-                    if (modified.valueIsTrue()) {
-                        lvs = lr.mergedLinkedToParameters();
-                    } else {
-                        lvs = lr.linkedToReturnValue();
-                    }
-                    expression = this;
-                }
+                LinkHelper linkHelper = new LinkHelper(context, sami.getMethodInfo(), sama);
+                ParameterizedType cft = typeInspection.interfacesImplemented().get(0);
+                DV indepOfMethod = sama.getProperty(Property.INDEPENDENT);
+                HiddenContentSelector hcsMethod = sama.getHiddenContentSelector();
+                LinkedVariables lvsObject = sama.getLinkedVariables();
+                ParameterizedType concreteReturnType = sami.getReturnType();
+                List<DV> independentOfParams = sama.getParameterAnalyses().stream()
+                        .map(pa -> pa.getProperty(Property.INDEPENDENT)).toList();
+                List<HiddenContentSelector> hcsParams = sama.getParameterAnalyses().stream()
+                        .map(ParameterAnalysis::getHiddenContentSelector).toList();
+                List<ParameterizedType> parameterTypes = parameterExpressions.stream().map(Expression::returnType).toList();
+                lvs = linkHelper.functional(indepOfMethod, hcsMethod, lvsObject, concreteReturnType, independentOfParams,
+                        hcsParams, parameterTypes, cft);
             } else {
                 lvs = LinkedVariables.EMPTY;
-                expression = this;
             }
-            return builder.setLinkedVariablesOfExpression(lvs).setExpression(expression).build();
+            return builder.setLinkedVariablesOfExpression(lvs).setExpression(this).build();
         }
 
         // "normal"

@@ -105,7 +105,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                                               boolean p1Varargs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p0Type, "p0", 0);
-        HiddenContentSelector p0Hcs = HiddenContentSelector.CsSet.selectTypeParameter(0);
+        HiddenContentSelector p0Hcs = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
         ParameterInspection.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p1Type, "p1", 1).setVarArgs(p1Varargs);
 

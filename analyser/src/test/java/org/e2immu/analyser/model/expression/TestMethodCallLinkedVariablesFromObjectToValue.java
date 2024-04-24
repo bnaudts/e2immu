@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
-    private final HiddenContentSelector SELECT_0 = HiddenContentSelector.CsSet.selectTypeParameter(0);
+    private final HiddenContentSelector SELECT_0 = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
 
     private MethodInfo methodWithTwoArgs(DV identity,
                                          DV fluent,
@@ -332,7 +332,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV,
-                new HiddenContentSelector.All(0), tpHc0Pt, immutableHcWithOneTypeParameter);
+                new HiddenContentSelector.All(null,0), tpHc0Pt, immutableHcWithOneTypeParameter);
         ParameterizedType immutableMutable = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(mutablePt));
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableMutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 lv0hc0);

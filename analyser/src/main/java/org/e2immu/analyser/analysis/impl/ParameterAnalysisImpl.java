@@ -246,7 +246,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     LV.Links links;
                     if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
                         HiddenContentTypes hctObject = primitives.objectTypeInfo().typeResolution.get().hiddenContentTypes();
-                        HiddenContentSelector select0 = new HiddenContentSelector.CsSet(Map.of(0, new LV.Indices(0)));
+                        HiddenContentSelector select0 = new HiddenContentSelector.CsSet(hctObject, Map.of(0, new LV.Indices(0)));
                         links = LV.matchingLinks(select0, select0);
                     } else {
                         links = LV.matchingLinks(mine, theirs);
