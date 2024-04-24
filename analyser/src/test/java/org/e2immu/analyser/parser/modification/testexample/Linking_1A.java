@@ -310,7 +310,7 @@ public class Linking_1A {
         Function<X, Y> f = function::apply;
         return f.apply(x);
     }
-/*
+
     static <X, Y> Y f0a(X x, Function<X, Y> function) {
         //noinspection ALL
         Function<X, Y> f = new Function<X, Y>() {
@@ -321,7 +321,7 @@ public class Linking_1A {
         };
         return f.apply(x);
     }
-*/
+
     static <X> M f1(X x, Function<X, M> function) {
         return function.apply(x);
     }
@@ -337,7 +337,7 @@ public class Linking_1A {
         Function<X, M> f = function::apply;
         return f.apply(x);
     }
-/*
+
     static <X> M f1a(X x, Function<X, M> function) {
         Function<X, M> f = new Function<X, M>() {
             @Override
@@ -347,7 +347,7 @@ public class Linking_1A {
         };
         return f.apply(x);
     }
-*/
+
     static <Y> Y f2(M m, Function<M, Y> function) {
         return function.apply(m);
     }
@@ -363,7 +363,7 @@ public class Linking_1A {
         Function<M, Y> f = function::apply;
         return f.apply(m);
     }
-/*
+
     static <Y> Y f2a(M m, Function<M, Y> function) {
         Function<M, Y> f = new Function<M, Y>() {
             @Override
@@ -375,7 +375,7 @@ public class Linking_1A {
     }
 
     // equivalent to List.add(), where we'd return the size rather than boolean
-*/
+
     static <X> Integer f3(X x, Function<X, Integer> function) {
         return function.apply(x);
     }
@@ -391,7 +391,7 @@ public class Linking_1A {
         Function<X, Integer> f = function::apply;
         return f.apply(x);
     }
-/*
+
     static <X> Integer f3a(X x, Function<X, Integer> function) {
         Function<X, Integer> f = new Function<X, Integer>() {
             @Override
@@ -403,7 +403,7 @@ public class Linking_1A {
     }
 
     // equivalent to List.get(index)
-*/
+
     static <Y> Y f4(int i, Function<Integer, Y> function) {
         return function.apply(i);
     }
@@ -419,7 +419,7 @@ public class Linking_1A {
         Function<Integer, Y> f = function::apply;
         return f.apply(i);
     }
-/*
+
     static <Y> Y f4a(int i, Function<Integer, Y> function) {
         Function<Integer, Y> f = new Function<Integer, Y>() {
             @Override
@@ -429,7 +429,7 @@ public class Linking_1A {
         };
         return f.apply(i);
     }
-*/
+
     static M f5(N n, Function<N, M> function) {
         return function.apply(n);
     }
@@ -445,7 +445,7 @@ public class Linking_1A {
         Function<N, M> f = function::apply;
         return f.apply(n);
     }
-/*
+
     static M f5a(N n, Function<N, M> function) {
         Function<N, M> f = new Function<N, M>() {
             @Override
@@ -453,11 +453,11 @@ public class Linking_1A {
                 return function.apply(n);
             }
         };
-        return function.apply(n);
+        return f.apply(n);
     }
 
     // equivalent to Map.get(string), List.get(...)
-*/
+
     static M f6(String s, Function<String, M> function) {
         return function.apply(s);
     }
@@ -473,7 +473,7 @@ public class Linking_1A {
         Function<String, M> f = function::apply;
         return f.apply(s);
     }
-/*
+
     static M f6a(String s, Function<String, M> function) {
         Function<String, M> f = new Function<String, M>() {
             @Override
@@ -485,7 +485,7 @@ public class Linking_1A {
     }
 
     // equivalent to List.add(), where we'd return some String rather than boolean
-*/
+
     static String f7(M m, Function<M, String> function) {
         return function.apply(m);
     }
@@ -501,7 +501,7 @@ public class Linking_1A {
         Function<M, String> f = function::apply;
         return f.apply(m);
     }
-/*
+
     static String f7a(M m, Function<M, String> function) {
         //noinspection ALL
         Function<M, String> f = new Function<M, String>() {
@@ -512,7 +512,7 @@ public class Linking_1A {
         };
         return f.apply(m);
     }
-*/
+
     static String f8(int i, Function<Integer, String> function) {
         return function.apply(i);
     }
@@ -528,7 +528,7 @@ public class Linking_1A {
         Function<Integer, String> f = function::apply;
         return f.apply(i);
     }
-/*
+
     static String f8a(int i, Function<Integer, String> function) {
         Function<Integer, String> f = new Function<>() {
             @Override
@@ -540,7 +540,7 @@ public class Linking_1A {
     }
 
     // function, types that share hidden content
-*/
+
     static <T> T f9(T t, Function<T, T> function) {
         return function.apply(t);
     }
@@ -556,7 +556,7 @@ public class Linking_1A {
         Function<T, T> f = function::apply;
         return f.apply(t);
     }
-/*
+
     static <T> T f9a(T t, Function<T, T> function) {
         Function<T, T> f = new Function<>() {
             @Override
@@ -566,7 +566,7 @@ public class Linking_1A {
         };
         return f.apply(t);
     }
-
+/*
     static <T> T f10(List<T> ts, Function<List<T>, T> function) {
         return function.apply(ts);
     }

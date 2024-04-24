@@ -61,6 +61,7 @@ public class LinkHelper {
         hcsSource = HiddenContentSelector.selectAll(hiddenContentTypes, formalObject);
     }
 
+    // IMPROVE consider storing this information in methodAnalysis; it is often needed
     private static HiddenContentTypes bestHiddenContentTypes(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         HiddenContentSelector methodHcs = methodAnalysis.getHiddenContentSelector();
         if (methodHcs != null && !methodHcs.isNone()) return methodHcs.hiddenContentTypes();
