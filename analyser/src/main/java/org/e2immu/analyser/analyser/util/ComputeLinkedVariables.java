@@ -164,12 +164,20 @@ public class ComputeLinkedVariables {
         LinkedVariables external = Objects.requireNonNullElse(
                         externalLinkedVariables.apply(variable), LinkedVariables.EMPTY)
                 .remove(removePredicate);
-        LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
-                : vi1.getLinkedVariables().remove(reassigned);
-        Map<Variable, LV> combinedMap = new HashMap<>(external.variables());
-        inVi.stream().forEach(e -> combinedMap.merge(e.getKey(), e.getValue(), LV::min));
-        LinkedVariables combined = LinkedVariables.of(combinedMap);
-
+        LinkedVariables combined;
+        if (external == NOT_YET_SET) {
+            combined = NOT_YET_SET;
+        } else {
+            LinkedVariables inVi = isBeingReassigned ? LinkedVariables.EMPTY
+                    : vi1.getLinkedVariables().remove(reassigned);
+            if(inVi == NOT_YET_SET) {
+                combined = NOT_YET_SET;
+            } else {
+                Map<Variable, LV> combinedMap = new HashMap<>(external.variables());
+                inVi.stream().forEach(e -> combinedMap.merge(e.getKey(), e.getValue(), LV::min));
+                combined = LinkedVariables.of(combinedMap);
+            }
+        }
         LinkedVariables afterChangeToDelay;
         if (viE != vi1
             && viE.getValue() instanceof DelayedVariableExpression dve

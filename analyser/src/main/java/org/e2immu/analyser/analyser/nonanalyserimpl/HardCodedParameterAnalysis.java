@@ -55,6 +55,11 @@ record HardCodedParameterAnalysis(String fullyQualifiedName) implements Paramete
     }
 
     @Override
+    public LinkedVariables getLinkedVariables() {
+        return LinkedVariables.EMPTY;
+    }
+
+    @Override
     public HiddenContentSelector getHiddenContentSelector() {
         return HiddenContentSelector.None.INSTANCE;
     }

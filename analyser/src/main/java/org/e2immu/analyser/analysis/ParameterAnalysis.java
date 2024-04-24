@@ -137,4 +137,6 @@ public interface ParameterAnalysis extends Analysis {
     or vice versa?
      */
     HiddenContentSelector getHiddenContentSelector();
+
+    LinkedVariables getLinkedVariables();
 }

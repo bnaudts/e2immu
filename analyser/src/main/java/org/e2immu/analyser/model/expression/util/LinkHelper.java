@@ -175,6 +175,7 @@ public class LinkHelper {
                                       List<DV> independentOfParameter,
                                       List<HiddenContentSelector> hcsParameters,
                                       List<ParameterizedType> expressionTypes,
+                                      List<LinkedVariables> linkedVariablesOfParameters,
                                       ParameterizedType concreteFunctionalType) {
         LinkedVariables lvs = functional(independentOfMethod, hcsMethod, linkedVariablesOfObject, concreteReturnType,
                 concreteFunctionalType);
@@ -183,8 +184,14 @@ public class LinkHelper {
             int index = Math.min(hcsParameters.size() - 1, i);
             DV independent = independentOfParameter.get(index);
             HiddenContentSelector hcs = hcsParameters.get(index);
-            LinkedVariables lvsParameter = functional(independent, hcs, linkedVariablesOfObject, expressionType,
-                    concreteFunctionalType);
+            LinkedVariables linkedVariables = linkedVariablesOfParameters.get(index);
+            LinkedVariables lvsParameter;
+            if (linkedVariables == LinkedVariables.NOT_YET_SET) {
+                lvsParameter = linkedVariables;
+            } else {
+                lvsParameter = functional(independent, hcs, linkedVariables, expressionType,
+                        concreteFunctionalType);
+            }
             lvs = lvs.merge(lvsParameter);
             i++;
         }

@@ -129,10 +129,14 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-            if (!builder.hiddenContentSelectorIsSet()) {
+            if (builder.hiddenContentSelectorNotYetSet()) {
                 ParameterizedType parameterType = builder.getParameterInfo().parameterizedType;
                 HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, parameterType);
                 builder.setHiddenContentSelector(hcs);
+            }
+            if(builder.linkedVariablesNotYetSet()) {
+                // mainly meant to catch links to the closure in anonymous types.
+                builder.setLinkedVariables(LinkedVariables.EMPTY);
             }
             List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
             analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,

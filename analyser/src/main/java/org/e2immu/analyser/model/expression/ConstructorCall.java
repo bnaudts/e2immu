@@ -485,9 +485,11 @@ public class ConstructorCall extends BaseExpression implements HasParameterExpre
                         .map(pa -> pa.getProperty(Property.INDEPENDENT)).toList();
                 List<HiddenContentSelector> hcsParams = sama.getParameterAnalyses().stream()
                         .map(ParameterAnalysis::getHiddenContentSelector).toList();
-                List<ParameterizedType> parameterTypes = parameterExpressions.stream().map(Expression::returnType).toList();
+                List<LinkedVariables> lvsParams = sama.getParameterAnalyses().stream()
+                        .map(ParameterAnalysis::getLinkedVariables).toList();
+                List<ParameterizedType> parameterTypes = sami.getParameters().stream().map(ParameterInfo::parameterizedType).toList();
                 lvs = linkHelper.functional(indepOfMethod, hcsMethod, lvsObject, concreteReturnType, independentOfParams,
-                        hcsParams, parameterTypes, cft);
+                        hcsParams, parameterTypes, lvsParams, cft);
             } else {
                 lvs = LinkedVariables.EMPTY;
             }

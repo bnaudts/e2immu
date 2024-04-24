@@ -93,6 +93,7 @@ public class Test_Linking1A extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             boolean isStatement0 = "0".equals(d.statementId());
             boolean isStatement1 = "1".equals(d.statementId());
+            boolean isStatement2 = "2".equals(d.statementId());
             String myAnonymous = anonymousOfEnclosing.get(d.methodInfo().name);
 
             if (d.variable() instanceof ReturnVariable) {
@@ -188,7 +189,7 @@ public class Test_Linking1A extends CommonTestRunner {
                         if (isStatement1) {
                             assertCurrentValue(d, 1, "(new " + myAnonymous
                                                      + "(){public boolean test(M x){return predicate.test(x);}}).test(x)");
-                            assertLinked(d, it(0, ""));
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, ""));
                         }
                     }
                     case "p1m" -> {
@@ -197,10 +198,16 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it(0, ""));
                         }
                     }
-                    case "p2l", "p2a" -> {
+                    case "p2l" -> {
                         if (isStatement1) {
                             assertCurrentValue(d, 1, "predicate.test(x)");
                             assertLinked(d, it(0, ""));
+                        }
+                    }
+                    case "p2a" -> {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 1, "predicate.test(x)");
+                            assertLinked(d, it0("NOT_YET_SET"), it(0, ""));
                         }
                     }
                     case "c0" -> {
@@ -429,10 +436,12 @@ public class Test_Linking1A extends CommonTestRunner {
                     }
                 }
                 case "s0a" -> {
-                    if (isStatement0 && "s".equals(d.variableName())) {
-                        assertCurrentValue(d, 0, "new $2(){public X get(){return supplier.get();}}");
-                        assertLinked(d, it(0, "supplier:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0");
+                    if ("s".equals(d.variableName())) {
+                        if (isStatement0) {
+                            assertCurrentValue(d, 1, "new $2(){public X get(){return supplier.get();}}");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "supplier:4"));
+                            assertSingleLv(d, 1, 0, "0-4-0");
+                        }
                     }
                 }
                 case "s1m" -> {
@@ -527,13 +536,13 @@ public class Test_Linking1A extends CommonTestRunner {
                         if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
                             assertCurrentValue(d, 0,
                                     "nullable instance type Consumer<X>/*@IgnoreMods*/");
-                            assertLinked(d, it(0, "xx:4"));
-                            assertSingleLv(d, 0, 0, "0-4-*");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "xx:4"));
+                            assertSingleLv(d, 1, 0, "0-4-*");
                         }
                         if (d.variable() instanceof ParameterInfo pi && "xx".equals(pi.name)) {
                             assertCurrentValue(d, 0, "nullable instance type X/*@Identity*/");
-                            assertLinked(d, it(0, "consumer:4"));
-                            assertSingleLv(d, 0, 0, "*-4-0");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "consumer:4"));
+                            assertSingleLv(d, 1, 0, "*-4-0");
                         }
                     }
                 }
@@ -543,8 +552,37 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 0, "new " + myAnonymous
                                                      + "(){public void accept(X xx){consumer.accept(xx);}}");
                             assertInstanceOf(ConstructorCall.class, d.variableInfo().getValue());
-                           // assertLinked(d, it(0, "consumer:4")); // FIXME debug!
-                           // assertSingleLv(d, 0, 0, "0-4-0");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "consumer:4"));
+                            assertSingleLv(d, 1, 0, "0-4-0");
+                        }
+                        if (isStatement1) {
+                            assertCurrentValue(d, 1, "new " + myAnonymous
+                                                     + "(){public void accept(X xx){consumer.accept(xx);}}");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "consumer:4,x:4"));
+                            assertSingleLv(d, 1, 0, "0-4-0");
+                            assertSingleLv(d, 1, 1, "0-4-*");
+                        }
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 1, "nullable instance type X/*@Identity*/");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "c:4,consumer:4"));
+                            assertSingleLv(d, 1, 0, "*-4-0");
+                            assertSingleLv(d, 1, 1, "*-4-0");
+                        }
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "consumer".equals(pi.name)) {
+                        if (isStatement1) {
+                            assertCurrentValue(d, 1,
+                                    "nullable instance type Consumer<X>/*@IgnoreMods*/");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "c:4,x:4"));
+                            assertSingleLv(d, 1, 0, "0-4-0");
+                            assertSingleLv(d, 1, 1, "0-4-*");
+                        }
+                        if (isStatement2) {
+                            assertCurrentValue(d, 1,
+                                    "nullable instance type Consumer<X>/*@IgnoreMods*/");
+                            assertLinked(d, it0("NOT_YET_SET"), it(1, "c:4,x:4"));
                         }
                     }
                 }
@@ -711,13 +749,13 @@ public class Test_Linking1A extends CommonTestRunner {
             }
             if ("get".equals(d.methodInfo().name) && "s0a".equals(d.enclosingMethod().name)) {
                 assertEquals("$2:X - get:", hct.toString());
-                assertDv(d, 0, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
+                assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
                     assertEquals(0, all.getHiddenContentIndex());
                 } else fail();
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
-                assertLinked(d, lvs, it(0, "supplier:4"));
-                assertSingleLv(d, lvs, 0, 0, "*-4-0");
+                assertLinked(d, lvs, it0("supplier:-1"), it(0, "supplier:4"));
+                assertSingleLv(d, lvs, 1, 0, "*-4-0");
             }
             if ("test".equals(d.methodInfo().name) && "p0l".equals(d.enclosingMethod().name)) {
                 String expected = d.iteration() == 0 ? "<m:test>" : "/*inline test*/predicate.test(t)";
@@ -748,7 +786,10 @@ public class Test_Linking1A extends CommonTestRunner {
                     assertEquals("java.util.function.Consumer.accept(T)",
                             all.hiddenContentTypes().getMethodInfo().fullyQualifiedName);
                 } else fail();
-                // FIXME linked variables should contain closure
+                assertLinked(d, pa.getLinkedVariables(), it0("NOT_YET_SET"),
+                        it(1, "consumer:4"));
+                assertSingleLv(d, pa.getLinkedVariables(), 1, 0, "0-4-*");
+                assertDv(d.p(0), 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
             if ("f10".equals(d.methodInfo().name)) {
                 assertEquals("Linking_1A: - f10:T", hct.toString());

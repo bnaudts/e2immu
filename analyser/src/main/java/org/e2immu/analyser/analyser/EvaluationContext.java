@@ -265,4 +265,16 @@ public interface EvaluationContext {
     Properties defaultValueProperties(ParameterizedType parameterizedType);
 
     Properties defaultValueProperties(ParameterizedType parameterizedType, boolean writable);
+
+    default boolean inClosure(Variable variable) {
+        EvaluationContext closure = getClosure();
+        if (closure == null) return false;
+        return closure.knownVariable(variable);
+    }
+
+    default boolean knownVariable(Variable variable) {
+        StatementAnalyser analyzer = getCurrentStatement();
+        if (analyzer == null) return false;
+        return analyzer.getStatementAnalysis().variableIsSet(variable.fullyQualifiedName());
+    }
 }

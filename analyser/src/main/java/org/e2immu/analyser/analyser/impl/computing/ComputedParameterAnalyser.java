@@ -41,12 +41,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE_ALL;
 import static org.e2immu.analyser.analyser.LV.LINK_ASSIGNED;
 import static org.e2immu.analyser.analyser.LV.LINK_INDEPENDENT;
 import static org.e2immu.analyser.analyser.Property.*;
+import static org.e2immu.analyser.analyser.impl.computing.ComputingMethodAnalyser.connectedToMyTypeHierarchy;
 import static org.e2immu.analyser.model.MultiLevel.*;
 import static org.e2immu.analyser.model.MultiLevel.Effective.*;
 
@@ -59,13 +61,15 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     public static final String ANALYSE_INDEPENDENT_NO_ASSIGNMENT = "PA:analyseIndependentNoAssignment";
     public static final String ANALYSE_CONTAINER_NO_ASSIGNMENT = "PA:analyseContainerNoAssignment";
     public static final String ANALYSE_INDEPENDENT_OF_RETURN_VALUE = "PA:independentOfReturnValue";
+    private static final String ANALYSE_LINKED_VARIABLES = "PA:analyseLinkedVariables";
 
     public ComputedParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         super(analyserContext, parameterInfo);
         AnalyserComponents.Builder<String, SharedState> ac = new AnalyserComponents.Builder<String, SharedState>()
                 .add(CHECK_UNUSED_PARAMETER, this::checkUnusedParameter)
                 .add(ANALYSE_FIRST_ITERATION, this::analyseFirstIteration)
-                .add(ANALYSE_CONTEXT, this::analyseContext);
+                .add(ANALYSE_CONTEXT, this::analyseContext)
+                .add(ANALYSE_LINKED_VARIABLES, this::analyseLinkedVariables);
         if (parameterInfo.owner.methodInspection.get().isFactoryMethod()) {
             ac.add(ANALYSE_INDEPENDENT_OF_RETURN_VALUE, this::analyseIndependentOfReturnValue);
         } else {
@@ -296,6 +300,18 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                         independent = independent.min(independentOfParameter);
                     }
                 }
+            }
+
+            if (sharedState.closure() != null) {
+                LinkedVariables lvs = parameterAnalysis.getLinkedVariables();
+                for (Map.Entry<Variable, LV> e : lvs) {
+                    Variable v = e.getKey();
+                    if (sharedState.closure().knownVariable(v)) {
+                        DV independentOfLv = e.getValue().toIndependent();
+                        independent = independent.min(independentOfLv);
+                    }
+                }
+                delay = delay.merge(lvs.causesOfDelay());
             }
         }
         if (delay.isDelayed()) {
@@ -769,5 +785,35 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
     @Override
     public AnalyserComponents<String, ?> getAnalyserComponents() {
         return null;
+    }
+
+    private AnalysisStatus analyseLinkedVariables(SharedState sharedState) {
+        if (sharedState.iteration() == 0) {
+            parameterAnalysis.setLinkedVariables(LinkedVariables.NOT_YET_SET);
+            return LinkedVariables.NOT_YET_SET_DELAY;
+        }
+        assert parameterAnalysis.linkedVariablesNotYetSet();
+        LinkedVariables lvs;
+        StatementAnalysis lastStatement = analyserContext.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        if (lastStatement == null) {
+            lvs = LinkedVariables.EMPTY;
+        } else {
+            Map<Variable, LV> lvMap = lastStatement.variableStream()
+                    .filter(vi1 -> vi1.getLinkedVariables().value(parameterInfo) != null)
+                    .filter(vi1 -> acceptVariable(sharedState, vi1.variable()))
+                    .collect(Collectors.toUnmodifiableMap(VariableInfo::variable,
+                            vi -> vi.getLinkedVariables().value(parameterInfo)));
+            lvs = lvMap.isEmpty() ? LinkedVariables.EMPTY : LinkedVariables.of(lvMap);
+        }
+        parameterAnalysis.setLinkedVariables(lvs);
+        return AnalysisStatus.of(lvs.causesOfDelay());
+    }
+
+    private boolean acceptVariable(SharedState sharedState, Variable variable) {
+        if (variable instanceof FieldReference fr) {
+            if (connectedToMyTypeHierarchy(fr).valueIsTrue()) return true;
+            return fr.scopeVariable() != null && sharedState.closure() != null && sharedState.closure().knownVariable(fr.scopeVariable());
+        }
+        return sharedState.closure() != null && sharedState.closure().knownVariable(variable);
     }
 }

@@ -136,7 +136,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
             AnalysisStatus.AnalysisResultSupplier<SharedState> parameterAnalyserAction = (sharedState) -> {
                 Analyser.SharedState state = new Analyser.SharedState(sharedState.evaluationContext.getIteration(),
-                        sharedState.breakDelayLevel(), null);
+                        sharedState.breakDelayLevel(), sharedState.evaluationContext.getClosure());
                 AnalyserResult result = parameterAnalyser.analyse(state);
                 analyserResultBuilder.add(result);
                 return result.analysisStatus();
@@ -293,7 +293,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         methodAnalysis.setHiddenContentSelector(hcs);
         methodAnalysis.parameterAnalyses.forEach(pa -> {
             if (pa instanceof ParameterAnalysisImpl.Builder builder) {
-                if (!builder.hiddenContentSelectorIsSet()) {
+                if (builder.hiddenContentSelectorNotYetSet()) {
                     ParameterizedType pt = overrideInspection.getParameters().get(pa.getParameterInfo().index).parameterizedType;
                     HiddenContentSelector hcsPa = HiddenContentSelector.selectAll(hctOverride, pt);
                     builder.setHiddenContentSelector(hcsPa);
@@ -384,16 +384,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
         }
         return e.getKey() instanceof FieldReference fr
                && (connectedToMyTypeHierarchy(fr).valueIsTrue() ||
-                   fr.scopeVariable() != null && inClosure(fr.scopeVariable(), sharedState))
-               || inClosure(e.getKey(), sharedState);
-    }
-
-    private boolean inClosure(Variable variable, SharedState sharedState) {
-        EvaluationContext closure = sharedState.evaluationContext.getClosure();
-        if (closure == null) return false;
-        StatementAnalyser analyzer = closure.getCurrentStatement();
-        if (analyzer == null) return false;
-        return analyzer.getStatementAnalysis().variableIsSet(variable.fullyQualifiedName());
+                   fr.scopeVariable() != null && sharedState.evaluationContext.inClosure(fr.scopeVariable()))
+               || sharedState.evaluationContext.inClosure(e.getKey());
     }
 
     private AnalysisStatus setPostCondition() {

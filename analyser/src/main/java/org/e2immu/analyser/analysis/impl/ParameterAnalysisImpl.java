@@ -45,21 +45,29 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public final Map<FieldInfo, LV> assignedToField;
     private final LinkedVariables linksToOtherParameters;
     private final LinkedVariables linkToReturnValueOfMethod;
+    private final LinkedVariables linkedVariables;
     private final HiddenContentSelector hiddenContentSelector;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<Property, DV> properties,
                                   Map<AnnotationExpression, AnnotationCheck> annotations,
                                   Map<FieldInfo, LV> assignedToField,
+                                  LinkedVariables linkedVariables,
                                   LinkedVariables linksToOtherParameters,
                                   LinkedVariables linkToReturnValueOfMethod,
                                   HiddenContentSelector hiddenContentSelector) {
         super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.assignedToField = assignedToField;
+        this.linkedVariables = linkedVariables;
         this.linksToOtherParameters = linksToOtherParameters;
         this.hiddenContentSelector = hiddenContentSelector;
         this.linkToReturnValueOfMethod = linkToReturnValueOfMethod;
+    }
+
+    @Override
+    public LinkedVariables getLinkedVariables() {
+        return linkedVariables;
     }
 
     @Override
@@ -112,6 +120,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         private final SetOnce<LinkedVariables> linksToParameters = new SetOnce<>();
         private final SetOnce<LinkedVariables> linkToReturnValueOfMethod = new SetOnce<>();
         private final SetOnce<HiddenContentSelector> hiddenContentSelector = new SetOnce<>();
+        private final EventuallyFinal<LinkedVariables> linkedVariables = new EventuallyFinal<>();
 
         @Override
         public void internalAllDoneCheck() {
@@ -268,13 +277,32 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             return this;
         }
 
+        public Builder setLinkedVariables(LinkedVariables linkedVariables) {
+            if (linkedVariables.isDelayed()) {
+                this.linkedVariables.setVariable(linkedVariables);
+            } else {
+                this.linkedVariables.setFinal(linkedVariables);
+            }
+            return this;
+        }
+
+        public boolean linkedVariablesNotYetSet() {
+            return linkedVariables.isVariable();
+        }
+
         @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
                     annotationChecks.toImmutableMap(), getAssignedToField(),
+                    getLinkedVariables(),
                     linksToParameters.getOrDefault(LinkedVariables.EMPTY),
                     linkToReturnValueOfMethod.getOrDefault(LinkedVariables.EMPTY),
                     getHiddenContentSelector());
+        }
+
+        @Override
+        public LinkedVariables getLinkedVariables() {
+            return linkedVariables.get();
         }
 
         public void transferPropertiesToAnnotations(AnalyserContext analysisProvider, E2ImmuAnnotationExpressions e2) {
@@ -348,8 +376,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             return parameterInfo.toString();
         }
 
-        public boolean hiddenContentSelectorIsSet() {
-            return hiddenContentSelector.isSet();
+        public boolean hiddenContentSelectorNotYetSet() {
+            return !hiddenContentSelector.isSet();
         }
 
         @Override

@@ -167,9 +167,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
         List<HiddenContentSelector> hcsParameters = methodAnalysis.getParameterAnalyses().stream()
                 .map(ParameterAnalysis::getHiddenContentSelector).toList();
 
-        LinkedVariables lvs = linkHelper.functional(independentOfMethod, hcsMethod, scopeResult.linkedVariablesOfExpression(),
+        LinkedVariables linkedVariablesOfObject = scopeResult.linkedVariablesOfExpression();
+        LinkedVariables lvs = linkHelper.functional(independentOfMethod, hcsMethod, linkedVariablesOfObject,
                 concreteTypeOfReturnValue, independentOfParameters, hcsParameters, concreteParameterTypes,
-                concreteReturnType);
+                List.of(linkedVariablesOfObject), concreteReturnType);
         builder.setLinkedVariablesOfExpression(lvs);
         return builder.build();
     }

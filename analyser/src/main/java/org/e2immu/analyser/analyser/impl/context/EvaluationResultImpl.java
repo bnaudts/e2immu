@@ -828,10 +828,13 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             }
             valueChanges.put(assignmentTarget, newEcd);
 
-            // TODO not too efficient, but for now... we want to get the symmetry right
-            for (Map.Entry<Variable, LV> entry : linkedVariables) {
-                if (!(entry.getKey() instanceof ReturnVariable)) {
-                    link(assignmentTarget, entry.getKey(), entry.getValue());
+            if (linkedVariables == LinkedVariables.NOT_YET_SET) {
+                link(assignmentTarget, linkedVariables);
+            } else {
+                for (Map.Entry<Variable, LV> entry : linkedVariables) {
+                    if (!(entry.getKey() instanceof ReturnVariable)) {
+                        link(assignmentTarget, entry.getKey(), entry.getValue());
+                    }
                 }
             }
             return this;
@@ -926,7 +929,11 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
         }
 
         public void link(Variable from, LinkedVariables to) {
-            to.stream().forEach(e -> link(from, e.getKey(), e.getValue()));
+            if (to == LinkedVariables.NOT_YET_SET) {
+                setLink(from, to, to.causesOfDelay());
+            } else {
+                to.stream().forEach(e -> link(from, e.getKey(), e.getValue()));
+            }
         }
 
         /*
@@ -938,15 +945,19 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             assert !LV.LINK_INDEPENDENT.equals(level);
             assert !(to instanceof ReturnVariable) : "Cannot link to return variable";
             if (from.equals(to)) return; // no need for that
+            LinkedVariables linked = LinkedVariables.of(to, level);
+            setLink(from, linked, level.causesOfDelay());
+        }
 
+        private void setLink(Variable from, LinkedVariables linked, CausesOfDelay causesOfDelay) {
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(from);
-            LinkedVariables linked = LinkedVariables.of(to, level);
+
             if (ecd == null) {
-                newEcd = new ChangeData(null, level.causesOfDelay(),
+                newEcd = new ChangeData(null, causesOfDelay,
                         CausesOfDelay.EMPTY, false, Set.of(), linked, LinkedVariables.EMPTY, Map.of(), 0);
             } else {
-                newEcd = new ChangeData(ecd.value(), ecd.delays().merge(level.causesOfDelay()),
+                newEcd = new ChangeData(ecd.value(), ecd.delays().merge(causesOfDelay),
                         ecd.stateIsDelayed(), ecd.markAssignment(),
                         ecd.readAtStatementTime(), ecd.linkedVariables().merge(linked), ecd.toRemoveFromLinkedVariables(),
                         ecd.properties(), ecd.modificationTimeIncrement());
