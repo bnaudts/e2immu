@@ -592,11 +592,11 @@ public class Linking_1A {
         };
         return f.apply(ts);
     }
-/*
+
     static <T> List<T> f11(T t, Function<T, List<T>> function) {
         return function.apply(t);
     }
-
+/*
     static <T> List<T> f11l(T t, Function<T, List<T>> function) {
         //noinspection ALL
         Function<T, List<T>> f = tt -> function.apply(tt);
@@ -618,11 +618,11 @@ public class Linking_1A {
         };
         return f.apply(t);
     }
-
+*/
     static <T> Set<T> f12(List<T> ts, Function<List<T>, Set<T>> function) {
         return function.apply(ts);
     }
-
+/*
     static <T> Set<T> f12l(List<T> ts, Function<List<T>, Set<T>> function) {
         //noinspection ALL
         Function<List<T>, Set<T>> f = t -> function.apply(t);

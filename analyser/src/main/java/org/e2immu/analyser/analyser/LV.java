@@ -239,6 +239,7 @@ public class LV implements Comparable<LV> {
             Map<Indices, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
+                assert link != null;
                 res.put(thisTo.to, link);
             });
             return new Links(res);
@@ -249,6 +250,7 @@ public class LV implements Comparable<LV> {
             Map<Indices, Link> res = new HashMap<>();
             map.forEach((thisFrom, thisTo) -> {
                 Link link = links.map.get(thisTo.to);
+                assert link != null;
                 res.put(thisFrom, link);
             });
             return new Links(res);
@@ -514,10 +516,6 @@ public class LV implements Comparable<LV> {
     @Override
     public String toString() {
         return label;
-    }
-
-    public boolean containsMutable() {
-        return links.map.values().stream().anyMatch(l -> l.mutable);
     }
 
     public String minimal() {

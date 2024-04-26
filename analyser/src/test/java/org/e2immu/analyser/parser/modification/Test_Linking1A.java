@@ -527,15 +527,15 @@ public class Test_Linking1A extends CommonTestRunner {
                     case "f11" -> {
                         // T, List<T>
                         assertCurrentValue(d, 0, "function.apply(t)");
-                        //assertLinked(d, it(0, "function:4,t:4"));
-                        //assertSingleLv(d, 0, 0, "0-2-1");
-                        //assertSingleLv(d, 0, 1, "0-4-*");
+                        assertLinked(d, it(0, "function:4,t:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME "0-2-1");
+                        assertSingleLv(d, 0, 1, "0-4-*");
                     }
                     case "f12" -> {
                         assertCurrentValue(d, 0, "function.apply(ts)");
-                        //assertLinked(d, it(0, "function:4,ts:4"));
-                        //assertSingleLv(d, 0, 0, "*M-4-1M"); // M because List is mutable
-                        //assertSingleLv(d, 0, 1, "0-4-0"); // possibility to share HC
+                        assertLinked(d, it(0, "function:4,ts:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0"); // M because List is mutable
+                        assertSingleLv(d, 0, 1, "0-4-0"); // possibility to share HC
                     }
                 }
             }

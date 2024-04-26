@@ -660,10 +660,14 @@ public class LinkHelper {
                                     () -> Map.of(newIndices, new HiddenContentTypes.IndicesAndType(newIndices, newSourceType));
                             HiddenContentSelector newHcsTarget;
                             ParameterizedType newTargetType;
-                            if (reverse) {
-                                // object -> param
+                            if (reverse && !targetType.isTypeParameter()) {
+                                // List<T> as parameter
                                 newHcsTarget = newHiddenContentSelectorOfSource;
                                 newTargetType = newSourceType;
+                            } else if(!reverse && !targetType.isTypeParameter()) {
+                                // List<T> as return type
+                                newTargetType = targetType;
+                                newHcsTarget = newHiddenContentSelectorOfSource;
                             } else {
                                 // object -> return
                                 newHcsTarget = new HiddenContentSelector.All(hctContext, index);
@@ -807,6 +811,7 @@ public class LinkHelper {
                                 } else {
                                     correctedIndicesInTargetWrtType = indicesInTargetWrtType;
                                 }
+                                assert correctedIndicesInTargetWrtType != null;
                                 linkMap.put(correctedIndicesInTargetWrtType, new Link(indicesInSourceWrtType, mutable));
                             }
                         } else {
@@ -957,7 +962,7 @@ public class LinkHelper {
             boolean fromLvTheirsIsAll = fromLv.theirsIsAll();
             boolean toLvTheirsIsAll = toLv.theirsIsAll();
             if (fromLvTheirsIsAll && !toLvTheirsIsAll) {
-                return LV.createHC(fromLv.links().theirsToTheirs(toLv.links()));
+                return LV.createHC(toLv.links().theirsToTheirs(fromLv.links()));
             }
             if (toLvTheirsIsAll && fromLvTheirsIsAll) {
                 return null;
