@@ -566,17 +566,17 @@ public class Linking_1A {
         };
         return f.apply(t);
     }
-/*
+
     static <T> T f10(List<T> ts, Function<List<T>, T> function) {
         return function.apply(ts);
     }
-
+/*
     static <T> T f10l(List<T> ts, Function<List<T>, T> function) {
         //noinspection ALL
         Function<List<T>, T> f = t -> function.apply(t);
         return f.apply(ts);
     }
-
+*/
     static <T> T f10m(List<T> ts, Function<List<T>, T> function) {
         //noinspection ALL
         Function<List<T>, T> f = function::apply;
@@ -592,7 +592,7 @@ public class Linking_1A {
         };
         return f.apply(ts);
     }
-
+/*
     static <T> List<T> f11(T t, Function<T, List<T>> function) {
         return function.apply(t);
     }

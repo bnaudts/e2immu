@@ -23,7 +23,7 @@ public abstract sealed class HiddenContentSelector
     }
 
     public Set<Integer> set() {
-        throw new UnsupportedOperationException();
+        return Set.of();
     }
 
     public CausesOfDelay causesOfDelay() {
@@ -94,6 +94,11 @@ public abstract sealed class HiddenContentSelector
         @Override
         public HiddenContentTypes hiddenContentTypes() {
             return hiddenContentTypes;
+        }
+
+        @Override
+        public Set<Integer> set() {
+            return Set.of(hiddenContentIndex);
         }
     }
 

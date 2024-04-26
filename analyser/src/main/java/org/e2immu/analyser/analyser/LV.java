@@ -102,6 +102,11 @@ public class LV implements Comparable<LV> {
             }
             return cnt;
         }
+
+        public Index dropFirst() {
+            assert list.size() > 1;
+            return new Index(list.subList(1, list.size()));
+        }
     }
 
     // important: as soon as there are multiple elements, use a TreeSet!!
@@ -144,6 +149,12 @@ public class LV implements Comparable<LV> {
             return first.findInFormal(inspectionProvider, type);
         }
 
+        public ParameterizedType find(InspectionProvider inspectionProvider, ParameterizedType type) {
+            // in theory, they all should map to the same type... so we pick one
+            Index first = set.stream().findFirst().orElseThrow();
+            return first.find(inspectionProvider, type);
+        }
+
         public LV.Indices allOccurrencesOf(InspectionProvider inspectionProvider, ParameterizedType where) {
             Index first = set.stream().findFirst().orElseThrow();
             ParameterizedType what = first.find(inspectionProvider, where);
@@ -170,6 +181,16 @@ public class LV implements Comparable<LV> {
                 pos.pop();
                 i++;
             }
+        }
+
+        public boolean containsSize2Plus() {
+            return set.stream().anyMatch(i -> i.list.size() > 1);
+        }
+
+        public Indices size2PlusDropOne() {
+            return new Indices(set.stream().filter(i -> i.list.size() > 1)
+                    .map(Index::dropFirst)
+                    .collect(Collectors.toUnmodifiableSet()));
         }
     }
 

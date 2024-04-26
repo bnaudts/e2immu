@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.LV.*;
@@ -633,6 +634,74 @@ public class LinkHelper {
         }
         InspectionProvider inspectionProvider = context.getAnalyserContext();
 
+        // special code block for functional interfaces with both return value and parameters (i.e. variants
+        // on Function<T,R>, BiFunction<T,S,R> etc. Not Consumers (no return value) nor Suppliers (no parameters))
+        if (hiddenContentSelectorOfTarget.isAll() && INDEPENDENT_HC_DV.equals(transferIndependent)) {
+            HiddenContentTypes hctContext;
+            if (context.getCurrentMethod() != null) {
+                hctContext = context.getCurrentMethod().getMethodInfo().methodResolution.get().hiddenContentTypes();
+            } else {
+                hctContext = context.getCurrentType().typeResolution.get().hiddenContentTypes();
+            }
+            HiddenContentSelector hcsTargetContext = HiddenContentSelector.selectAll(hctContext, targetType);
+            HiddenContentSelector hcsSourceContext = HiddenContentSelector.selectAll(hctContext, sourceType);
+            Set<Integer> set = new HashSet<>(hcsSourceContext.set());
+            set.retainAll(hcsTargetContext.set());
+            if (!set.isEmpty()) {
+                for (int index : set) {
+                    if (hcsSourceContext instanceof HiddenContentSelector.CsSet s) {
+                        Indices indices = s.getMap().get(index);
+                        if (indices.containsSize2Plus()) {
+                            Indices newIndices = indices.size2PlusDropOne();
+                            HiddenContentSelector.CsSet newHiddenContentSelectorOfSource
+                                    = new HiddenContentSelector.CsSet(hctContext, Map.of(index, newIndices));
+                            ParameterizedType newSourceType = newIndices.find(inspectionProvider, sourceType);
+                            Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier =
+                                    () -> Map.of(newIndices, new HiddenContentTypes.IndicesAndType(newIndices, newSourceType));
+                            HiddenContentSelector newHcsTarget;
+                            ParameterizedType newTargetType;
+                            if (reverse) {
+                                // object -> param
+                                newHcsTarget = newHiddenContentSelectorOfSource;
+                                newTargetType = newSourceType;
+                            } else {
+                                // object -> return
+                                newHcsTarget = new HiddenContentSelector.All(hctContext, index);
+                                newTargetType = targetType;
+                            }
+
+                            return continueLinkedVariables(inspectionProvider, hctContext,
+                                    newHiddenContentSelectorOfSource,
+                                    sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource,
+                                    newTargetType, newTargetType, newHcsTarget, hctMethodToHctSourceSupplier,
+                                    reverse);
+                        }
+                    }
+                }
+            }
+        }
+        Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier = () -> hiddenContentTypes
+                .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType);
+
+        return continueLinkedVariables(inspectionProvider, hiddenContentTypes,
+                (HiddenContentSelector.CsSet) hiddenContentSelectorOfSource,
+                sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource, targetType, methodTargetType,
+                hiddenContentSelectorOfTarget, hctMethodToHctSourceSupplier, reverse
+        );
+    }
+
+    private LinkedVariables continueLinkedVariables(InspectionProvider inspectionProvider,
+                                                    HiddenContentTypes hiddenContentTypes,
+                                                    HiddenContentSelector.CsSet hiddenContentSelectorOfSource,
+                                                    LinkedVariables sourceLvs,
+                                                    boolean sourceIsVarArgs,
+                                                    DV transferIndependent,
+                                                    DV immutableOfSource,
+                                                    ParameterizedType targetType,
+                                                    ParameterizedType methodTargetType,
+                                                    HiddenContentSelector hiddenContentSelectorOfTarget,
+                                                    Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier,
+                                                    boolean reverse) {
         Integer index = hiddenContentTypes.indexOfOrNull(methodTargetType);
         Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHcsTarget;
         if (index != null && methodTargetType.parameters.isEmpty()) {
@@ -654,9 +723,7 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(delay(correctedIndependent.causesOfDelay()));
         }
 
-        Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHctSource = hiddenContentTypes
-                .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType);
-
+        Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHctSource = hctMethodToHctSourceSupplier.get();
         Map<Variable, LV> newLinked = new HashMap<>();
         CausesOfDelay causesOfDelay = CausesOfDelay.EMPTY;
 
@@ -726,7 +793,7 @@ public class LinkHelper {
                                     correctForVarargsMutable = mutable;
                                 }
 
-                                Indices indicesInSourceWrtMethod = ((HiddenContentSelector.CsSet) hiddenContentSelectorOfSource).getMap().get(entry.getKey());
+                                Indices indicesInSourceWrtMethod = hiddenContentSelectorOfSource.getMap().get(entry.getKey());
                                 assert indicesInSourceWrtMethod != null;
                                 HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
                                 assert indicesAndType != null;
