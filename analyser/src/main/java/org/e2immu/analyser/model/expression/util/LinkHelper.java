@@ -648,14 +648,16 @@ public class LinkHelper {
             Set<Integer> set = new HashSet<>(hcsSourceContext.set());
             set.retainAll(hcsTargetContext.set());
             if (!set.isEmpty()) {
+                List<LinkedVariables> lvsList = new ArrayList<>();
                 for (int index : set) {
                     if (hcsSourceContext instanceof HiddenContentSelector.CsSet s) {
                         Indices indices = s.getMap().get(index);
                         if (indices.containsSize2Plus()) {
                             Indices newIndices = indices.size2PlusDropOne();
+                            Indices base = indices.first();
                             HiddenContentSelector.CsSet newHiddenContentSelectorOfSource
                                     = new HiddenContentSelector.CsSet(hctContext, Map.of(index, newIndices));
-                            ParameterizedType newSourceType = newIndices.find(inspectionProvider, sourceType);
+                            ParameterizedType newSourceType = base.find(inspectionProvider, sourceType);
                             Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier =
                                     () -> Map.of(newIndices, new HiddenContentTypes.IndicesAndType(newIndices, newSourceType));
                             HiddenContentSelector newHcsTarget;
@@ -664,7 +666,7 @@ public class LinkHelper {
                                 // List<T> as parameter
                                 newHcsTarget = newHiddenContentSelectorOfSource;
                                 newTargetType = newSourceType;
-                            } else if(!reverse && !targetType.isTypeParameter()) {
+                            } else if (!reverse && !targetType.isTypeParameter()) {
                                 // List<T> as return type
                                 newTargetType = targetType;
                                 newHcsTarget = newHiddenContentSelectorOfSource;
@@ -674,13 +676,17 @@ public class LinkHelper {
                                 newTargetType = targetType;
                             }
 
-                            return continueLinkedVariables(inspectionProvider, hctContext,
+                            LinkedVariables lvs = continueLinkedVariables(inspectionProvider, hctContext,
                                     newHiddenContentSelectorOfSource,
                                     sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource,
                                     newTargetType, newTargetType, newHcsTarget, hctMethodToHctSourceSupplier,
                                     reverse);
+                            lvsList.add(lvs);
                         }
                     }
+                }
+                if(!lvsList.isEmpty()) {
+                    return lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                 }
             }
         }
@@ -764,7 +770,9 @@ public class LinkHelper {
                         if (accept) {
                             assert hctMethodToHctSource != null;
                             // the indices contain a single number, the index in the hidden content types of the source.
-                            Indices iInHctSource = hctMethodToHctSource.get(new Indices(i)).indices();
+                            HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(new Indices(i));
+                            assert indicesAndType != null;
+                            Indices iInHctSource = indicesAndType.indices();
                             assert iInHctSource != null;
                             linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
                         }

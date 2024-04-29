@@ -369,6 +369,9 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                 return LINK_INDEPENDENT.value();
             }
+            if (e.getValue().isStaticallyAssignedOrAssigned()) {
+                return MultiLevel.independentCorrespondingToImmutable(immutable).value();
+            }
             return e.getValue().value();
         }).min().orElseThrow();
         if (!causeOfDelays.isEmpty()) {

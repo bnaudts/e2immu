@@ -169,7 +169,17 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it(0, ""));
                         }
                     }
-
+                    case "sp0" -> {
+                        assertCurrentValue(d, 2, "supplier.get()");
+                        assertLinked(d, it(0, "supplier:4"));
+                        assertSingleLv(d, 0, 0, "0,1-4-0,1");
+                    }
+                    case "sp1" -> {
+                        assertCurrentValue(d, 2, "supplier.get()");
+                        assertLinked(d, it(0, "supplier:4"));
+                        // FIXME should become 0,1M-4-0,1M, see also f13
+                        assertSingleLv(d, 0, 0, "0-4-0");
+                    }
                     case "p0", "p1", "p2" -> {
                         assertCurrentValue(d, 0, "predicate.test(x)");
                         assertLinked(d, it(0, ""));
@@ -216,6 +226,14 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertCurrentValue(d, 1, "predicate.test(x)");
                             assertLinked(d, it0(NOT_YET_SET_STR), it(0, ""));
                         }
+                    }
+                    case "ppa0"-> {
+                        assertCurrentValue(d, 0, "predicate.test(x,y)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "ppb0"-> {
+                        assertCurrentValue(d, 1, "predicate.test(pair.f(),pair.g())");
+                        assertLinked(d, it(0, ""));
                     }
                     case "c0" -> {
                         if (isStatement1) {
@@ -528,14 +546,14 @@ public class Test_Linking1A extends CommonTestRunner {
                         // T, List<T>
                         assertCurrentValue(d, 0, "function.apply(t)");
                         assertLinked(d, it(0, "function:4,t:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME "0-2-1");
+                        assertSingleLv(d, 0, 0, "0-4-0");
                         assertSingleLv(d, 0, 1, "0-4-*");
                     }
                     case "f12" -> {
                         assertCurrentValue(d, 0, "function.apply(ts)");
                         assertLinked(d, it(0, "function:4,ts:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0"); // M because List is mutable
-                        assertSingleLv(d, 0, 1, "0-4-0"); // possibility to share HC
+                        assertSingleLv(d, 0, 0, "0-4-0");
+                        assertSingleLv(d, 0, 1, "0-4-0");
                     }
                 }
             }
@@ -892,7 +910,8 @@ public class Test_Linking1A extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             HiddenContentTypes hct = d.methodInfo().methodResolution.get().hiddenContentTypes();
-            if ("get".equals(d.methodInfo().name) && "s0l".equals(d.enclosingMethod().name)) {
+            String enclosingMethod = d.enclosingMethod() != null ? d.enclosingMethod().name : "";
+            if ("get".equals(d.methodInfo().name) && "s0l".equals(enclosingMethod)) {
                 // () -> supplier.get() ~ public X get() { return supplier.get(); }
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
                 if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
@@ -902,7 +921,7 @@ public class Test_Linking1A extends CommonTestRunner {
                 assertLinked(d, lvs, it0("supplier:-1"), it(1, "supplier:4"));
                 assertSingleLv(d, lvs, 1, 0, "*-4-0");
             }
-            if ("get".equals(d.methodInfo().name) && "s0a".equals(d.enclosingMethod().name)) {
+            if ("get".equals(d.methodInfo().name) && "s0a".equals(enclosingMethod)) {
                 assertEquals("$2:X - get:", hct.toString());
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
                 if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
@@ -912,7 +931,7 @@ public class Test_Linking1A extends CommonTestRunner {
                 assertLinked(d, lvs, it0("supplier:-1"), it(0, "supplier:4"));
                 assertSingleLv(d, lvs, 1, 0, "*-4-0");
             }
-            if ("test".equals(d.methodInfo().name) && "p0l".equals(d.enclosingMethod().name)) {
+            if ("test".equals(d.methodInfo().name) && "p0l".equals(enclosingMethod)) {
                 String expected = d.iteration() == 0 ? "<m:test>" : "/*inline test*/predicate.test(t)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 // result is a boolean, so 'none'
@@ -921,14 +940,14 @@ public class Test_Linking1A extends CommonTestRunner {
                 assertEquals(1, hct.size());
                 assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
             }
-            if ("test".equals(d.methodInfo().name) && "p1l".equals(d.enclosingMethod().name)) {
+            if ("test".equals(d.methodInfo().name) && "p1l".equals(enclosingMethod)) {
                 String expected = d.iteration() == 0 ? "<m:test>" : "predicate.test(t)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 // result is a boolean, so 'none'
                 assertEquals(" - ", hct.sortedTypes());
                 assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
             }
-            if ("accept".equals(d.methodInfo().name) && "c0a".equals(d.enclosingMethod().name)) {
+            if ("accept".equals(d.methodInfo().name) && "c0a".equals(enclosingMethod)) {
                 assertEquals("X - ", hct.sortedTypes());
                 assertDv(d, 0, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
@@ -947,7 +966,7 @@ public class Test_Linking1A extends CommonTestRunner {
                 assertSingleLv(d, pa.getLinkedVariables(), 2, 0, "0-4-*");
                 assertDv(d.p(0), 2, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
             }
-            if ("accept".equals(d.methodInfo().name) && "c1a".equals(d.enclosingMethod().name)) {
+            if ("accept".equals(d.methodInfo().name) && "c1a".equals(enclosingMethod)) {
                 assertEquals(" - ", hct.sortedTypes());
                 assertDv(d, 0, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
                 assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());

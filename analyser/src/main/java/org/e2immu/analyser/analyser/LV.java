@@ -82,6 +82,7 @@ public class LV implements Comparable<LV> {
             if (pos == list.size() - 1) {
                 assert type.typeInfo != null;
                 ParameterizedType formal = switchToFormal ? type.typeInfo.asParameterizedType(inspectionProvider) : type;
+                assert index < formal.parameters.size();
                 return formal.parameters.get(index);
             }
             ParameterizedType nextType = type.parameters.get(index);
@@ -106,6 +107,10 @@ public class LV implements Comparable<LV> {
         public Index dropFirst() {
             assert list.size() > 1;
             return new Index(list.subList(1, list.size()));
+        }
+        public Index takeFirst() {
+            assert list.size() > 1;
+            return new Index(List.of(list.get(0)));
         }
     }
 
@@ -190,7 +195,12 @@ public class LV implements Comparable<LV> {
         public Indices size2PlusDropOne() {
             return new Indices(set.stream().filter(i -> i.list.size() > 1)
                     .map(Index::dropFirst)
-                    .collect(Collectors.toUnmodifiableSet()));
+                    .collect(Collectors.toCollection(TreeSet::new)));
+        }
+        public Indices first(){
+            return new Indices(set.stream().filter(i -> i.list.size() > 1)
+                    .map(Index::takeFirst)
+                    .collect(Collectors.toCollection(TreeSet::new)));
         }
     }
 

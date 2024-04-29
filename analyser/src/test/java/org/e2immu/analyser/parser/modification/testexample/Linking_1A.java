@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.*;
 
@@ -37,6 +38,9 @@ public class Linking_1A {
         public void setI(int i) {
             this.i = i;
         }
+    }
+
+    record Pair<F, G>(F f, G g) {
     }
 
     // supplier
@@ -121,6 +125,14 @@ public class Linking_1A {
         return s.get();
     }
 
+    static <X, Y> Pair<X, Y> sp0(Supplier<Pair<X, Y>> supplier) {
+        return supplier.get();
+    }
+
+    static <X> Pair<X, M> sp1(Supplier<Pair<X, M>> supplier) {
+        return supplier.get();
+    }
+
     // predicate
 
     static <X> boolean p0(X x, Predicate<X> predicate) {
@@ -201,20 +213,42 @@ public class Linking_1A {
         return p.test(x);
     }
 
+    static <X, Y> boolean ppa0(X x, Y y, BiPredicate<X, Y> predicate) {
+        return predicate.test(x, y);
+    }
+
+    static <X, Y> boolean ppb0(Pair<X, Y> pair, BiPredicate<X, Y> predicate) {
+        return predicate.test(pair.f(), pair.g());
+    }
+/*
+FIXME cause crashes
+    static <X, Y> boolean ppb0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+        return predicate.test(new Pair<>(x, y));
+    }
+
+    static <X, Y> boolean ppc0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+        return predicate.test(new Pair<>(x, y));
+    }
+*/
+    static <X, Y> boolean ppe0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+        return predicate.test(new Pair<>(x, y));
+    }
+
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {
         consumer.accept(x);
         return consumer;
     }
-/*
-    static <X> Consumer<X> c0l(X x, Consumer<X> consumer) {
-        //noinspection ALL
-        Consumer<X> c = xx -> consumer.accept(xx);
-        c.accept(x);
-        return consumer;
-    }
-*/
+
+    /*
+        static <X> Consumer<X> c0l(X x, Consumer<X> consumer) {
+            //noinspection ALL
+            Consumer<X> c = xx -> consumer.accept(xx);
+            c.accept(x);
+            return consumer;
+        }
+    */
     static <X> Consumer<X> c0m(X x, Consumer<X> consumer) {
         //noinspection ALL
         Consumer<X> c = consumer::accept;
@@ -237,14 +271,15 @@ public class Linking_1A {
         consumer.accept(m);
         return consumer;
     }
-/*
-    static Consumer<M> c1l(M m, Consumer<M> consumer) {
-        //noinspection ALL
-        Consumer<M> c = mm -> consumer.accept(mm);
-        c.accept(m);
-        return consumer;
-    }
-*/
+
+    /*
+        static Consumer<M> c1l(M m, Consumer<M> consumer) {
+            //noinspection ALL
+            Consumer<M> c = mm -> consumer.accept(mm);
+            c.accept(m);
+            return consumer;
+        }
+    */
     static Consumer<M> c1m(M m, Consumer<M> consumer) {
         //noinspection ALL
         Consumer<M> c = consumer::accept;
@@ -267,14 +302,15 @@ public class Linking_1A {
         consumer.accept(i);
         return consumer;
     }
-/*
-    static Consumer<Integer> c2l(int i, Consumer<Integer> consumer) {
-        //noinspection ALL
-        Consumer<Integer> c = ii -> consumer.accept(ii);
-        c.accept(i);
-        return consumer;
-    }
-*/
+
+    /*
+        static Consumer<Integer> c2l(int i, Consumer<Integer> consumer) {
+            //noinspection ALL
+            Consumer<Integer> c = ii -> consumer.accept(ii);
+            c.accept(i);
+            return consumer;
+        }
+    */
     static Consumer<Integer> c2m(int i, Consumer<Integer> consumer) {
         //noinspection ALL
         Consumer<Integer> c = consumer::accept;
@@ -298,13 +334,14 @@ public class Linking_1A {
     static <X, Y> Y f0(X x, Function<X, Y> function) {
         return function.apply(x);
     }
-/*
-    static <X, Y> Y f0l(X x, Function<X, Y> function) {
-        //noinspection ALL
-        Function<X, Y> f = xx -> function.apply(xx);
-        return f.apply(x);
-    }
-*/
+
+    /*
+        static <X, Y> Y f0l(X x, Function<X, Y> function) {
+            //noinspection ALL
+            Function<X, Y> f = xx -> function.apply(xx);
+            return f.apply(x);
+        }
+    */
     static <X, Y> Y f0m(X x, Function<X, Y> function) {
         //noinspection ALL
         Function<X, Y> f = function::apply;
@@ -325,13 +362,14 @@ public class Linking_1A {
     static <X> M f1(X x, Function<X, M> function) {
         return function.apply(x);
     }
-/*
-    static <X> M f1l(X x, Function<X, M> function) {
-        //noinspection ALL
-        Function<X, M> f = xx -> function.apply(xx);
-        return f.apply(x);
-    }
-*/
+
+    /*
+        static <X> M f1l(X x, Function<X, M> function) {
+            //noinspection ALL
+            Function<X, M> f = xx -> function.apply(xx);
+            return f.apply(x);
+        }
+    */
     static <X> M f1m(X x, Function<X, M> function) {
         //noinspection ALL
         Function<X, M> f = function::apply;
@@ -351,13 +389,14 @@ public class Linking_1A {
     static <Y> Y f2(M m, Function<M, Y> function) {
         return function.apply(m);
     }
-/*
-    static <Y> Y f2l(M m, Function<M, Y> function) {
-        //noinspection ALL
-        Function<M, Y> f = mm -> function.apply(mm);
-        return f.apply(m);
-    }
-*/
+
+    /*
+        static <Y> Y f2l(M m, Function<M, Y> function) {
+            //noinspection ALL
+            Function<M, Y> f = mm -> function.apply(mm);
+            return f.apply(m);
+        }
+    */
     static <Y> Y f2m(M m, Function<M, Y> function) {
         //noinspection ALL
         Function<M, Y> f = function::apply;
@@ -379,13 +418,14 @@ public class Linking_1A {
     static <X> Integer f3(X x, Function<X, Integer> function) {
         return function.apply(x);
     }
-/*
-    static <X> Integer f3l(X x, Function<X, Integer> function) {
-        //noinspection ALL
-        Function<X, Integer> f = xx -> function.apply(xx);
-        return f.apply(x);
-    }
-*/
+
+    /*
+        static <X> Integer f3l(X x, Function<X, Integer> function) {
+            //noinspection ALL
+            Function<X, Integer> f = xx -> function.apply(xx);
+            return f.apply(x);
+        }
+    */
     static <X> Integer f3m(X x, Function<X, Integer> function) {
         //noinspection ALL
         Function<X, Integer> f = function::apply;
@@ -407,13 +447,14 @@ public class Linking_1A {
     static <Y> Y f4(int i, Function<Integer, Y> function) {
         return function.apply(i);
     }
-/*
-    static <Y> Y f4l(int i, Function<Integer, Y> function) {
-        //noinspection ALL
-        Function<Integer, Y> f = ii -> function.apply(ii);
-        return f.apply(i);
-    }
-*/
+
+    /*
+        static <Y> Y f4l(int i, Function<Integer, Y> function) {
+            //noinspection ALL
+            Function<Integer, Y> f = ii -> function.apply(ii);
+            return f.apply(i);
+        }
+    */
     static <Y> Y f4m(int i, Function<Integer, Y> function) {
         //noinspection ALL
         Function<Integer, Y> f = function::apply;
@@ -433,13 +474,14 @@ public class Linking_1A {
     static M f5(N n, Function<N, M> function) {
         return function.apply(n);
     }
-/*
-    static M f5l(N n, Function<N, M> function) {
-        //noinspection ALL
-        Function<N, M> f = nn -> function.apply(nn);
-        return function.apply(n);
-    }
-*/
+
+    /*
+        static M f5l(N n, Function<N, M> function) {
+            //noinspection ALL
+            Function<N, M> f = nn -> function.apply(nn);
+            return function.apply(n);
+        }
+    */
     static M f5m(N n, Function<N, M> function) {
         //noinspection ALL
         Function<N, M> f = function::apply;
@@ -461,13 +503,14 @@ public class Linking_1A {
     static M f6(String s, Function<String, M> function) {
         return function.apply(s);
     }
-/*
-    static M f6l(String s, Function<String, M> function) {
-        //noinspection ALL
-        Function<String, M> f = t -> function.apply(t);
-        return f.apply(s);
-    }
-*/
+
+    /*
+        static M f6l(String s, Function<String, M> function) {
+            //noinspection ALL
+            Function<String, M> f = t -> function.apply(t);
+            return f.apply(s);
+        }
+    */
     static M f6m(String s, Function<String, M> function) {
         //noinspection ALL
         Function<String, M> f = function::apply;
@@ -489,13 +532,14 @@ public class Linking_1A {
     static String f7(M m, Function<M, String> function) {
         return function.apply(m);
     }
-/*
-    static String f7s(M m, Function<M, String> function) {
-        //noinspection ALL
-        Function<M, String> f = mm -> function.apply(mm);
-        return f.apply(m);
-    }
-*/
+
+    /*
+        static String f7s(M m, Function<M, String> function) {
+            //noinspection ALL
+            Function<M, String> f = mm -> function.apply(mm);
+            return f.apply(m);
+        }
+    */
     static String f7m(M m, Function<M, String> function) {
         //noinspection ALL
         Function<M, String> f = function::apply;
@@ -516,13 +560,14 @@ public class Linking_1A {
     static String f8(int i, Function<Integer, String> function) {
         return function.apply(i);
     }
-/*
-    static String f8l(int i, Function<Integer, String> function) {
-        //noinspection ALL
-        Function<Integer, String> f = ii -> function.apply(ii);
-        return f.apply(i);
-    }
-*/
+
+    /*
+        static String f8l(int i, Function<Integer, String> function) {
+            //noinspection ALL
+            Function<Integer, String> f = ii -> function.apply(ii);
+            return f.apply(i);
+        }
+    */
     static String f8m(int i, Function<Integer, String> function) {
         //noinspection ALL
         Function<Integer, String> f = function::apply;
@@ -544,13 +589,14 @@ public class Linking_1A {
     static <T> T f9(T t, Function<T, T> function) {
         return function.apply(t);
     }
-/*
-    static <T> T f9l(T t, Function<T, T> function) {
-        //noinspection ALL
-        Function<T, T> f = tt -> function.apply(tt);
-        return f.apply(t);
-    }
-*/
+
+    /*
+        static <T> T f9l(T t, Function<T, T> function) {
+            //noinspection ALL
+            Function<T, T> f = tt -> function.apply(tt);
+            return f.apply(t);
+        }
+    */
     static <T> T f9m(T t, Function<T, T> function) {
         //noinspection ALL
         Function<T, T> f = function::apply;
@@ -570,13 +616,14 @@ public class Linking_1A {
     static <T> T f10(List<T> ts, Function<List<T>, T> function) {
         return function.apply(ts);
     }
-/*
-    static <T> T f10l(List<T> ts, Function<List<T>, T> function) {
-        //noinspection ALL
-        Function<List<T>, T> f = t -> function.apply(t);
-        return f.apply(ts);
-    }
-*/
+
+    /*
+        static <T> T f10l(List<T> ts, Function<List<T>, T> function) {
+            //noinspection ALL
+            Function<List<T>, T> f = t -> function.apply(t);
+            return f.apply(ts);
+        }
+    */
     static <T> T f10m(List<T> ts, Function<List<T>, T> function) {
         //noinspection ALL
         Function<List<T>, T> f = function::apply;
@@ -596,29 +643,30 @@ public class Linking_1A {
     static <T> List<T> f11(T t, Function<T, List<T>> function) {
         return function.apply(t);
     }
-/*
-    static <T> List<T> f11l(T t, Function<T, List<T>> function) {
-        //noinspection ALL
-        Function<T, List<T>> f = tt -> function.apply(tt);
-        return f.apply(t);
-    }
 
-    static <T> List<T> f11m(T t, Function<T, List<T>> function) {
-        //noinspection ALL
-        Function<T, List<T>> f = function::apply;
-        return f.apply(t);
-    }
+    /*
+        static <T> List<T> f11l(T t, Function<T, List<T>> function) {
+            //noinspection ALL
+            Function<T, List<T>> f = tt -> function.apply(tt);
+            return f.apply(t);
+        }
 
-    static <T> List<T> f11a(T t, Function<T, List<T>> function) {
-        Function<T, List<T>> f = new Function<T, List<T>>() {
-            @Override
-            public List<T> apply(T tt) {
-                return function.apply(tt);
-            }
-        };
-        return f.apply(t);
-    }
-*/
+        static <T> List<T> f11m(T t, Function<T, List<T>> function) {
+            //noinspection ALL
+            Function<T, List<T>> f = function::apply;
+            return f.apply(t);
+        }
+
+        static <T> List<T> f11a(T t, Function<T, List<T>> function) {
+            Function<T, List<T>> f = new Function<T, List<T>>() {
+                @Override
+                public List<T> apply(T tt) {
+                    return function.apply(tt);
+                }
+            };
+            return f.apply(t);
+        }
+    */
     static <T> Set<T> f12(List<T> ts, Function<List<T>, Set<T>> function) {
         return function.apply(ts);
     }
@@ -644,5 +692,14 @@ public class Linking_1A {
         };
         return f.apply(ts);
     }
+
+
+    static M f13(List<M> ts, Function<List<M>, M> function) {
+        return function.apply(ts);
+    }
 */
+    /*
+    static <T> T f14(List<T> l, Map<Integer, T> m, BiFunction<List<T>, Map<Integer, T>, T> function) {
+        return function.apply(l, m);
+    }*/
 }
