@@ -35,8 +35,8 @@ public class DynamicImmutableOfConstructor {
      */
     public DV compute(DV formal) {
         if (parameterExpressions.isEmpty()
-                || MultiLevel.MUTABLE_DV.equals(formal)
-                || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(formal)) {
+            || MultiLevel.MUTABLE_DV.equals(formal)
+            || MultiLevel.isAtLeastEventuallyRecursivelyImmutable(formal)) {
             // the two ends of the spectrum cannot change, and neither do we have any influence without parameters
             return formal;
         }
@@ -81,10 +81,6 @@ public class DynamicImmutableOfConstructor {
         return fieldAnalysis.getProperty(Property.EXTERNAL_IMMUTABLE);
     }
 
-    /*
-     TODO the current implementation is simplistic. We'll need to take into account the possible effects of
-       linking at a level higher than 2 (MUTABLE)
-    */
     private DV valueOverParameters() {
         // immutable with hidden content, the result is determined by the immutability values of the parameters
         DV minParams = MultiLevel.EFFECTIVELY_IMMUTABLE_DV;
@@ -101,14 +97,7 @@ public class DynamicImmutableOfConstructor {
                 if (independent.isDelayed()) {
                     causesOfDelay = causesOfDelay.merge(independent.causesOfDelay());
                 } else if (MultiLevel.INDEPENDENT_DV.gt(independent)) {
-                    DV dv;
-                    if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-                        throw new UnsupportedOperationException("TODO:IS_HC");
-                    } else {
-                        // dependent, directly take immutable value
-                        dv = immutable;
-                    }
-                    minParams = minParams.min(dv);
+                    minParams = minParams.min(immutable);
                 } // else: ignore
             }
             i++;

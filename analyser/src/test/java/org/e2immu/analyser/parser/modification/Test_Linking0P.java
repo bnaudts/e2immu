@@ -16,16 +16,15 @@ package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.visitor.BreakDelayVisitor;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
-import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
-import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.visitor.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -71,32 +70,38 @@ public class Test_Linking0P extends CommonTestRunner {
             if ("create2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Pair<>(x,m)");
-                    assertLinked(d, it(0, 1, "m:-1,p:0,x:-1"), it(0, "m:2,p:0,x:4"));
-                    assertSingleLv(d, 2, 0, "1M-2-*M");
+                    assertLinked(d, it(0, 1, "m:-1,p:0,x:-1"), it(0, "m:4,p:0,x:4"));
+                    assertSingleLv(d, 2, 0, "1M-4-*M");
                     assertSingleLv(d, 2, 2, "0-4-*");
                 }
             }
             if ("create3".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Pair<>(n,m)");
-                    assertLinked(d, it(0, 1, "m:-1,n:-1,p:0"), it(0, "m:2,n:2,p:0"));
-                    assertSingleLv(d, 2, 0, "1M-2-*M");
-                    assertSingleLv(d, 2, 1, "0M-2-*M");
+                    assertLinked(d, it(0, 1, "m:-1,n:-1,p:0"), it(0, "m:4,n:4,p:0"));
+                    assertSingleLv(d, 2, 0, "1M-4-*M");
+                    assertSingleLv(d, 2, 1, "0M-4-*M");
                 }
             }
             if ("create4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Pair<>(i,m)");
-                    assertLinked(d, it(0, 1, "m:-1,p:0"), it(0, "m:2,p:0"));
-                    assertSingleLv(d, 2, 0, "1M-2-*M");
+                    assertLinked(d, it(0, 1, "m:-1,p:0"), it(0, "m:4,p:0"));
+                    assertSingleLv(d, 2, 0, "1M-4-*M");
                 }
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            if("Pair".equals(d.typeInfo().simpleName)) {
+                assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
+            }
+        };
 
         testClass("Linking_0P", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }
 }

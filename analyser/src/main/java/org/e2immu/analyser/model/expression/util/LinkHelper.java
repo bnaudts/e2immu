@@ -338,8 +338,7 @@ public class LinkHelper {
             }
             // link to the input types rather than the output type, see also HCT.mapMethodToTypeIndices
             Map<Indices, Indices> correctionMap = new HashMap<>();
-            // must be of formal type
-            HiddenContentTypes hct = methodInspection.getMethodInfo().methodResolution.get().hiddenContentTypes();
+            // FIXME 1??
             correctionMap.put(new Indices(1), new Indices(0));
             LinkedVariables corrected = vi.getLinkedVariables().map(lv -> lv.correctTo(correctionMap));
             return new LambdaResult(result, corrected);
@@ -685,7 +684,7 @@ public class LinkHelper {
                         }
                     }
                 }
-                if(!lvsList.isEmpty()) {
+                if (!lvsList.isEmpty()) {
                     return lvsList.stream().reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
                 }
             }
@@ -693,11 +692,17 @@ public class LinkHelper {
         Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier = () -> hiddenContentTypes
                 .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType);
 
+        DV immutableOfFormalSource;
+        if(sourceType.typeInfo != null) {
+            ParameterizedType formalSource = sourceType.typeInfo.asParameterizedType(inspectionProvider);
+            immutableOfFormalSource = context.evaluationContext().immutable(formalSource);
+        } else {
+            immutableOfFormalSource = immutableOfSource;
+        }
         return continueLinkedVariables(inspectionProvider, hiddenContentTypes,
                 (HiddenContentSelector.CsSet) hiddenContentSelectorOfSource,
-                sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource, targetType, methodTargetType,
-                hiddenContentSelectorOfTarget, hctMethodToHctSourceSupplier, reverse
-        );
+                sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfFormalSource, targetType,
+                methodTargetType, hiddenContentSelectorOfTarget, hctMethodToHctSourceSupplier, reverse);
     }
 
     private LinkedVariables continueLinkedVariables(InspectionProvider inspectionProvider,
@@ -706,7 +711,7 @@ public class LinkHelper {
                                                     LinkedVariables sourceLvs,
                                                     boolean sourceIsVarArgs,
                                                     DV transferIndependent,
-                                                    DV immutableOfSource,
+                                                    DV immutableOfFormalSource,
                                                     ParameterizedType targetType,
                                                     ParameterizedType methodTargetType,
                                                     HiddenContentSelector hiddenContentSelectorOfTarget,
@@ -722,7 +727,7 @@ public class LinkHelper {
                     methodTargetType, targetType);
         }
 
-        DV correctedIndependent = correctIndependent(context.evaluationContext(), immutableOfSource,
+        DV correctedIndependent = correctIndependent(context.evaluationContext(), immutableOfFormalSource,
                 transferIndependent, targetType, hiddenContentSelectorOfTarget, hctMethodToHcsTarget);
 
         if (MultiLevel.INDEPENDENT_DV.equals(correctedIndependent)) {
@@ -748,7 +753,7 @@ public class LinkHelper {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay()).merge(lv.causesOfDelay());
             } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
                 boolean createDependentLink = MultiLevel.isMutable(immutable) && isDependent(transferIndependent,
-                        correctedIndependent, immutableOfSource, lv);
+                        correctedIndependent, immutableOfFormalSource, lv);
 
                 if (!hiddenContentSelectorOfTarget.isNone()) {
                     // from mine==target to theirs==source

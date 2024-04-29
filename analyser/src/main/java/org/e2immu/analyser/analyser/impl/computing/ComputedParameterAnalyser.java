@@ -256,15 +256,12 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     delay = DelayFactory.createDelay(new VariableCause(parameterInfo, lastStatement.location(Stage.MERGE),
                             CauseOfDelay.Cause.LINKING));
                 } else {
-                    Map<Variable, LV> fields = viParam.getLinkedVariables().variables().entrySet().stream()
-                            .filter(e -> e.getKey() instanceof FieldReference fr && fr.scopeIsThis() || e.getKey() instanceof This)
-                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-                    if (!fields.isEmpty()) {
-                        /*
-                         The parameter is linked to some fields, or to "this", because of expanded variables,
-                         see e.g. E2ImmutableComposition_0.EncapsulatedExposedArrayOfHasSize
-                         */
-                        DV dv = independentFromFields(fields);
+                    List<LV> linksToThis = viParam.getLinkedVariables().variables().entrySet().stream()
+                            .filter(e -> e.getKey() instanceof This)
+                            .map(Map.Entry::getValue)
+                            .toList();
+                    if (!linksToThis.isEmpty()) {
+                        DV dv = linksToThis.stream().map(LV::toIndependent).reduce(INDEPENDENT_DV, DV::min);
                         if (dv.isDelayed()) {
                             delay = dv.causesOfDelay();
                         } else {
@@ -273,14 +270,14 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     }
                 }
             }
-
+/*          FIXME shouldn't this whole code block be removed?? all these links should be fully present in the parameter->field
             // from fields to parameters, exposing via a functional interface (e.g. Independent1_0)
             List<VariableInfo> vis = lastStatement.variableStream()
                     .filter(v -> v.variable() instanceof FieldReference fr && fr.scopeIsThis())
                     .toList();
             for (VariableInfo vi : vis) {
                 if (!vi.linkedVariablesIsSet()) {
-                    /*
+
                     Removed because the "other" independent delay break comes too early in Independent1_9.
                     if (sharedState.breakDelayLevel().acceptParameter() && vi.getLinkedVariables().causesOfDelay()
                             .containsCauseOfDelay(CauseOfDelay.Cause.LINKING)) {
@@ -288,7 +285,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                                 parameterInfo, vi.variable());
                         parameterAnalysis.setProperty(INDEPENDENT, INDEPENDENT_DV);
                         return DONE;
-                    }*/
+                    }
                     LOGGER.debug("Delay independent in parameter {}, waiting for linked variables in statement {}",
                             parameterInfo.fullyQualifiedName(), lastStatement.index());
                     delay = delay.merge(DelayFactory.createDelay(new VariableCause(vi.variable(), lastStatement.location(Stage.MERGE),
@@ -301,7 +298,7 @@ public class ComputedParameterAnalyser extends ParameterAnalyserImpl {
                     }
                 }
             }
-
+*/
             if (sharedState.closure() != null) {
                 LinkedVariables lvs = parameterAnalysis.getLinkedVariables();
                 for (Map.Entry<Variable, LV> e : lvs) {
