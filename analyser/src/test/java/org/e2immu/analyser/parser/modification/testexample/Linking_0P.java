@@ -32,6 +32,9 @@ public class Linking_0P {
     }
 
     record R<F, G>(Pair<F, G> pair) {
+        public R {
+            assert pair != null;
+        }
     }
 
     record R1<F, G>(SetOnce<Pair<F, G>> setOncePair) {
@@ -66,7 +69,7 @@ public class Linking_0P {
     static <X, Y> Pair<Y, X> reverse(Pair<X, Y> pair) {
         return new Pair<>(pair.g, pair.f);
     }
-/*
+
     static <X, Y> Pair<Y, X> reverse2(Pair<X, Y> pair) {
         return new Pair<>(pair.g(), pair.f());
     }
@@ -76,6 +79,10 @@ public class Linking_0P {
     }
 
     static <X, Y> R<Y, X> reverse4(R<X, Y> r) {
-        return new R(new Pair<>(r.pair.g, r.pair.f));
-    }*/
+        return new R<>(new Pair<>(r.pair.g, r.pair.f));
+    }
+
+    static <X, Y> R<Y, X> reverse5(R<X, Y> r) {
+        return new R(new Pair(r.pair.g, r.pair.f));
+    }
 }

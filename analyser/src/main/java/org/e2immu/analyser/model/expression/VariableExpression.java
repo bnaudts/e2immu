@@ -304,13 +304,19 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         builder.setLinkedVariablesOfExpression(linkedVariables);
 
         if (scopeResult != null) {
-            // FIXME this works well for arrays, but for fields, the index can be != 0, which it always is for List.get()
-            MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
-            ParameterizedType boxedFieldType = variable.parameterizedType().ensureBoxed(context.getPrimitives());
-            ParameterizedType listOfFieldType = new ParameterizedType(methodInfo.typeInfo, List.of(boxedFieldType));
-            LinkHelper linkHelper = new LinkHelper(context, methodInfo);
-            LinkedVariables linkedVariables2 = linkHelper.linkedVariablesMethodCallObjectToReturnType(listOfFieldType, scopeResult,
-                    List.of(), variable.parameterizedType());
+            LinkedVariables linkedVariables2;
+            if (variable instanceof DependentVariable) {
+                // simulate List.get(index)
+                MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
+                ParameterizedType boxedFieldType = variable.parameterizedType().ensureBoxed(context.getPrimitives());
+                ParameterizedType listOfFieldType = new ParameterizedType(methodInfo.typeInfo, List.of(boxedFieldType));
+                LinkHelper linkHelper = new LinkHelper(context, methodInfo);
+                linkedVariables2 = linkHelper.linkedVariablesMethodCallObjectToReturnType(listOfFieldType, scopeResult,
+                        List.of(), variable.parameterizedType());
+            } else if (variable instanceof FieldReference fr) {
+                linkedVariables2 = LinkHelper.forFieldAccess(context, scopeResult, variable.parameterizedType(),
+                        fr.fieldInfo().type, scopeValue.returnType());
+            } else throw new UnsupportedOperationException();
             builder.link(variable, linkedVariables2);
         }
 

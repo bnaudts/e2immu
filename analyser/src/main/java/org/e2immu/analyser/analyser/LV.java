@@ -108,6 +108,7 @@ public class LV implements Comparable<LV> {
             assert list.size() > 1;
             return new Index(list.subList(1, list.size()));
         }
+
         public Index takeFirst() {
             assert list.size() > 1;
             return new Index(List.of(list.get(0)));
@@ -169,7 +170,7 @@ public class LV implements Comparable<LV> {
         public static LV.Indices allOccurrencesOf(ParameterizedType what, ParameterizedType where) {
             Set<LV.Index> set = new TreeSet<>();
             allOccurrencesOf(what, where, set, new Stack<>());
-            assert !set.isEmpty();
+            if (set.isEmpty()) return null;
             return new LV.Indices(set);
         }
 
@@ -197,7 +198,8 @@ public class LV implements Comparable<LV> {
                     .map(Index::dropFirst)
                     .collect(Collectors.toCollection(TreeSet::new)));
         }
-        public Indices first(){
+
+        public Indices first() {
             return new Indices(set.stream().filter(i -> i.list.size() > 1)
                     .map(Index::takeFirst)
                     .collect(Collectors.toCollection(TreeSet::new)));
@@ -229,7 +231,7 @@ public class LV implements Comparable<LV> {
                         boolean middleIsAll = middle.equals(ALL_INDICES);
                         boolean mutable = !middleIsAll && entry.getValue().mutable && link.mutable;
                         Link newLink = mutable == link.mutable ? link : new Link(link.to, false);
-                        res.put(entry.getKey(), newLink);
+                        res.merge(entry.getKey(), newLink, Link::merge);
                     }
                 } else {
                     Link allLink = this.map.get(ALL_INDICES);
@@ -237,11 +239,19 @@ public class LV implements Comparable<LV> {
                         // start again from *
                         boolean mutable = entry.getValue().mutable || allLink.mutable;
                         Link newLink = mutable == allLink.mutable ? allLink : new Link(allLink.to, true);
-                        res.put(entry.getKey(), newLink);
+                        res.merge(entry.getKey(), newLink, Link::merge);
                     }
                 }
             }
             if (res.isEmpty()) return null;
+            return new Links(res);
+        }
+
+        @Override
+        public DijkstraShortestPath.Connection merge(DijkstraShortestPath.Connection connection) {
+            Links other = (Links) connection;
+            Map<Indices, Link> res = new HashMap<>(map);
+            other.map.forEach((k, v) -> res.merge(k, v, Link::merge));
             return new Links(res);
         }
 

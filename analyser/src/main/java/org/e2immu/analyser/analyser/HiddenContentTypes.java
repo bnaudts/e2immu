@@ -369,8 +369,8 @@ public class HiddenContentTypes {
             if (from.arrays > 0 && hiddenContentSelector.selectArrayElement(from.arrays)) {
                 LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
                 iat = new IndicesAndType(indices, to);
-            } else if(LV.ALL_INDICES.equals(entry1.getKey())) {
-                     iat = new IndicesAndType(entry1.getKey(), to);
+            } else if (LV.ALL_INDICES.equals(entry1.getKey())) {
+                iat = new IndicesAndType(entry1.getKey(), to);
             } else {
                 iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to);
             }
@@ -424,7 +424,13 @@ public class HiddenContentTypes {
             }
             assert formalFrom.parameters.get(atPos).equals(ptFrom);
             if (formalFrom.typeInfo == to.typeInfo) {
-                ParameterizedType concrete = to.parameters.get(atPos);
+                ParameterizedType concrete;
+                if (atPos >= to.parameters.size()) {
+                    // type parameters are missing, we'd expect <> so that they get filled in automatically
+                    concrete = inspectionProvider.getPrimitives().objectParameterizedType();
+                } else {
+                    concrete = to.parameters.get(atPos);
+                }
                 return new IndicesAndType(new LV.Indices(Set.of(index)), concrete);
             }
             ParameterizedType formalTo = to.typeInfo.asParameterizedType(inspectionProvider);

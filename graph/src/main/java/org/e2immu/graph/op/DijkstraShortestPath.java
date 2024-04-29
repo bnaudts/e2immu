@@ -16,6 +16,8 @@ public class DijkstraShortestPath {
 
     public interface Connection {
         Connection next(Connection connection);
+
+        Connection merge(Connection connection);
     }
 
     public record DC(long dist, Connection connection) implements Comparable<DC> {
@@ -27,6 +29,11 @@ public class DijkstraShortestPath {
         @Override
         public boolean equals(Object obj) {
             return obj instanceof DC dc && dist == dc.dist;
+        }
+
+        public DC merge(DC alt) {
+            if(connection == null) return alt;
+            return new DC(dist, connection.merge(alt.connection));
         }
     }
 
@@ -118,7 +125,17 @@ public class DijkstraShortestPath {
     }
 
     public DijkstraShortestPath() {
-        this(required -> null);
+        this(new Connection() {
+            @Override
+            public Connection next(Connection connection) {
+                return null;
+            }
+
+            @Override
+            public Connection merge(Connection connection) {
+                return this;
+            }
+        });
     }
 
     public long[] shortestPath(int numVertices, EdgeProvider edgeProvider, int sourceVertex) {
@@ -176,6 +193,8 @@ public class DijkstraShortestPath {
                     dist[v] = alt;
                     AddressableHeap.Handle<DC, Integer> handle = handles.get(v);
                     handle.decreaseKey(alt);
+                } else if (alt.dist == dist[v].dist) {
+                    dist[v] = dist[v].merge(alt);
                 }
             });
         }

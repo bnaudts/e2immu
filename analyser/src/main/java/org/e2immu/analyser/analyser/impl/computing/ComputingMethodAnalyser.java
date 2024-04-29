@@ -328,9 +328,6 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
     private AnalysisStatus computeLinkedVariables(SharedState sharedState) {
         assert !methodAnalysis.linkedVariablesIsFinal();
         if (methodInfo.isConstructor() || !methodInfo.hasReturnValue()) {
-            if (!methodAnalysis.hiddenContentSelectorIsSet()) {
-                methodAnalysis.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
-            }
             methodAnalysis.setProperty(INDEPENDENT, MultiLevel.INDEPENDENT_DV);
             methodAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
             return DONE;

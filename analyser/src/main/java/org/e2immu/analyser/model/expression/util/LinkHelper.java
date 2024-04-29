@@ -76,6 +76,14 @@ public class LinkHelper {
         return methodInfo.methodResolution.get().hiddenContentTypes();
     }
 
+    private LinkHelper(EvaluationResult context, HiddenContentTypes hctMethod, HiddenContentSelector hcsSource) {
+        this.context = context;
+        this.methodInfo = null;
+        this.methodAnalysis = null;
+        this.hiddenContentTypes = hctMethod;
+        this.hcsSource = hcsSource;
+    }
+
     /*
     Linked variables of parameter.
     There are 2 types involved:
@@ -693,7 +701,7 @@ public class LinkHelper {
                 .translateHcs(inspectionProvider, hcsSource, methodSourceType, sourceType);
 
         DV immutableOfFormalSource;
-        if(sourceType.typeInfo != null) {
+        if (sourceType.typeInfo != null) {
             ParameterizedType formalSource = sourceType.typeInfo.asParameterizedType(inspectionProvider);
             immutableOfFormalSource = context.evaluationContext().immutable(formalSource);
         } else {
@@ -778,8 +786,9 @@ public class LinkHelper {
                             HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(new Indices(i));
                             assert indicesAndType != null;
                             Indices iInHctSource = indicesAndType.indices();
-                            assert iInHctSource != null;
-                            linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
+                            if (iInHctSource != null) {
+                                linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
+                            }// else: no type parameters available, see e.g. Linking_0P.reverse5
                         }
                     } else {
                         // both are CsSet, we'll set mutable what is mutable, in a common way
@@ -991,5 +1000,27 @@ public class LinkHelper {
             return null;
         }
         throw new UnsupportedOperationException("?");
+    }
+
+    /*
+    by-pass the method for field access; used in VariableExpression
+     */
+    public static LinkedVariables forFieldAccess(EvaluationResult context,
+                                                 EvaluationResult scopeResult,
+                                                 ParameterizedType fieldType,
+                                                 ParameterizedType formalFieldType,
+                                                 ParameterizedType scopeType) {
+        if (scopeResult.linkedVariablesOfExpression().isDelayed()) {
+            return scopeResult.linkedVariablesOfExpression();
+        }
+        HiddenContentTypes hct = scopeType.typeInfo.typeResolution.get().hiddenContentTypes();
+        ParameterizedType formalScopeType = scopeType.typeInfo.asParameterizedType(context.getAnalyserContext());
+        HiddenContentSelector hcsSource = HiddenContentSelector.selectAll(hct, formalScopeType);
+        HiddenContentSelector hcsTarget = HiddenContentSelector.selectAll(hct, formalFieldType);
+        LinkHelper lh = new LinkHelper(context, hct, hcsSource);
+        DV immutable = context.evaluationContext().immutable(fieldType);
+        DV independent = immutable.isDelayed() ? immutable : MultiLevel.independentCorrespondingToImmutable(immutable);
+        return lh.linkedVariables(hcsSource, scopeType, formalScopeType, hcsSource, scopeResult.linkedVariablesOfExpression(), false,
+                independent, fieldType, formalFieldType, hcsTarget, false);
     }
 }

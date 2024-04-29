@@ -59,7 +59,6 @@ public class Test_Linking0P extends CommonTestRunner {
                 assertNotNull(cdg);
                 assertLinked(d, cdg.linkedVariables(), it(0, 1, "pair:-1"),
                         it(2, "pair:4"));
-                // FIXME??
                 assertSingleLv(d, cdg.linkedVariables(), 2, 0, "*-4-1");
             }
         };
@@ -110,7 +109,7 @@ public class Test_Linking0P extends CommonTestRunner {
                     assertLinked(d, it(0, 1, "pair.f:-1,pair.g:-1"),
                             it(2, "pair.f:4,pair.g:4"));
                     assertSingleLv(d, 2, 0, "0-4-*");
-                    assertSingleLv(d, 2, 1, "1-4-*"); // FIXME??
+                    assertSingleLv(d, 2, 1, "1-4-*");
                 }
                 if (d.variable() instanceof FieldReference fr && "f".equals(fr.fieldInfo().name)) {
                     assertCurrentValue(d, 2, "nullable instance type F");
@@ -119,16 +118,44 @@ public class Test_Linking0P extends CommonTestRunner {
                 }
                 if (d.variable() instanceof FieldReference fr && "g".equals(fr.fieldInfo().name)) {
                     assertCurrentValue(d, 2, "nullable instance type G");
-                    assertLinked(d, it(0, "pair.f:-1,pair:-1"));
+                    assertLinked(d, it(0, 1, "pair.f:-1,pair:-1"), it(2, "pair:4"));
                     assertSingleLv(d, 2, 0, "*-4-1");
                 }
                 if (d.variable() instanceof ReturnVariable) {
                     assertCurrentValue(d, 2, "new Pair<>(pair.g,pair.f)");
                     assertLinked(d, it(0, 1, "pair.f:-1,pair.g:-1,pair:-1"),
                             it(2, "pair.f:4,pair.g:4,pair:4"));
-                    assertSingleLv(d, 2, 0, "1-4-0");
-                    assertSingleLv(d, 2, 1, "0-4-1");
-                    assertSingleLv(d, 2, 2, "0,1-4-1,0");
+                    assertSingleLv(d, 2, 0, "0,1-4-1,0");
+                    assertSingleLv(d, 2, 1, "1-4-*");
+                    assertSingleLv(d, 2, 2, "0-4-*");
+                }
+            }
+            if ("reverse2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2, "new Pair<>(pair.g(),pair.f())");
+                    //     assertLinked(d, it(0, 1, "pair:-1"),
+                    // FIXME empty is not the solution!!
+                    //           it(2, "pair.f:4,pair.g:4,pair:4"));
+                }
+            }
+            if ("reverse3".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 3, "new Pair<>(r.pair.g,r.pair.f)");
+                    assertLinked(d, it(0, 2, "r.pair.f:-1,r.pair.g:-1,r.pair:-1,r:-1"),
+                            it(3, "r.pair.f:4,r.pair.g:4,r.pair:4,r:4"));
+                    // FIXME
+                    //assertSingleLv(d, 3, 1, "1-4-*");
+                    //assertSingleLv(d, 3, 2, "0-4-*");
+                }
+            }
+            if ("reverse4".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 3, "new R<>(new Pair<>(r.pair.g,r.pair.f))");
+                    //assertLinked(d, it(0, 2, "r.pair.f:-1,r.pair.g:-1,r.pair:-1,r:-1"),
+                    //        it(3, "r.pair.f:4,r.pair.g:4,r.pair:4,r:4"));
+                    // FIXME
+                    //assertSingleLv(d, 3, 1, "1-4-*");
+                    //assertSingleLv(d, 3, 2, "0-4-*");
                 }
             }
         };
