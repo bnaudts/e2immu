@@ -139,7 +139,7 @@ public class LinkedVariables implements Comparable<LinkedVariables>, Iterable<Ma
     public LV select(int index) {
         if (this == NOT_YET_SET || this == EMPTY || variables.isEmpty()) throw new UnsupportedOperationException();
         return variables.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().minimalOutput()))
+                .sorted(Comparator.comparing(e -> e.getKey().minimalOutput() + ":" + e.getValue().value()))
                 .skip(index)
                 .map(Map.Entry::getValue)
                 .findFirst().orElseThrow();

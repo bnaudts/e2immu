@@ -229,11 +229,11 @@ FIXME cause crashes
     static <X, Y> boolean ppc0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
-*/
+
     static <X, Y> boolean ppe0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
-
+*/
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {
