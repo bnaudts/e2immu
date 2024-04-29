@@ -15,6 +15,7 @@
 package org.e2immu.analyser.parser.modification;
 
 import org.e2immu.analyser.analyser.ChangeData;
+import org.e2immu.analyser.analyser.HiddenContentSelector;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.Property;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -43,10 +44,24 @@ public class Test_Linking0P extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             LinkedVariables lvsExpression = d.evaluationResult().linkedVariablesOfExpression();
-            if ("create".equals(d.methodInfo().name)) {
+            if ("reverse".equals(d.methodInfo().name)) {
+                assertLinked(d, lvsExpression, it(0, 1, "pair.f:-1,pair.g:-1,pair:-1"),
+                        it(2, "pair.f:4,pair.g:4"));
+                assertSingleLv(d, lvsExpression, 2, 0, "1-4-*");
+                assertSingleLv(d, lvsExpression, 2, 1, "0-4-*");
 
+                ChangeData cdf = d.evaluationResult().findChangeData("f");
+                assertNotNull(cdf);
+                assertLinked(d, cdf.linkedVariables(), it(0, 1, "pair:-1"),
+                        it(2, "pair:4"));
+                assertSingleLv(d, cdf.linkedVariables(), 2, 0, "*-4-0");
+                ChangeData cdg = d.evaluationResult().findChangeData("g");
+                assertNotNull(cdg);
+                assertLinked(d, cdg.linkedVariables(), it(0, 1, "pair:-1"),
+                        it(2, "pair:4"));
+                // FIXME??
+                assertSingleLv(d, cdg.linkedVariables(), 2, 0, "*-4-1");
             }
-
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -58,7 +73,6 @@ public class Test_Linking0P extends CommonTestRunner {
                     assertSingleLv(d, 2, 1, "1-4-*");
                 }
             }
-            // FIXME 2 needs to be 4, rest is fine
             if ("create1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertCurrentValue(d, 2, "new Pair<>(x,m)");
@@ -90,10 +104,62 @@ public class Test_Linking0P extends CommonTestRunner {
                     assertSingleLv(d, 2, 0, "1M-4-*M");
                 }
             }
+            if ("reverse".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ParameterInfo pi && "pair".equals(pi.name)) {
+                    assertCurrentValue(d, 2, "nullable instance type Pair<X,Y>/*@Identity*/");
+                    assertLinked(d, it(0, 1, "pair.f:-1,pair.g:-1"),
+                            it(2, "pair.f:4,pair.g:4"));
+                    assertSingleLv(d, 2, 0, "0-4-*");
+                    assertSingleLv(d, 2, 1, "1-4-*"); // FIXME??
+                }
+                if (d.variable() instanceof FieldReference fr && "f".equals(fr.fieldInfo().name)) {
+                    assertCurrentValue(d, 2, "nullable instance type F");
+                    assertLinked(d, it(0, 1, "pair.g:-1,pair:-1"), it(2, "pair:4"));
+                    assertSingleLv(d, 2, 0, "*-4-0");
+                }
+                if (d.variable() instanceof FieldReference fr && "g".equals(fr.fieldInfo().name)) {
+                    assertCurrentValue(d, 2, "nullable instance type G");
+                    assertLinked(d, it(0, "pair.f:-1,pair:-1"));
+                    assertSingleLv(d, 2, 0, "*-4-1");
+                }
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2, "new Pair<>(pair.g,pair.f)");
+                    assertLinked(d, it(0, 1, "pair.f:-1,pair.g:-1,pair:-1"),
+                            it(2, "pair.f:4,pair.g:4,pair:4"));
+                    assertSingleLv(d, 2, 0, "1-4-0");
+                    assertSingleLv(d, 2, 1, "0-4-1");
+                    assertSingleLv(d, 2, 2, "0,1-4-1,0");
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("f".equals(d.methodInfo().name)) {
+                HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
+                if (hcs instanceof HiddenContentSelector.All all) {
+                    assertEquals(0, all.getHiddenContentIndex());
+                } else fail();
+            }
+            if ("g".equals(d.methodInfo().name)) {
+                HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
+                if (hcs instanceof HiddenContentSelector.All all) {
+                    assertEquals(1, all.getHiddenContentIndex());
+                } else fail();
+            }
+            if ("pair".equals(d.methodInfo().name)) {
+                assertEquals("R", d.methodInfo().typeInfo.simpleName);
+                HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
+                assertEquals("0,1", hcs.toString());
+            }
+            if ("setOncePair".equals(d.methodInfo().name)) {
+                assertEquals("R1", d.methodInfo().typeInfo.simpleName);
+                HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
+                assertEquals("0=0.0,1=0.1", hcs.toString());
+            }
         };
 
         TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            if("Pair".equals(d.typeInfo().simpleName)) {
+            if ("Pair".equals(d.typeInfo().simpleName)) {
                 assertDv(d, 1, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
             }
         };
@@ -101,6 +167,7 @@ public class Test_Linking0P extends CommonTestRunner {
         testClass("Linking_0P", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypeAnalyserVisitor(typeAnalyserVisitor)
                 .build());
     }

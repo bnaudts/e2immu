@@ -932,7 +932,9 @@ public record EvaluationResultImpl(EvaluationContext evaluationContext,
             if (to == LinkedVariables.NOT_YET_SET) {
                 setLink(from, to, to.causesOfDelay());
             } else {
-                to.stream().forEach(e -> link(from, e.getKey(), e.getValue()));
+                to.stream()
+                        .filter(e -> !(e.getKey() instanceof ReturnVariable))
+                        .forEach(e -> link(from, e.getKey(), e.getValue()));
             }
         }
 

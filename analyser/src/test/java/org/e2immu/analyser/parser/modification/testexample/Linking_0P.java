@@ -1,5 +1,7 @@
 package org.e2immu.analyser.parser.modification.testexample;
 
+import org.e2immu.support.SetOnce;
+
 public class Linking_0P {
 
     static class M {
@@ -29,6 +31,12 @@ public class Linking_0P {
     record Pair<F, G>(F f, G g) {
     }
 
+    record R<F, G>(Pair<F, G> pair) {
+    }
+
+    record R1<F, G>(SetOnce<Pair<F, G>> setOncePair) {
+    }
+
     static <X, Y> Pair<X, Y> create0(X x, Y y) {
         return new Pair<>(x, y);
     }
@@ -54,8 +62,20 @@ public class Linking_0P {
         Pair<Integer, M> p = new Pair<>(i, m);
         return p;
     }
-/* FIXME fail
+
     static <X, Y> Pair<Y, X> reverse(Pair<X, Y> pair) {
         return new Pair<>(pair.g, pair.f);
+    }
+/*
+    static <X, Y> Pair<Y, X> reverse2(Pair<X, Y> pair) {
+        return new Pair<>(pair.g(), pair.f());
+    }
+
+    static <X, Y> Pair<Y, X> reverse3(R<X, Y> r) {
+        return new Pair<>(r.pair.g, r.pair.f);
+    }
+
+    static <X, Y> R<Y, X> reverse4(R<X, Y> r) {
+        return new R(new Pair<>(r.pair.g, r.pair.f));
     }*/
 }

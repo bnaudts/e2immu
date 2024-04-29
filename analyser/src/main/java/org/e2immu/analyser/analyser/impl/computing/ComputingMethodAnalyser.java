@@ -64,7 +64,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
     public static final String STATEMENT_ANALYSER = "StatementAnalyser";
     public static final String OBTAIN_MOST_COMPLETE_PRECONDITION = "obtainMostCompletePrecondition";
-    public static final String COMPUTE_LINKED_VARIABLES = "computeLinkedVariablesIndependentHCS";
+    public static final String COMPUTE_LINKED_VARIABLES = "computeLinkedVariables";
+    public static final String COMPUTE_INDEPENDENT = "computeIndependent";
     public static final String COMPUTE_MODIFIED = "computeModified";
     public static final String COMPUTE_MODIFIED_CYCLES = "computeModifiedCycles";
     public static final String COMPUTE_RETURN_VALUE = "computeReturnValue";
@@ -157,6 +158,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
 
         builder.add(STATEMENT_ANALYSER, statementAnalyser)
                 .add(COMPUTE_LINKED_VARIABLES, this::computeLinkedVariables)
+                .add(COMPUTE_INDEPENDENT, this::computeIndependent)
                 .add(COMPUTE_MODIFIED, this::computeModified)
                 .add(COMPUTE_MODIFIED_CYCLES, (sharedState -> methodInfo.isConstructor() ? DONE : computeModifiedInternalCycles()))
                 .add(OBTAIN_MOST_COMPLETE_PRECONDITION, (sharedState) -> obtainMostCompletePrecondition())
@@ -342,7 +344,11 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
         LinkedVariables lvs = lvMap.isEmpty() ? LinkedVariables.EMPTY : LinkedVariables.of(lvMap);
         methodAnalysis.setLinkedVariables(lvs);
+        return AnalysisStatus.of(lvs.causesOfDelay());
+    }
 
+    private AnalysisStatus computeIndependent(SharedState sharedState) {
+        LinkedVariables lvs = methodAnalysis.getLinkedVariables();
         CausesOfDelay linkDelays = lvs.causesOfDelay();
         DV independent;
         if (linkDelays.isDelayed()) {
@@ -351,8 +357,7 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
             independent = independent(lvs, sharedState.evaluationContext);
         }
         methodAnalysis.setProperty(INDEPENDENT, independent);
-        CausesOfDelay allDelays = linkDelays.merge(independent.causesOfDelay());
-        return AnalysisStatus.of(allDelays);
+        return AnalysisStatus.of(independent.causesOfDelay());
     }
 
     private DV independent(LinkedVariables linkedVariables, EvaluationContext evaluationContext) {

@@ -300,20 +300,19 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
         EvaluationResult indexResult = evaluateIndex(context, fwd);
         if (indexResult != null) builder.compose(indexResult, lv -> null);
 
-        LinkedVariables linkedVariables1 = LinkedVariables.of(variable, LV.LINK_STATICALLY_ASSIGNED);
-        LinkedVariables linkedVariables;
-        if (scopeResult == null) {
-            linkedVariables = linkedVariables1;
-        } else {
-            // a.b (FieldReference) or a[b] (DependentVariable) are linking-wise equivalent to a.get("b")
+        LinkedVariables linkedVariables = LinkedVariables.of(variable, LV.LINK_STATICALLY_ASSIGNED);
+        builder.setLinkedVariablesOfExpression(linkedVariables);
+
+        if (scopeResult != null) {
+            // FIXME this works well for arrays, but for fields, the index can be != 0, which it always is for List.get()
             MethodInfo methodInfo = context.getAnalyserContext().importantClasses().arrayFieldAccess();
             ParameterizedType boxedFieldType = variable.parameterizedType().ensureBoxed(context.getPrimitives());
             ParameterizedType listOfFieldType = new ParameterizedType(methodInfo.typeInfo, List.of(boxedFieldType));
             LinkHelper linkHelper = new LinkHelper(context, methodInfo);
-            linkedVariables = linkHelper.linkedVariablesMethodCallObjectToReturnType(listOfFieldType, scopeResult,
-                    List.of(), variable.parameterizedType()).merge(linkedVariables1);
+            LinkedVariables linkedVariables2 = linkHelper.linkedVariablesMethodCallObjectToReturnType(listOfFieldType, scopeResult,
+                    List.of(), variable.parameterizedType());
+            builder.link(variable, linkedVariables2);
         }
-        builder.setLinkedVariablesOfExpression(linkedVariables);
 
         Variable source;
         if (variable instanceof DependentVariable dv) {
