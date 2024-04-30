@@ -32,6 +32,7 @@ import org.e2immu.analyser.analysis.impl.MethodAnalysisImpl;
 import org.e2immu.analyser.analysis.impl.ParameterAnalysisImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -45,10 +46,8 @@ import org.e2immu.support.FlipSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -124,41 +123,88 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
         if (!methodAnalysis.hiddenContentSelectorIsSet()) {
             HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, methodInspection.getReturnType());
             methodAnalysis.setHiddenContentSelector(hcs);
-            methodAnalysis.setLinkedVariables(LinkedVariables.EMPTY);
         }
-
-        parameterAnalyses.forEach(parameterAnalysis -> {
-            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-            if (builder.hiddenContentSelectorNotYetSet()) {
-                ParameterizedType parameterType = builder.getParameterInfo().parameterizedType;
-                HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, parameterType);
-                builder.setHiddenContentSelector(hcs);
-            }
-            if(builder.linkedVariablesNotYetSet()) {
-                // mainly meant to catch links to the closure in anonymous types.
-                builder.setLinkedVariables(LinkedVariables.EMPTY);
-            }
-            List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
-            analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
-                    annotations, e2));
-            if (explicitlyEmpty) {
-                DV modified = builder.getProperty(Property.MODIFIED_VARIABLE);
-                if (modified.valueIsTrue()) {
-                    analyserResultBuilder.add(Message.newMessage(builder.location, Message.Label.CONTRADICTING_ANNOTATIONS,
-                            "Empty method cannot modify its parameters"));
-                } else {
-                    builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
-                }
-                builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-            }
-        });
-
         if (!annotationsHaveBeenSet.isSet()) {
+            parameterAnalyses.forEach(parameterAnalysis -> {
+                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                if (builder.hiddenContentSelectorNotYetSet()) {
+                    ParameterizedType parameterType = builder.getParameterInfo().parameterizedType;
+                    HiddenContentSelector hcs = HiddenContentSelector.selectAll(hct, parameterType);
+                    builder.setHiddenContentSelector(hcs);
+                }
+                List<AnnotationExpression> annotations = builder.getParameterInfo().parameterInspection.get().getAnnotations();
+                analyserResultBuilder.addMessages(builder.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.PARAMETER, true,
+                        annotations, e2));
+                if (explicitlyEmpty) {
+                    DV modified = builder.getProperty(Property.MODIFIED_VARIABLE);
+                    if (modified.valueIsTrue()) {
+                        analyserResultBuilder.add(Message.newMessage(builder.location, Message.Label.CONTRADICTING_ANNOTATIONS,
+                                "Empty method cannot modify its parameters"));
+                    } else {
+                        builder.setProperty(Property.MODIFIED_VARIABLE, DV.FALSE_DV);
+                    }
+                    builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
+                }
+            });
             List<AnnotationExpression> annotations = methodInfo.methodInspection.get().getAnnotations();
             analyserResultBuilder.addMessages(methodAnalysis.fromAnnotationsIntoProperties(Analyser.AnalyserIdentification.METHOD,
                     true, annotations, e2));
             annotationsHaveBeenSet.set();
         }
+
+        AtomicReference<CausesOfDelay> lvDelays = new AtomicReference<>(CausesOfDelay.EMPTY);
+        boolean factoryMethod = methodInspection.isFactoryMethod();
+        parameterAnalyses.forEach(parameterAnalysis -> {
+            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+            if (builder.linkedVariablesNotYetSet()) {
+                // mainly meant to catch links to the closure in anonymous types.
+                if (factoryMethod) {
+                    DV independent = builder.getProperty(Property.INDEPENDENT);
+                    if (independent.isDelayed()) {
+                        lvDelays.set(lvDelays.get().merge(independent.causesOfDelay()));
+                    } else {
+                        LinkedVariables linkedVariables;
+                        if (!MultiLevel.INDEPENDENT_DV.equals(independent)) {
+                            boolean isDependent = MultiLevel.DEPENDENT_DV.equals(independent);
+                            LV.Links links = LinkHelper.factoryMethodLinks(hct, methodAnalysis.getHiddenContentSelector(),
+                                    parameterAnalysis.getHiddenContentSelector(), isDependent);
+                            LV lv = isDependent ? (links == null ? LV.LINK_DEPENDENT : LV.createDependent(links))
+                                    : links == null ? null : LV.createHC(links);
+                            if (lv != null) {
+                                linkedVariables = LinkedVariables.of(parameterAnalysis.getParameterInfo(), lv);
+                            } else {
+                                // FIXME later, when "Object" will become a hidden content type
+                                LOGGER.warn("TODO: linked variables empty for {}", methodInfo);
+                                linkedVariables = LinkedVariables.EMPTY;
+                            }
+                        } else {
+                            linkedVariables = LinkedVariables.EMPTY;
+                        }
+                        builder.setLinkedVariables(linkedVariables);
+                    }
+                    assert builder.getLinkToReturnValueOfMethod().isEmpty();
+                } else {
+                    builder.setLinkedVariables(LinkedVariables.EMPTY);
+                }
+            }
+        });
+
+        if (!methodAnalysis.linkedVariablesIsFinal() && lvDelays.get().isDone()) {
+            LinkedVariables linkedVariables;
+            if (factoryMethod) {
+                // copy the linked variables from the parameters into the method
+                linkedVariables = parameterAnalyses.stream()
+                        .map(pa -> LinkedVariables.of(pa.getLinkedVariables().stream()
+                                .collect(Collectors.toUnmodifiableMap(e -> pa.getParameterInfo(),
+                                        e -> e.getValue().reverse()))))
+                        .reduce(LinkedVariables.EMPTY, LinkedVariables::merge);
+            } else {
+                // shallow analyser: no information about private fields
+                linkedVariables = LinkedVariables.EMPTY;
+            }
+            methodAnalysis.setLinkedVariables(linkedVariables);
+        }
+
 
         CausesOfDelay causes;
         if (explicitlyEmpty) {
@@ -175,7 +221,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             CausesOfDelay c2 = parameterAnalyses.stream()
                     .map(pa -> computeParameterProperties((ParameterAnalysisImpl.Builder) pa))
                     .reduce(CausesOfDelay.EMPTY, CausesOfDelay::merge);
-            causes = c1.merge(c2);
+            causes = lvDelays.get().merge(c1).merge(c2);
         } else {
             CausesOfDelay c1 = computeMethodPropertyIfNecessary(Property.FLUENT, () -> bestOfOverridesOrWorstValue(Property.FLUENT));
             CausesOfDelay c2 = computeMethodPropertyIfNecessary(Property.MODIFIED_METHOD, this::computeMethodModified);
@@ -190,7 +236,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
             checkMethodIndependent();
             CausesOfDelay c6 = computeMethodPropertyIfNecessary(Property.STATIC_SIDE_EFFECTS,
                     () -> bestOfOverridesOrWorstValue(Property.STATIC_SIDE_EFFECTS));
-            causes = c1.merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
+            causes = lvDelays.get().merge(c1).merge(c2).merge(c3).merge(c4).merge(c5).merge(c6);
         }
 
         CompanionMethodName pre = new CompanionMethodName(methodInfo.name, CompanionMethodName.Action.PRECONDITION, null);

@@ -1052,4 +1052,35 @@ public class LinkHelper {
         return lh.linkedVariables(hcsSource, scopeType, formalScopeType, hcsSource, scopeResult.linkedVariablesOfExpression(), false,
                 independent, fieldType, formalFieldType, hcsTarget, false);
     }
+
+    public static Links factoryMethodLinks(HiddenContentTypes hct,
+                                           HiddenContentSelector hcsFrom,
+                                           HiddenContentSelector hcsTo,
+                                           boolean isDependent) {
+        if (hcsFrom.isNone() || hcsTo.isNone()) return null;
+        if (hcsFrom.isAll() && hcsTo.isAll()) return null;
+        Map<LV.Indices, LV.Link> linkMap = new HashMap<>();
+        Map<Integer, Integer> correct = hct.mapMethodToTypeIndices(null);
+        if (hcsFrom instanceof HiddenContentSelector.All fromAll) {
+            int allIndex = correct.getOrDefault(fromAll.getHiddenContentIndex(), fromAll.getHiddenContentIndex());
+            LV.Indices to = new LV.Indices(allIndex);
+            linkMap.put(LV.ALL_INDICES, new LV.Link(to, false));
+        } else if (hcsFrom instanceof HiddenContentSelector.CsSet fromSet) {
+            if (hcsTo instanceof HiddenContentSelector.All toAll) {
+                int allIndex = correct.getOrDefault(toAll.getHiddenContentIndex(), toAll.getHiddenContentIndex());
+                LV.Indices from = new LV.Indices(allIndex);
+                linkMap.put(from, new LV.Link(LV.ALL_INDICES, false));
+            } else if (hcsTo instanceof HiddenContentSelector.CsSet toSet) {
+                for (Map.Entry<Integer, LV.Indices> entry : fromSet.getMap().entrySet()) {
+                    LV.Indices to = toSet.getMap().get(entry.getKey());
+                    if (to != null) {
+                        linkMap.put(entry.getValue(), new LV.Link(to, false));
+                    } // FIXME: else to be reviewed
+                }
+            } else throw new UnsupportedOperationException();
+        } else throw new UnsupportedOperationException();
+        if (linkMap.isEmpty()) return null;
+        return new LV.Links(linkMap);
+    }
+
 }

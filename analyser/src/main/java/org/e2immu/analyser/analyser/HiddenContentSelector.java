@@ -104,7 +104,7 @@ public abstract sealed class HiddenContentSelector
         @Override
         public HiddenContentSelector correct(Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
             int mapped = mapMethodHCTIndexToTypeHCTIndex.getOrDefault(hiddenContentIndex, hiddenContentIndex);
-            return mapped == hiddenContentIndex ? this: new All(hiddenContentTypes, mapped);
+            return mapped == hiddenContentIndex ? this : new All(hiddenContentTypes, mapped);
         }
     }
 
@@ -243,16 +243,8 @@ public abstract sealed class HiddenContentSelector
             // assert type.parameters.isEmpty(); // not doing the combination
             return None.INSTANCE;
         }
-        Map<Integer, LV.Indices> map;
-        if (type.typeInfo.equals(hiddenContentTypes.getTypeInfo())) {
-            map = hiddenContentTypes.selectAll().stream()
-                    .collect(Collectors.toUnmodifiableMap(i -> i, i -> {
-                        return new LV.Indices(i);
-                    }));
-        } else {
-            map = new HashMap<>();
-            recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
-        }
+        Map<Integer, LV.Indices> map = new HashMap<>();
+        recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
         if (map.isEmpty()) {
             return None.INSTANCE;
         }

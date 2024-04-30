@@ -14,9 +14,7 @@
 
 package org.e2immu.analyser.shallow;
 
-import org.e2immu.analyser.analyser.DV;
-import org.e2immu.analyser.analyser.HiddenContentTypes;
-import org.e2immu.analyser.analyser.Property;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.analysis.MethodAnalysis;
 import org.e2immu.analyser.analysis.ParameterAnalysis;
 import org.e2immu.analyser.analysis.TypeAnalysis;
@@ -204,16 +202,24 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
     public void testListOf() {
         TypeInfo typeInfo = typeContext.getFullyQualified(List.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 1);
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
+        assertEquals("e1:4", methodAnalysis.getLinkedVariables().toString());
+        assertEquals("*-4-0", methodAnalysis.getLinkedVariables().select(0).toString());
         assertEquals("1=0", methodAnalysis.getHiddenContentSelector().toString());
 
         // index
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
-        assertEquals("*", p0.getHiddenContentSelector().toString());
+        if (p0.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+            assertEquals(1, all.getHiddenContentIndex());
+        } else fail();
+        assertEquals("e1:4", p0.getLinkedVariables().toString());
+        assertEquals("0-4-*", p0.getLinkedVariables().select(0).toString());
     }
 
     @Test
@@ -277,6 +283,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
                              m.methodInspection.get().getParameters().get(0).parameterizedType.arrays > 0)
                 .findFirst().orElseThrow();
         assertEquals("java.util.Set.of(E...)", methodInfo.fullyQualifiedName);
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL_DV, methodAnalysis.getProperty(Property.NOT_NULL_EXPRESSION));
@@ -490,16 +498,22 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("copyOf", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals("2=0,3=1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("map:4", methodAnalysis.getLinkedVariables().toString());
+        assertEquals("0,1-4-0,1", methodAnalysis.getLinkedVariables().select(0).toString());
 
         ParameterAnalysis p0 = methodAnalysis.getParameterAnalyses().get(0);
         assertEquals(MultiLevel.MUTABLE_DV, p0.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals("2=0,3=1", p0.getHiddenContentSelector().toString());
+        assertEquals("map:4", p0.getLinkedVariables().toString());
+        assertEquals("0,1-4-0,1", p0.getLinkedVariables().select(0).toString());
     }
 
     @Test
@@ -507,18 +521,30 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("of", 2);
         assertTrue(methodInfo.isStatic());
+        assertTrue(methodInfo.methodInspection.get().isFactoryMethod());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.CONTAINER_DV, methodAnalysis.getProperty(Property.CONTAINER));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, methodAnalysis.getProperty(Property.IMMUTABLE));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
         assertEquals("2=0,3=1", methodAnalysis.getHiddenContentSelector().toString());
+        assertEquals("k1:4,v1:4", methodAnalysis.getLinkedVariables().toString());
+        assertEquals("*-4-0", methodAnalysis.getLinkedVariables().select(0).toString());
+        assertEquals("*-4-1", methodAnalysis.getLinkedVariables().select(1).toString());
+
+        ParameterAnalysis p1 = methodAnalysis.getParameterAnalyses().get(1);
+        if (p1.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
+            assertEquals(3, all.getHiddenContentIndex());
+        } else fail();
     }
 
     @Test
     public void testMapValues() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Map.class);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("values", 0);
+        assertFalse(methodInfo.methodInspection.get().isFactoryMethod());
+
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.FALSE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
         assertEquals(MultiLevel.DEPENDENT_DV, methodAnalysis.getProperty(Property.INDEPENDENT));
