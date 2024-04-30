@@ -41,11 +41,33 @@ public class Test_Linking0H extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("create".equals(d.methodInfo().name)) {
+                if ("mList".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        assertCurrentValue(d, 2, "List.of(m)");
+                        assertLinked(d, it(0, ""));
+                    }
+                }
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Linking_0H<>(List.of(m))");
                     assertLinked(d, it(0, 1, "m:-1,mList:-1"), it(2, "mList:4"));
                     assertSingleLv(d, 2, 0, "0M-4-0M");
                     // FIXME need a link  0M-4-*M to m
+                }
+            }
+            // create2 does the same as List.of(..), but then in 2 steps
+            if ("create2".equals(d.methodInfo().name)) {
+                if ("mList".equals(d.variableName())) {
+                    if ("1".equals(d.statementId())) {
+                        assertCurrentValue(d, 0, "instance 1 type ArrayList<M>/*1==this.size()&&this.contains(m)*/");
+                        assertLinked(d, it(0, 1, "m:-1"), it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                    }
+                }
+                if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
+                    assertCurrentValue(d, 0, "new Linking_0H<>(mList$1)");
+                    assertLinked(d, it(0, 1, "m:-1,mList:-1"), it(2, "m:4,mList:4"));
+                    assertSingleLv(d, 2, 0, "0M-4-*M");
+                    assertSingleLv(d, 2, 1, "0M-4-0M");
                 }
             }
             if ("getList".equals(d.methodInfo().name)) {

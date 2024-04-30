@@ -100,6 +100,12 @@ public abstract sealed class HiddenContentSelector
         public Set<Integer> set() {
             return Set.of(hiddenContentIndex);
         }
+
+        @Override
+        public HiddenContentSelector correct(Map<Integer, Integer> mapMethodHCTIndexToTypeHCTIndex) {
+            int mapped = mapMethodHCTIndexToTypeHCTIndex.getOrDefault(hiddenContentIndex, hiddenContentIndex);
+            return mapped == hiddenContentIndex ? this: new All(hiddenContentTypes, mapped);
+        }
     }
 
     public static final class None extends HiddenContentSelector {

@@ -7,7 +7,7 @@ import java.util.List;
 
 /*
 Contrast to Linking_0D, where "this.list" is linked -4- to "this", because "this" is immutable HC.
-Also tests List.copyOf(...) which has a type parameter bound to the method.
+Also tests List.of() and List.copyOf(...), which have a type parameter bound to the method.
  */
 @ImmutableContainer(hc = true)
 public class Linking_0H<X> {
@@ -36,6 +36,12 @@ public class Linking_0H<X> {
 
     static Linking_0H<M> create(M m) {
         List<M> mList = List.of(m);
+        return new Linking_0H<>(mList);
+    }
+
+    static Linking_0H<M> create2(M m) {
+        List<M> mList = new ArrayList<>();
+        mList.add(m);
         return new Linking_0H<>(mList);
     }
 }
