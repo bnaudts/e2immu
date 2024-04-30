@@ -27,11 +27,11 @@ public class Linking_0H<X> {
     private final List<X> list;
 
     Linking_0H(List<X> list) {
-        this.list = new ArrayList<>(list);// FIXME  List.copyOf(list);
+        this.list = List.copyOf(list);
     }
 
     List<X> getList() {
-        return new ArrayList<>(list);
+        return List.copyOf(list);
     }
 
     static Linking_0H<M> create(M m) {

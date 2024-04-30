@@ -369,6 +369,8 @@ public class HiddenContentTypes {
             if (from.arrays > 0 && hiddenContentSelector.selectArrayElement(from.arrays)) {
                 LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
                 iat = new IndicesAndType(indices, to);
+            } else if(from.typeParameter != null) {
+                iat = new IndicesAndType(entry1.getKey(), to);
             } else if (LV.ALL_INDICES.equals(entry1.getKey())) {
                 iat = new IndicesAndType(entry1.getKey(), to);
             } else {

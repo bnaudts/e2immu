@@ -44,14 +44,15 @@ public class Test_Linking0H extends CommonTestRunner {
                 if ("mList".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
                         assertCurrentValue(d, 2, "List.of(m)");
-                        assertLinked(d, it(0, ""));
+                        assertLinked(d, it(0, 1, "m:-1"), it(2, "m:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Linking_0H<>(List.of(m))");
-                    assertLinked(d, it(0, 1, "m:-1,mList:-1"), it(2, "mList:4"));
-                    assertSingleLv(d, 2, 0, "0M-4-0M");
-                    // FIXME need a link  0M-4-*M to m
+                    assertLinked(d, it(0, 1, "m:-1,mList:-1"), it(2, "m:4,mList:4"));
+                    assertSingleLv(d, 2, 0, "0M-4-*M");
+                    assertSingleLv(d, 2, 1, "0M-4-0M");
                 }
             }
             // create2 does the same as List.of(..), but then in 2 steps
@@ -72,10 +73,10 @@ public class Test_Linking0H extends CommonTestRunner {
             }
             if ("getList".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 1, "new ArrayList<>(list)");
-                    assertLinked(d, it0("this.list:-1,this:-1"), it(1, "this.list:4,this:4"));
-                    assertSingleLv(d, 1, 0, "0-4-0");
-                    assertSingleLv(d, 1, 1, "0-4-0");
+                    assertCurrentValue(d, 1, "List.copyOf(list)");
+                    assertLinked(d,  it(0, "this.list:4,this:4"));
+                    assertSingleLv(d, 0, 0, "0-4-0");
+                    assertSingleLv(d, 0, 1, "0-4-0");
                 }
             }
         };

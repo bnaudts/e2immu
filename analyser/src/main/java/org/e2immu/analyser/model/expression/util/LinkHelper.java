@@ -379,10 +379,12 @@ public class LinkHelper {
                 : new EvaluationResultImpl.Builder(context).setLinkedVariablesOfExpression(LinkedVariables.EMPTY);
         Map<Integer, Integer> correctionMap = new HashMap<>();
         if (!methodInspection.getParameters().isEmpty()) {
+            boolean isFactoryMethod = methodInspection.isFactoryMethod();
             // links between object/return value and parameters
             for (ParameterAnalysis parameterAnalysis : methodAnalysis.getParameterAnalyses()) {
                 DV formalParameterIndependent = parameterAnalysis.getProperty(Property.INDEPENDENT);
-                LinkedVariables lvsToResult = parameterAnalysis.getLinkToReturnValueOfMethod();
+                LinkedVariables lvsToResult = isFactoryMethod ? parameterAnalysis.getLinkedVariables()
+                        : parameterAnalysis.getLinkToReturnValueOfMethod();
                 boolean inResult = intoResultBuilder != null && !lvsToResult.isEmpty();
                 if (!INDEPENDENT_DV.equals(formalParameterIndependent) || inResult) {
                     ParameterInfo pi = parameterAnalysis.getParameterInfo();
@@ -841,12 +843,24 @@ public class LinkHelper {
                                     correctForVarargsMutable = mutable;
                                 }
 
-                                Indices indicesInSourceWrtMethod = ((HiddenContentSelector.CsSet) hiddenContentSelectorOfSource).getMap().get(entry.getKey());
+                                Indices indicesInSourceWrtMethod;
+                                boolean isAll ;
+                                Indices indicesInSourceWrtType;
+                                if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet cs) {
+                                    indicesInSourceWrtMethod = cs.getMap().get(entry.getKey());
+                                    isAll = false;
+                                    HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
+                                    assert indicesAndType != null;
+                                    indicesInSourceWrtType  = indicesAndType.indices();
+                                    assert indicesInSourceWrtType != null;
+                                } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.All all) {
+                                    // FIXME verify
+                                    indicesInSourceWrtMethod = ALL_INDICES;
+                                    isAll = true;
+                                    indicesInSourceWrtType = ALL_INDICES;
+                                } else throw new UnsupportedOperationException();
                                 assert indicesInSourceWrtMethod != null;
-                                HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
-                                assert indicesAndType != null;
-                                Indices indicesInSourceWrtType = indicesAndType.indices();
-                                assert indicesInSourceWrtType != null;
+
 
                                 // FIXME this feels rather arbitrary, see Linking_0P.reverse4
                                 //   yet the 2nd clause seems needed for 1A.f10()
@@ -1069,12 +1083,12 @@ public class LinkHelper {
             if (hcsTo instanceof HiddenContentSelector.All toAll) {
                 int allIndex = correct.getOrDefault(toAll.getHiddenContentIndex(), toAll.getHiddenContentIndex());
                 LV.Indices from = new LV.Indices(allIndex);
-                linkMap.put(from, new LV.Link(LV.ALL_INDICES, false));
+                linkMap.put(ALL_INDICES, new LV.Link(from, false));
             } else if (hcsTo instanceof HiddenContentSelector.CsSet toSet) {
                 for (Map.Entry<Integer, LV.Indices> entry : fromSet.getMap().entrySet()) {
                     LV.Indices to = toSet.getMap().get(entry.getKey());
                     if (to != null) {
-                        linkMap.put(entry.getValue(), new LV.Link(to, false));
+                        linkMap.put(to, new LV.Link(entry.getValue(), false));
                     } // FIXME: else to be reviewed
                 }
             } else throw new UnsupportedOperationException();

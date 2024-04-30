@@ -35,6 +35,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.LinkHelper;
 import org.e2immu.analyser.model.impl.TranslationMapImpl;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -154,6 +155,8 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
 
         AtomicReference<CausesOfDelay> lvDelays = new AtomicReference<>(CausesOfDelay.EMPTY);
         boolean factoryMethod = methodInspection.isFactoryMethod();
+        ReturnVariable returnVariable = new ReturnVariable(methodInfo);
+
         parameterAnalyses.forEach(parameterAnalysis -> {
             ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
             if (builder.linkedVariablesNotYetSet()) {
@@ -171,7 +174,7 @@ public class ShallowMethodAnalyser extends MethodAnalyserImpl {
                             LV lv = isDependent ? (links == null ? LV.LINK_DEPENDENT : LV.createDependent(links))
                                     : links == null ? null : LV.createHC(links);
                             if (lv != null) {
-                                linkedVariables = LinkedVariables.of(parameterAnalysis.getParameterInfo(), lv);
+                                linkedVariables = LinkedVariables.of(returnVariable, lv);
                             } else {
                                 // FIXME later, when "Object" will become a hidden content type
                                 LOGGER.warn("TODO: linked variables empty for {}", methodInfo);
