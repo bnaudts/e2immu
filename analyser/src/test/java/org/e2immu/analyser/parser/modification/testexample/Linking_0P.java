@@ -90,4 +90,12 @@ public class Linking_0P {
     static <X, Y> R<Y, X> reverse5(R<X, Y> r) {
         return new R(new Pair(r.pair.g, r.pair.f));
     }
+
+    static <X, Y> R<Y, X> reverse6(X x, Y y) {
+        return new R<>(new Pair<>(y, x));
+    }
+
+    static <X, Y> R<Y, X> reverse7(R<X, Y> r1, R<X, Y> r2) {
+        return new R<>(new Pair<>(r2.pair.g, r1.pair.f));
+    }
 }

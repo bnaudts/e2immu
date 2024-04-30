@@ -151,10 +151,17 @@ public class LinkHelper {
                 }
                 if (targetData != null && !targetData.isEmpty()) {
                     Map<LV.Indices, Link> linkMap = new HashMap<>();
-                    for (Map.Entry<LV.Indices, HiddenContentTypes.IndicesAndType> entry : targetData.entrySet()) {
-                        Indices iInHctSource = entry.getKey();
-                        Indices iInHctTarget = entry.getValue().indices();
-                        ParameterizedType type = entry.getValue().type();
+                    Collection<Indices> targetDataKeys;
+                    // NOTE: this type of filter occurs in 'continueLinkedVariables' as well
+                    if (lv.haveLinks()) {
+                        targetDataKeys = lv.links().map().keySet().stream().filter(targetData::containsKey).toList();
+                    } else {
+                        targetDataKeys = targetData.keySet();
+                    }
+                    for (LV.Indices iInHctSource : targetDataKeys) {
+                        HiddenContentTypes.IndicesAndType value = targetData.get(iInHctSource);
+                        Indices iInHctTarget = lv.haveLinks() && lv.theirsIsAll() ? ALL_INDICES : value.indices();
+                        ParameterizedType type = value.type();
                         assert type != null;
                         DV immutable = context.evaluationContext().immutable(type);
                         if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
@@ -381,6 +388,7 @@ public class LinkHelper {
                     ParameterInfo pi = parameterAnalysis.getParameterInfo();
                     ParameterizedType parameterType = parameterExpressions.get(pi.index).returnType();
                     LinkedVariables parameterLvs;
+                    EvaluationResult parameterResult = parameterResults.get(pi.index);
                     if (inResult) {
                         /*
                         change the links of the parameter to the value of the return variable (see also MethodReference,
@@ -388,7 +396,7 @@ public class LinkHelper {
                          */
                         LinkedVariables returnValueLvs = linkedVariablesOfParameter(pi.parameterizedType,
                                 parameterExpressions.get(pi.index).returnType(),
-                                parameterResults.get(pi.index).linkedVariablesOfExpression(), hcsSource);
+                                parameterResult.linkedVariablesOfExpression(), hcsSource);
                         LV valueOfReturnValue = lvsToResult.stream().filter(e -> e.getKey() instanceof ReturnVariable)
                                 .map(Map.Entry::getValue).findFirst().orElseThrow();
                         Map<Variable, LV> map = returnValueLvs.stream().collect(Collectors.toMap(Map.Entry::getKey,
@@ -398,8 +406,16 @@ public class LinkHelper {
                     } else {
                         parameterLvs = linkedVariablesOfParameter(pi.parameterizedType,
                                 parameterExpressions.get(pi.index).returnType(),
-                                parameterResults.get(pi.index).linkedVariablesOfExpression(), hcsSource);
+                                parameterResult.linkedVariablesOfExpression(), hcsSource);
                     }
+                    EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
+                    parameterResult.changeData().forEach((v, cd) -> {
+                        cd.linkedVariables().forEach(e -> {
+                            if (!e.getValue().isStaticallyAssignedOrAssigned()) {
+                                builder.link(v, e.getKey(), e.getValue());
+                            } // FIXME this is not the best way to approach copying, what with -1- links??
+                        });
+                    });
                     ParameterizedType pt = inResult ? resultPt : objectPt;
                     ParameterizedType methodPt;
                     if (inResult) {
@@ -426,7 +442,6 @@ public class LinkHelper {
                                     formalParameterIndependent, parameterType, pi.parameterizedType, hcsTarget,
                                     true);
                         }
-                        EvaluationResultImpl.Builder builder = inResult ? intoResultBuilder : intoObjectBuilder;
                         builder.mergeLinkedVariablesOfExpression(lv);
                     }
                 }
@@ -798,7 +813,14 @@ public class LinkHelper {
                             assert hctMethodToHctSource != null;
                             assert hctMethodToHcsTarget != null;
 
-                            for (Map.Entry<Integer, Indices> entry : mineCsSet.getMap().entrySet()) {
+                            // NOTE: this type of filtering occurs in 'linkedVariablesOfParameter' as well
+                            Set<Map.Entry<Integer, Indices>> entrySet;
+                            if (lv.haveLinks()) {
+                                entrySet = filter(lv.links().map().keySet(), mineCsSet.getMap().entrySet());
+                            } else {
+                                entrySet = mineCsSet.getMap().entrySet();
+                            }
+                            for (Map.Entry<Integer, Indices> entry : entrySet) {
                                 Indices indicesInTargetWrtMethod = entry.getValue();
                                 HiddenContentTypes.IndicesAndType targetAndType = hctMethodToHcsTarget.get(indicesInTargetWrtMethod);
                                 assert targetAndType != null;
@@ -826,7 +848,9 @@ public class LinkHelper {
                                 Indices indicesInSourceWrtType = indicesAndType.indices();
                                 assert indicesInSourceWrtType != null;
 
-                                Indices indicesInTargetWrtType = targetAndType.indices();
+                                // FIXME this feels rather arbitrary, see Linking_0P.reverse4
+                                //   yet the 2nd clause seems needed for 1A.f10()
+                                Indices indicesInTargetWrtType = lv.theirsIsAll() && entrySet.size() < mineCsSet.getMap().size() && reverse ? ALL_INDICES : targetAndType.indices();
                                 Indices correctedIndicesInTargetWrtType;
                                 if (correctForVarargsMutable != null) {
                                     correctedIndicesInTargetWrtType = ALL_INDICES;
@@ -863,6 +887,10 @@ public class LinkHelper {
             return sourceLvs.changeToDelay(LV.delay(causesOfDelay));
         }
         return LinkedVariables.of(newLinked);
+    }
+
+    private Set<Map.Entry<Integer, Indices>> filter(Set<Indices> indices, Set<Map.Entry<Integer, Indices>> entries) {
+        return entries.stream().filter(e -> indices.contains(e.getValue())).collect(Collectors.toUnmodifiableSet());
     }
 
     private boolean isDependent(DV transferIndependent, DV correctedIndependent,
