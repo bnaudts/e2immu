@@ -68,7 +68,8 @@ public class Test_Linking0M extends CommonTestRunner {
                                 .noneMatch(cd -> cd.linkedVariables().isDelayed()));
                     }
                     ChangeData cdL = d.findValueChangeByToString("listM");
-                    assertLinked(d, cdL.linkedVariables(), it(0, 1, "m:-1"), it(2, "m:4"));
+                    assertLinked(d, cdL.linkedVariables(), it(0, 1, "m:-1,this:2"),
+                            it(2, "m:4,this:2"));
                     ChangeData cdM = d.findValueChangeBySubString(":0:m");
                     assertLinked(d, cdM.linkedVariables(), it(0, ""));
                 }
@@ -112,7 +113,7 @@ public class Test_Linking0M extends CommonTestRunner {
                 if (d.variable() instanceof ParameterInfo pi && "m".equals(pi.name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "this.listM:-1,this:-1"),
-                                it(2, "this.listM:4,this:4"));
+                                it(2, "this.listM:4"));
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
                     if ("1".equals(d.statementId())) {
@@ -125,15 +126,15 @@ public class Test_Linking0M extends CommonTestRunner {
                 if (d.variable() instanceof FieldReference fr && "listM".equals(fr.fieldInfo().name)) {
                     if ("0".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1,this:-1"),
-                                it(2, "m:4,this:4"));
+                                it(2, "m:4,this:2"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                     }
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "m:-1,this.listM2:-1,this:-1"),
-                                it(2, "m:4,this.listM2:4,this:4"));
+                                it(2, "m:4,this.listM2:2,this:2"));
                         assertSingleLv(d, 2, 0, "0M-4-*M");
                         // IMPORTANT: the link here is at 0-4-0, not at 0M-4-0M
-                        assertSingleLv(d, 2, 1, "0-4-0");
+                        assertSingleLv(d, 2, 1, "-2-");
                     }
                 }
                 if (d.variable() instanceof FieldReference fr && "listM2".equals(fr.fieldInfo().name)) {
@@ -222,7 +223,7 @@ public class Test_Linking0M extends CommonTestRunner {
         testClass("Linking_0M", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+               // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
     }

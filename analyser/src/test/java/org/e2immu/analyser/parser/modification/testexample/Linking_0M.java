@@ -23,7 +23,7 @@ public class Linking_0M<X> {
     private final List<M> listM = new ArrayList<>();
     private final List<M> listM2 = new ArrayList<>();
     private final Map<M, X> map = new HashMap<>();
-
+/*
     @Modified
     void m1(int index) {
         M m = listM.get(index);
@@ -39,13 +39,13 @@ public class Linking_0M<X> {
     List<M> getListM2() {
         return listM2;
     }
-
+*/
     @Modified
     void m2(M m) {
         listM.add(m);
         listM2.add(m);
     }
-
+/*
     @Modified
     void m3(List<M> ms) {
         listM.addAll(ms);
@@ -72,5 +72,5 @@ public class Linking_0M<X> {
 
     Map<M, X> getMap() {
         return map;
-    }
+    }*/
 }

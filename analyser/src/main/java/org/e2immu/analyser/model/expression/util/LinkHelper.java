@@ -723,14 +723,14 @@ public class LinkHelper {
             immutableOfFormalSource = immutableOfSource;
         }
         return continueLinkedVariables(inspectionProvider, hiddenContentTypes,
-                (HiddenContentSelector.CsSet) hiddenContentSelectorOfSource,
+                hiddenContentSelectorOfSource,
                 sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfFormalSource, targetType,
                 methodTargetType, hiddenContentSelectorOfTarget, hctMethodToHctSourceSupplier, reverse);
     }
 
     private LinkedVariables continueLinkedVariables(InspectionProvider inspectionProvider,
                                                     HiddenContentTypes hiddenContentTypes,
-                                                    HiddenContentSelector.CsSet hiddenContentSelectorOfSource,
+                                                    HiddenContentSelector hiddenContentSelectorOfSource,
                                                     LinkedVariables sourceLvs,
                                                     boolean sourceIsVarArgs,
                                                     DV transferIndependent,
@@ -775,10 +775,10 @@ public class LinkHelper {
             if (immutable.isDelayed() || lv.isDelayed()) {
                 causesOfDelay = causesOfDelay.merge(immutable.causesOfDelay()).merge(lv.causesOfDelay());
             } else if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutable)) {
-                boolean createDependentLink = MultiLevel.isMutable(immutable) && isDependent(transferIndependent,
-                        correctedIndependent, immutableOfFormalSource, lv);
 
-                if (!hiddenContentSelectorOfTarget.isNone()) {
+                if (hiddenContentSelectorOfTarget.isNone()) {
+                    newLinked.put(e.getKey(), LINK_DEPENDENT);
+                } else {
                     // from mine==target to theirs==source
                     Map<Indices, Link> linkMap = new HashMap<>();
 
@@ -841,7 +841,7 @@ public class LinkHelper {
                                     correctForVarargsMutable = mutable;
                                 }
 
-                                Indices indicesInSourceWrtMethod = hiddenContentSelectorOfSource.getMap().get(entry.getKey());
+                                Indices indicesInSourceWrtMethod = ((HiddenContentSelector.CsSet) hiddenContentSelectorOfSource).getMap().get(entry.getKey());
                                 assert indicesInSourceWrtMethod != null;
                                 HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
                                 assert indicesAndType != null;
@@ -864,7 +864,8 @@ public class LinkHelper {
                             throw new UnsupportedOperationException();
                         }
                     }
-
+                    boolean createDependentLink = MultiLevel.isMutable(immutable) && isDependent(transferIndependent,
+                            correctedIndependent, immutableOfFormalSource, lv);
                     if (createDependentLink) {
                         if (linkMap.isEmpty()) {
                             newLinked.put(e.getKey(), LINK_DEPENDENT);
