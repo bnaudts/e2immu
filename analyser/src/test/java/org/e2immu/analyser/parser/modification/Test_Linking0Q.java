@@ -22,7 +22,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.VariableNature;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.modification.testexample.Linking_0Q;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
@@ -45,6 +47,13 @@ public class Test_Linking0Q extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("return1".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
+                    assertCurrentValue(d, 2, "new R<>(new Pair<>(y,x))");
+                    // FIXME
+                    assertLinked(d, it(0, 1, "p:-1,x:-1,y:-1"), it(2, "p:4,x:4,y:4"));
+                }
+            }
             if ("viaR0".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     // FIXME, ideally we link 0,1-4-0,1 to "in"
@@ -100,7 +109,24 @@ public class Test_Linking0Q extends CommonTestRunner {
                     assertSingleLv(d, 2, 4, "0-4-*");
                 }
             }
-
+            final String scopeName = "scope-55:16";
+            if ("viaR2".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2, "new Pair<X,Y>(x,y)");
+                    assertLinked(d, it(0, 1, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName + ":-1,x:-1,y:-1"),
+                            it(2, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName + ":4,x:4,y:4"));
+                    assertSingleLv(d, 2, 1, "0-4-*");
+                    assertSingleLv(d, 2, 2, "1-4-*");
+                }
+                if (d.variable() instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable) {
+                    assertCurrentValue(d, 2, "new R<>(new Pair<X,Y>(x,y))");
+                    assertLinked(d, it(0, 1, "new R<>(new Pair<X,Y>(x,y)).s:-1,x:-1,y:-1"),
+                            it(2, "new R<>(new Pair<X,Y>(x,y)).s:4,x:4,y:4"));
+                    assertSingleLv(d, 2, 0, "0.0,0.1-4-0,1");
+                    assertSingleLv(d, 2, 1, "0.0-4-*");
+                    assertSingleLv(d, 2, 2, "0.1-4-*");
+                }
+            }
         };
 
 

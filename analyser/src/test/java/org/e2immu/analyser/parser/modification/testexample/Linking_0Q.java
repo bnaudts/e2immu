@@ -31,6 +31,15 @@ public class Linking_0Q {
         }
     }
 
+    static <X, Y> R<Pair<X, Y>> return0(X x, Y y) {
+        return new R<>(new Pair<>(x, y));
+    }
+
+    static <X, Y> R<Pair<Y, X>> return1(X x, Y y) {
+        Pair<Y, X> p = new Pair<>(y, x);
+        return new R<>(p);
+    }
+
     static <X, Y> Pair<X, Y> viaR0(Pair<X, Y> in) {
         R<Pair<X, Y>> r = new R<>(in);
         return r.s;
@@ -41,8 +50,8 @@ public class Linking_0Q {
         R<Pair<X, Y>> r = new R<>(p);
         return r.s;
     }
-/* FIXME crashes
+
     static <X, Y> Pair<X, Y> viaR2(X x, Y y) {
         return new R<>(new Pair<X, Y>(x, y)).s;
-    }*/
+    }
 }

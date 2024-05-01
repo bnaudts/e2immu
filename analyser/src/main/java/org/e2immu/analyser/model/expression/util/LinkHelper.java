@@ -1054,7 +1054,9 @@ public class LinkHelper {
                                                  ParameterizedType formalFieldType,
                                                  ParameterizedType scopeType) {
         if (scopeResult.linkedVariablesOfExpression().isDelayed()) {
-            return scopeResult.linkedVariablesOfExpression();
+            return scopeResult.linkedVariablesOfExpression()
+                    // the following call is mostly unnecessary, unless there's a direct :0 link to the scope
+                    .changeToDelay(LV.delay(scopeResult.linkedVariablesOfExpression().causesOfDelay()));
         }
         HiddenContentTypes hct = scopeType.typeInfo.typeResolution.get().hiddenContentTypes();
         ParameterizedType formalScopeType = scopeType.typeInfo.asParameterizedType(context.getAnalyserContext());
