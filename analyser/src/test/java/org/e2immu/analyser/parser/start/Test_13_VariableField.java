@@ -20,6 +20,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.EvaluationResultVisitor;
+import org.e2immu.analyser.visitor.MethodAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVisitor;
 import org.junit.jupiter.api.Test;
@@ -137,4 +138,32 @@ public class Test_13_VariableField extends CommonTestRunner {
                 .build());
     }
 
+
+
+    @Test
+    public void test_1() throws IOException {
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if("v1".equals(d.variableName()) && "2".equals(d.statementId())) {
+                    assertCurrentValue(d, 2, "m$0-E$1.i$1");
+                }
+                if("v2".equals(d.variableName()) && "4".equals(d.statementId())) {
+                    assertCurrentValue(d, 2, "m$0-E$2.i$2");
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d-> {
+          if("getI".equals(d.methodInfo().name)) {
+              assertEquals("i", d.methodAnalysis().getSetField().toString());
+          }
+        };
+
+        // potential null pointer "out"
+        testClass("VariableField_1", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
 }

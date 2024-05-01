@@ -114,7 +114,7 @@ class HardCodedMethodAnalysis implements MethodAnalysis {
 
     @Override
     public FieldInfo getSetField() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override

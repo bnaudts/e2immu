@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.util.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.impl.FieldReferenceImpl;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -296,6 +297,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // is the method modifying, do we need to wait?
         MethodAnalysis methodAnalysis = context.getAnalyserContext().getMethodAnalysis(concreteMethod);
+
+        // getter in the same primary type -> convert to field; this significantly improves linking; see e.g. Linking_0P
+        if (methodAnalysis.getSetField() != null
+            && parameterExpressions.isEmpty() // getter, not setter
+            && methodAnalysis.getSetField().owner.primaryType()
+                    .equals(context.getCurrentType().primaryType())) {
+            FieldReference fr = new FieldReferenceImpl(context.getAnalyserContext(),
+                    methodAnalysis.getSetField(), object, context.getCurrentType());
+            // see VariableField_1; this approach ensures that the correct suffixes are set
+            VariableExpression ve = new VariableExpression(identifier, fr);
+            return ve.evaluate(context, forwardEvaluationInfo);
+        }
+
         DV modifiedMethod = methodAnalysis.getProperty(Property.MODIFIED_METHOD_ALT_TEMP);
 
         DV modifiedBeforeCorrection;

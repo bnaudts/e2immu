@@ -731,7 +731,8 @@ public class ComputingMethodAnalyser extends MethodAnalyserImpl {
                 assert value.isDelayed() || value instanceof VariableExpression ve && ve.variable().equals(getter);
                 methodAnalysis.setGetSetField(getter.fieldInfo());
             }
-            // TODO in the same PrimaryType, switch to field. Outside, switch to getter
+            // NOTE: see MethodCall: in the same PrimaryType, we switch to a field. Outside, we keep the getter
+            // outside use of fields is currently not converted/standardized to the getter, if present.
         }
 
         ParameterizedType concreteReturnType = value.isNullConstant() ? methodInfo.returnType() : value.returnType();

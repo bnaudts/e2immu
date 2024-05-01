@@ -220,13 +220,12 @@ public class Linking_1A {
     static <X, Y> boolean ppb0(Pair<X, Y> pair, BiPredicate<X, Y> predicate) {
         return predicate.test(pair.f(), pair.g());
     }
-/*
-FIXME cause crashes
-    static <X, Y> boolean ppb0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
-        return predicate.test(new Pair<>(x, y));
-    }
 
     static <X, Y> boolean ppc0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+        return predicate.test(new Pair<>(x, y));
+    }
+/*
+    static <X, Y> boolean ppd0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
 

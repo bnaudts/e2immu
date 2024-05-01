@@ -156,10 +156,13 @@ public class Test_Linking0P extends CommonTestRunner {
             }
             if ("reverse2".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
-                    assertCurrentValue(d, 2, "new Pair<>(pair.g(),pair.f())");
-                    //     assertLinked(d, it(0, 1, "pair:-1"),
-                    // FIXME empty is not the solution!!
-                    //           it(2, "pair.f:4,pair.g:4,pair:4"));
+                    assertCurrentValue(d, 2, "new Pair<>(pair.g,pair.f)");
+                    // exact copy of "reverse", because MethodCall substitutes the accessor by the field
+                    assertLinked(d, it(0, 1, "pair.f:-1,pair.g:-1,pair:-1"),
+                            it(2, "pair.f:4,pair.g:4,pair:4"));
+                    assertSingleLv(d, 2, 0, "1-4-*");
+                    assertSingleLv(d, 2, 1, "0-4-*");
+                    assertSingleLv(d, 2, 2, "0,1-4-1,0");
                 }
             }
             if ("reverse3".equals(d.methodInfo().name)) {
@@ -260,12 +263,14 @@ public class Test_Linking0P extends CommonTestRunner {
                 if (hcs instanceof HiddenContentSelector.All all) {
                     assertEquals(0, all.getHiddenContentIndex());
                 } else fail();
+                assertEquals("f", d.methodAnalysis().getSetField().toString());
             }
             if ("g".equals(d.methodInfo().name)) {
                 HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
                 if (hcs instanceof HiddenContentSelector.All all) {
                     assertEquals(1, all.getHiddenContentIndex());
                 } else fail();
+                assertEquals("g", d.methodAnalysis().getSetField().toString());
             }
             if ("pair".equals(d.methodInfo().name)) {
                 assertEquals("R", d.methodInfo().typeInfo.simpleName);

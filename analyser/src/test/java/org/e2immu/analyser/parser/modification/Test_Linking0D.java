@@ -14,15 +14,11 @@
 
 package org.e2immu.analyser.parser.modification;
 
-import org.e2immu.analyser.analyser.ChangeData;
 import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.visitor.BreakDelayVisitor;
-import org.e2immu.analyser.visitor.EvaluationResultVisitor;
 import org.e2immu.analyser.visitor.FieldAnalyserVisitor;
 import org.e2immu.analyser.visitor.StatementAnalyserVariableVisitor;
 import org.junit.jupiter.api.Test;

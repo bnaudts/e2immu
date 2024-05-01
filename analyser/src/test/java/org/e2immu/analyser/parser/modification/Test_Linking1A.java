@@ -232,7 +232,11 @@ public class Test_Linking1A extends CommonTestRunner {
                         assertLinked(d, it(0, ""));
                     }
                     case "ppb0"-> {
-                        assertCurrentValue(d, 1, "predicate.test(pair.f(),pair.g())");
+                        assertCurrentValue(d, 1, "predicate.test(pair.f,pair.g)");
+                        assertLinked(d, it(0, ""));
+                    }
+                    case "ppc0"-> {
+                        assertCurrentValue(d, 0, "predicate.test(new Pair<>(x,y))");
                         assertLinked(d, it(0, ""));
                     }
                     case "c0" -> {
@@ -672,6 +676,21 @@ public class Test_Linking1A extends CommonTestRunner {
                                     it(2, "x:4"));
                             assertSingleLv(d, 2, 0, "0M-4-*M");
                         }
+                    }
+                }
+                case "ppc0" -> {
+                    // FIXME this is very weird
+                    if(d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "");
+                        assertLinked(d, it(0, "predicate:0,y:0"));
+                    }
+                    if(d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "");
+                        assertLinked(d, it(0, "predicate:0,x:0"));
+                    }
+                    if(d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "");
+                        assertLinked(d, it(0, "x:0,y:0"));
                     }
                 }
                 case "c0l" -> {
