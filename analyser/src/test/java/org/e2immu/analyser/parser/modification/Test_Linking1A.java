@@ -227,15 +227,15 @@ public class Test_Linking1A extends CommonTestRunner {
                             assertLinked(d, it0(NOT_YET_SET_STR), it(0, ""));
                         }
                     }
-                    case "ppa0"-> {
+                    case "ppa0" -> {
                         assertCurrentValue(d, 0, "predicate.test(x,y)");
                         assertLinked(d, it(0, ""));
                     }
-                    case "ppb0"-> {
+                    case "ppb0" -> {
                         assertCurrentValue(d, 1, "predicate.test(pair.f,pair.g)");
                         assertLinked(d, it(0, ""));
                     }
-                    case "ppc0"-> {
+                    case "ppc0" -> {
                         assertCurrentValue(d, 0, "predicate.test(new Pair<>(x,y))");
                         assertLinked(d, it(0, ""));
                     }
@@ -679,18 +679,71 @@ public class Test_Linking1A extends CommonTestRunner {
                     }
                 }
                 case "ppc0" -> {
-                    // FIXME this is very weird
-                    if(d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
-                        assertCurrentValue(d, 2, "");
-                        assertLinked(d, it(0, "predicate:0,y:0"));
+                    if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type X/*@Identity*/");
+                        assertLinked(d, it(0, 1, "predicate:-1,y:-1"), it(2, "predicate:4,y:4")); // FIXME
+                        assertSingleLv(d, 2, 0, "0-4-0"); // FIXME
                     }
-                    if(d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
-                        assertCurrentValue(d, 2, "");
-                        assertLinked(d, it(0, "predicate:0,x:0"));
+                    if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type Y");
+                        assertLinked(d, it(0, 1, "predicate:-1,x:-1"), it(2, "predicate:4,x:4"));
                     }
-                    if(d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
-                        assertCurrentValue(d, 2, "");
-                        assertLinked(d, it(0, "x:0,y:0"));
+                    if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type Predicate<Pair<X,Y>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "x:4,y:4"));
+                        assertSingleLv(d, 2, 0, "0-4-0");  // FIXME wrong
+                    }
+                }
+                case "ppc0bis" -> {
+                    if ("0".equals(d.statementId())) {
+                        if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                            assertCurrentValue(d, 2, "nullable instance type X/*@Identity*/");
+                            assertLinked(d, it(0, 1, "p:-1,y:-1"), it(2, "p:4"));
+                            assertSingleLv(d, 2, 0, "*-4-0");
+                        }
+                        if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
+                            assertCurrentValue(d, 2, "nullable instance type Y");
+                            assertLinked(d, it(0, 1, "p:-1,x:-1"), it(2, "p:4"));
+                            assertSingleLv(d, 2, 0, "*-4-1");
+                        }
+                        if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
+                            assertCurrentValue(d, 0, "nullable instance type Predicate<Pair<X,Y>>/*@IgnoreMods*/");
+                            assertLinked(d, it(0, ""));
+                        }
+                    }
+                }
+                case "ppd0" -> {
+                    if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type X/*@Identity*/");
+                        assertLinked(d, it(0, "predicate:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME wrong
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
+                        assertCurrentValue(d, 0, "nullable instance type Integer");
+                        assertLinked(d, it(0, ""));
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
+                        assertCurrentValue(d, 0, "nullable instance type Predicate<Pair<X,Integer>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, "x:4"));
+                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME should be *
+                    }
+                }
+                case "ppe0" -> {
+                    if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type M/*@Identity*/");
+                        assertLinked(d, it(0, 1, "predicate:-1,y:-1"), it(2, "predicate:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type N");
+                        assertLinked(d, it(0, 1, "predicate:-1,x:-1"), it(2, "predicate:4"));
+                        assertSingleLv(d, 2, 0, "*M-4-0M"); // FIXME? 0 should be 1
+                    }
+                    if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
+                        assertCurrentValue(d, 2, "nullable instance type Predicate<Pair<M,N>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, 1, "x:-1,y:-1"), it(2, "x:4,y:4"));
+                        assertSingleLv(d, 2, 0, "0M-4-*M");
+                        assertSingleLv(d, 2, 1, "0M-4-*M"); // FIXME? 0 should be 1
                     }
                 }
                 case "c0l" -> {

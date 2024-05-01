@@ -56,7 +56,9 @@ public class EvaluateParameters {
         int i = 0;
         DV minCnnOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL_DV;
 
-        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context).compose(context);
+        EvaluationResultImpl.Builder builder = new EvaluationResultImpl.Builder(context);
+        //IMPORTANT 20240501: removed '.compose(context);' because it messes up linked variables (Linking_1A, ppc0).
+        // not sure why it was ever included; if so, it should be a 'lightweight' compose, without LVs?
         List<EvaluationResult> evaluationResults = new ArrayList<>(n);
 
         if (!parameterExpressions.isEmpty()) {

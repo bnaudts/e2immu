@@ -224,15 +224,20 @@ public class Linking_1A {
     static <X, Y> boolean ppc0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
-/*
-    static <X, Y> boolean ppd0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+
+    static <X, Y> boolean ppc0bis(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+        Pair<X, Y> p = new Pair<>(x, y);
+        return predicate.test(p);
+    }
+
+    static <X> boolean ppd0(X x, Integer y, Predicate<Pair<X, Integer>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
 
-    static <X, Y> boolean ppe0(X x, Y y, Predicate<Pair<X, Y>> predicate) {
+    static boolean ppe0(M x, N y, Predicate<Pair<M, N>> predicate) {
         return predicate.test(new Pair<>(x, y));
     }
-*/
+
     // consumer
 
     static <X> Consumer<X> c0(X x, Consumer<X> consumer) {

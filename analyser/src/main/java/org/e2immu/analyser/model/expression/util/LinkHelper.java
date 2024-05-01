@@ -133,7 +133,7 @@ public class LinkHelper {
                 }
                 if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(mutable)) {
                     boolean m = MultiLevel.isMutable(mutable);
-                    Indices indices = new Indices(Set.of(new Index(List.of(0))));
+                    Indices indices = new Indices(Set.of(new Index(List.of(index))));
                     Links links = new Links(Map.of(indices, new Link(ALL_INDICES, m)));
                     boolean independentHc = lv.isCommonHC();
                     LV newLv = independentHc ? LV.createHC(links) : LV.createDependent(links);

@@ -301,10 +301,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // getter in the same primary type -> convert to field; this significantly improves linking; see e.g. Linking_0P
         if (methodAnalysis.getSetField() != null
             && parameterExpressions.isEmpty() // getter, not setter
-            && methodAnalysis.getSetField().owner.primaryType()
-                    .equals(context.getCurrentType().primaryType())) {
-            FieldReference fr = new FieldReferenceImpl(context.getAnalyserContext(),
-                    methodAnalysis.getSetField(), object, context.getCurrentType());
+            && methodAnalysis.getSetField().owner.primaryType().equals(context.getCurrentType().primaryType())) {
+            FieldReference fr = new FieldReferenceImpl(context.getAnalyserContext(), methodAnalysis.getSetField(),
+                    object, context.getCurrentType());
             // see VariableField_1; this approach ensures that the correct suffixes are set
             VariableExpression ve = new VariableExpression(identifier, fr);
             return ve.evaluate(context, forwardEvaluationInfo);
