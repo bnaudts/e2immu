@@ -316,8 +316,8 @@ public class VariableExpression extends BaseExpression implements IsVariableExpr
             } else if (variable instanceof FieldReference fr) {
                 ParameterizedType scopeType = scopeValue != null ? scopeValue.returnType()
                         : fr.getOwningType().asSimpleParameterizedType();
-                linkedVariables2 = LinkHelper.forFieldAccess(context, scopeResult, variable.parameterizedType(),
-                        fr.fieldInfo().type, scopeType);
+                linkedVariables2 = LinkHelper.forFieldAccess(context, scopeResult.linkedVariablesOfExpression(),
+                        variable.parameterizedType(), fr.fieldInfo().type, scopeType);
             } else throw new UnsupportedOperationException();
             builder.link(variable, linkedVariables2);
         }

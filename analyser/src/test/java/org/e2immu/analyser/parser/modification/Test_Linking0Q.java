@@ -47,23 +47,38 @@ public class Test_Linking0Q extends CommonTestRunner {
     @Test
     public void test_0() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("return1".equals(d.methodInfo().name)) {
+            if ("method0".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertEquals("0", d.statementId());
+                    assertCurrentValue(d, 2, "new R<>(new Pair<>(x,y))");
+                    assertLinked(d, it(0, 1, "x:-1,y:-1"), it(2, "x:4,y:4"));
+                    assertSingleLv(d, 2, 0, "0.0-4-*");
+                    assertSingleLv(d, 2, 1, "0.1-4-*");
+                }
+            }
+            if ("method1".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new R<>(new Pair<>(y,x))");
-                    // FIXME
                     assertLinked(d, it(0, 1, "p:-1,x:-1,y:-1"), it(2, "p:4,x:4,y:4"));
+                    assertSingleLv(d, 2, 0, "0.0,0.1-4-0,1");
+                    assertSingleLv(d, 2, 1, "0.1-4-*");
+                    assertSingleLv(d, 2, 2, "0.0-4-*");
                 }
             }
-            if ("viaR0".equals(d.methodInfo().name)) {
+            if ("method2".equals(d.methodInfo().name)) {
+                if ("r".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    assertCurrentValue(d, 2, "new R<>(in)");
+                    assertLinked(d, it(0, "in:4"));
+                    assertSingleLv(d, 0, 0, "0.0,0.1-4-0,1");
+                }
                 if (d.variable() instanceof ReturnVariable && "1".equals(d.statementId())) {
-                    // FIXME, ideally we link 0,1-4-0,1 to "in"
                     assertCurrentValue(d, 2, "in");
                     assertLinked(d, it(0, 1, "in:-1,r.s:0,r:-1"), it(2, "in:4,r.s:0,r:4"));
-                    assertSingleLv(d, 2, 0, "0-4-*"); // at the level of "in", not f,g
-                    assertSingleLv(d, 2, 2, "0,1-4-0,1"); // at which level???
+                    assertSingleLv(d, 2, 0, "0,1-4-0,1");
+                    assertSingleLv(d, 2, 2, "0,1-4-0.0,0.1");
                 }
             }
-            if ("viaR1".equals(d.methodInfo().name)) {
+            if ("method3".equals(d.methodInfo().name)) {
                 if ("p".equals(d.variableName())) {
                     assertCurrentValue(d, 2, "new Pair<>(x,y)");
                     if ("0".equals(d.statementId())) {
@@ -75,7 +90,7 @@ public class Test_Linking0Q extends CommonTestRunner {
                         assertLinked(d, it(0, 1, "r:-1,x:-1,y:-1"), it(2, "r:4,x:4,y:4"));
                         assertSingleLv(d, 2, 0, "0,1-4-0.0,0.1");
                         assertSingleLv(d, 2, 1, "0-4-*");
-                        assertSingleLv(d, 2, 1, "1-4-*");
+                        assertSingleLv(d, 2, 2, "1-4-*");
                     }
                 }
                 if ("r".equals(d.variableName()) && "1".equals(d.statementId())) {
@@ -96,27 +111,28 @@ public class Test_Linking0Q extends CommonTestRunner {
                     if ("1".equals(d.statementId())) {
                         assertLinked(d, it(0, 1, "p:-1,r:-1,x:-1"), it(2, "p:4,r:4"));
                         assertSingleLv(d, 2, 0, "*-4-1");
-                        assertSingleLv(d, 2, 0, "*-4-0.1");
+                        assertSingleLv(d, 2, 1, "*-4-0.1");
                     }
                 }
                 if (d.variable() instanceof ReturnVariable && "2".equals(d.statementId())) {
                     assertCurrentValue(d, 2, "new Pair<>(x,y)");
                     assertLinked(d, it(0, 1, "p:-1,r.s:0,r:-1,x:-1,y:-1"),
                             it(2, "p:4,r.s:0,r:4,x:4,y:4"));
-                    assertSingleLv(d, 2, 0, "0-4-*"); // at the level of "p", not f,g
-                    assertSingleLv(d, 2, 2, "0,1-4-0,1"); // at which level???
+                    assertSingleLv(d, 2, 0, "0,1-4-0,1");
+                    assertSingleLv(d, 2, 2, "0,1-4-0.0,0.1");
                     assertSingleLv(d, 2, 3, "0-4-*");
-                    assertSingleLv(d, 2, 4, "0-4-*");
+                    assertSingleLv(d, 2, 4, "1-4-*");
                 }
             }
-            final String scopeName = "scope-55:16";
-            if ("viaR2".equals(d.methodInfo().name)) {
+            final String scopeName4 = "scope-55:16";
+            if ("method4".equals(d.methodInfo().name)) {
                 if (d.variable() instanceof ReturnVariable) {
                     assertCurrentValue(d, 2, "new Pair<X,Y>(x,y)");
-                    assertLinked(d, it(0, 1, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName + ":-1,x:-1,y:-1"),
-                            it(2, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName + ":4,x:4,y:4"));
-                    assertSingleLv(d, 2, 1, "0-4-*");
-                    assertSingleLv(d, 2, 2, "1-4-*");
+                    assertLinked(d, it(0, 1, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName4 + ":-1,x:-1,y:-1"),
+                            it(2, "new R<>(new Pair<X,Y>(x,y)).s:0," + scopeName4 + ":4,x:4,y:4"));
+                    assertSingleLv(d, 2, 1, "0,1-4-0.0,0.1");
+                    assertSingleLv(d, 2, 2, "0-4-*");
+                    assertSingleLv(d, 2, 3, "1-4-*");
                 }
                 if (d.variable() instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable) {
                     assertCurrentValue(d, 2, "new R<>(new Pair<X,Y>(x,y))");
@@ -127,8 +143,26 @@ public class Test_Linking0Q extends CommonTestRunner {
                     assertSingleLv(d, 2, 2, "0.1-4-*");
                 }
             }
+            final String scopeName5 = "scope-59:16";
+            if ("method5".equals(d.methodInfo().name)) {
+                if (d.variable() instanceof ReturnVariable) {
+                    assertCurrentValue(d, 2, "new Pair<Y,X>(y,x)");
+                    assertLinked(d, it(0, 1, "new R<>(new Pair<Y,X>(y,x)).s:0," + scopeName5 + ":-1,x:-1,y:-1"),
+                            it(2, "new R<>(new Pair<Y,X>(y,x)).s:0," + scopeName5 + ":4,x:4,y:4"));
+                    assertSingleLv(d, 2, 1, "0,1-4-0.0,0.1");
+                    assertSingleLv(d, 2, 2, "1-4-*");
+                    assertSingleLv(d, 2, 3, "0-4-*");
+                }
+                if (d.variable() instanceof LocalVariableReference lvr && lvr.variable.nature() instanceof VariableNature.ScopeVariable) {
+                    assertCurrentValue(d, 2, "new R<>(new Pair<Y,X>(y,x))");
+                    assertLinked(d, it(0, 1, "new R<>(new Pair<Y,X>(y,x)).s:-1,x:-1,y:-1"),
+                            it(2, "new R<>(new Pair<Y,X>(y,x)).s:4,x:4,y:4"));
+                    assertSingleLv(d, 2, 0, "0.0,0.1-4-0,1");
+                    assertSingleLv(d, 2, 1, "0.1-4-*");
+                    assertSingleLv(d, 2, 2, "0.0-4-*");
+                }
+            }
         };
-
 
         testClass("Linking_0Q", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -113,6 +113,10 @@ public class LV implements Comparable<LV> {
             assert list.size() > 1;
             return new Index(List.of(list.get(0)));
         }
+
+        public Index prefix(int index) {
+            return new Index(Stream.concat(Stream.of(index), list.stream()).toList());
+        }
     }
 
     // important: as soon as there are multiple elements, use a TreeSet!!
@@ -204,6 +208,11 @@ public class LV implements Comparable<LV> {
                     .map(Index::takeFirst)
                     .collect(Collectors.toCollection(TreeSet::new)));
         }
+
+        public Indices prefix(int index) {
+            Set<Index> newSet = set.stream().map(i -> i.prefix(index)).collect(Collectors.toUnmodifiableSet());
+            return new Indices(newSet);
+        }
     }
 
     public record Links(Map<Indices, Link> map) implements DijkstraShortestPath.Connection {
@@ -293,6 +302,10 @@ public class LV implements Comparable<LV> {
 
         public Link merge(Link l2) {
             return new Link(to.merge(l2.to), mutable || l2.mutable);
+        }
+
+        public Link prefixTheirs(int index) {
+            return new Link(to.prefix(index), mutable);
         }
     }
 
@@ -569,7 +582,6 @@ public class LV implements Comparable<LV> {
         return false;
     }
 
-
     public LV correctTo(Map<Indices, Indices> correctionMap) {
         if (links.map.isEmpty()) return this;
         boolean isHc = isCommonHC();
@@ -577,5 +589,30 @@ public class LV implements Comparable<LV> {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().correctTo(correctionMap)));
         Links updatedLinks = new Links(updatedMap);
         return isHc ? createHC(updatedLinks) : createDependent(updatedLinks);
+    }
+
+    public LV prefixMine(int index) {
+        if (isDelayed() || isStaticallyAssignedOrAssigned()) return this;
+        if (links.map.isEmpty()) return this;
+        Map<Indices, Link> newMap = links.map.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(e -> e.getKey().prefix(index), Map.Entry::getValue));
+        Links newLinks = new Links(newMap);
+        return isCommonHC() ? LV.createHC(newLinks) : LV.createDependent(newLinks);
+    }
+
+    public LV prefixTheirs(int index) {
+        if (isDelayed() || isStaticallyAssignedOrAssigned()) return this;
+        if (links.map.isEmpty()) return this;
+        Map<Indices, Link> newMap = links.map.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().prefixTheirs(index)));
+        Links newLinks = new Links(newMap);
+        return isCommonHC() ? LV.createHC(newLinks) : LV.createDependent(newLinks);
+    }
+
+    public LV changeToHc() {
+        if (value == DEPENDENT) {
+            return createHC(links);
+        }
+        return this;
     }
 }
