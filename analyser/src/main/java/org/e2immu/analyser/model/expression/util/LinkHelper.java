@@ -774,16 +774,8 @@ public class LinkHelper {
                                                     HiddenContentSelector hiddenContentSelectorOfTarget,
                                                     Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier,
                                                     boolean reverse) {
-        Integer index = hiddenContentTypes.indexOfOrNull(methodTargetType);
-        Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHcsTarget;
-        if (index != null && methodTargetType.parameters.isEmpty()) {
-            // all links will become ALL->source
-            hctMethodToHcsTarget = null;
-        } else {
-            hctMethodToHcsTarget = hiddenContentTypes.translateHcs(inspectionProvider, hiddenContentSelectorOfTarget,
-                    methodTargetType, targetType);
-        }
-
+        Map<Indices, HiddenContentTypes.IndicesAndType> hctMethodToHcsTarget = hiddenContentTypes
+                .translateHcs(inspectionProvider, hiddenContentSelectorOfTarget, methodTargetType, targetType);
         DV correctedIndependent = correctIndependent(context.evaluationContext(), immutableOfFormalSource,
                 transferIndependent, targetType, hiddenContentSelectorOfTarget, hctMethodToHcsTarget);
 
@@ -842,7 +834,6 @@ public class LinkHelper {
                             Boolean correctForVarargsMutable = null;
 
                             assert hctMethodToHctSource != null;
-                            assert hctMethodToHcsTarget != null;
 
                             // NOTE: this type of filtering occurs in 'linkedVariablesOfParameter' as well
                             Set<Map.Entry<Integer, Indices>> entrySet;
@@ -975,8 +966,12 @@ public class LinkHelper {
                 // if all types of the hcs are independent HC, then we can upgrade
                 Map<Integer, Indices> selectorSet = csSet.getMap();
                 boolean allIndependentHC = true;
+                assert hctMethodToHcsTarget != null;
                 for (Map.Entry<Indices, HiddenContentTypes.IndicesAndType> entry : hctMethodToHcsTarget.entrySet()) {
                     if (selectorSet.containsValue(entry.getKey())) {
+                        if(hiddenContentSelectorOfTarget.hiddenContentTypes().isExtensible(entry.getKey().single())) {
+                            return INDEPENDENT_HC_DV;
+                        }
                         DV immutablePt = evaluationContext.immutable(entry.getValue().type());
                         if (immutablePt.isDelayed()) return immutablePt;
                         if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {

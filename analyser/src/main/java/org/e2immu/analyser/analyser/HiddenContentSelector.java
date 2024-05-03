@@ -1,7 +1,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
@@ -187,7 +186,13 @@ public abstract sealed class HiddenContentSelector
         @Override
         public Map<LV.Indices, ParameterizedType> extract(InspectionProvider inspectionProvider, ParameterizedType type) {
             return map.values().stream().collect(Collectors.toUnmodifiableMap(i -> i,
-                    i -> i.findInFormal(inspectionProvider, type)));
+                    i -> {
+                        Integer index = hiddenContentTypes.indexOfOrNull(type);
+                        if (index != null) {
+                            return type;
+                        }
+                        return i.findInFormal(inspectionProvider, type);
+                    }));
         }
 
         @Override
@@ -245,6 +250,8 @@ public abstract sealed class HiddenContentSelector
         }
         Map<Integer, LV.Indices> map = new HashMap<>();
         recursivelyCollectHiddenContentParameters(hiddenContentTypes, type, new Stack<>(), map);
+        hiddenContentTypes.typesOfExtensibleFields()
+                .forEach(e -> map.put(e.getValue(), new LV.Indices(e.getValue())));
         if (map.isEmpty()) {
             return None.INSTANCE;
         }

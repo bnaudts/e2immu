@@ -117,6 +117,10 @@ public class LV implements Comparable<LV> {
         public Index prefix(int index) {
             return new Index(Stream.concat(Stream.of(index), list.stream()).toList());
         }
+
+        public Integer single() {
+            return list.size() == 1 ? list.get(0) : null;
+        }
     }
 
     // important: as soon as there are multiple elements, use a TreeSet!!
@@ -212,6 +216,10 @@ public class LV implements Comparable<LV> {
         public Indices prefix(int index) {
             Set<Index> newSet = set.stream().map(i -> i.prefix(index)).collect(Collectors.toUnmodifiableSet());
             return new Indices(newSet);
+        }
+
+        public Integer single() {
+            return set.stream().findFirst().map(Index::single).orElse(null);
         }
     }
 
