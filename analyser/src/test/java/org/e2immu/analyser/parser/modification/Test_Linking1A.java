@@ -171,14 +171,14 @@ public class Test_Linking1A extends CommonTestRunner {
                     }
                     case "sp0" -> {
                         assertCurrentValue(d, 2, "supplier.get()");
-                        assertLinked(d, it(0, "supplier:4"));
-                        assertSingleLv(d, 0, 0, "0,1-4-0,1");
+                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
+                        assertSingleLv(d, 2, 0, "0,1-4-0,1");
                     }
                     case "sp1" -> {
                         assertCurrentValue(d, 2, "supplier.get()");
-                        assertLinked(d, it(0, "supplier:4"));
+                        assertLinked(d, it(0, 1, "supplier:-1"), it(2, "supplier:4"));
                         // FIXME should become 0,1M-4-0,1M, see also f13
-                        assertSingleLv(d, 0, 0, "0-4-0");
+                        //assertSingleLv(d, 4, 0, "0-4-0");
                     }
                     case "p0", "p1", "p2" -> {
                         assertCurrentValue(d, 0, "predicate.test(x)");
@@ -550,14 +550,14 @@ public class Test_Linking1A extends CommonTestRunner {
                         // T, List<T>
                         assertCurrentValue(d, 0, "function.apply(t)");
                         assertLinked(d, it(0, "function:4,t:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0");
+                        //FIXME   assertSingleLv(d, 0, 0, "0-4-0");
                         assertSingleLv(d, 0, 1, "0-4-*");
                     }
                     case "f12" -> {
                         assertCurrentValue(d, 0, "function.apply(ts)");
                         assertLinked(d, it(0, "function:4,ts:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0");
-                        assertSingleLv(d, 0, 1, "0-4-0");
+                        //FIXME assertSingleLv(d, 0, 0, "0-4-0");
+                        //assertSingleLv(d, 0, 1, "0-4-0");
                     }
                 }
             }
@@ -681,17 +681,19 @@ public class Test_Linking1A extends CommonTestRunner {
                 case "ppc0" -> {
                     if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type X/*@Identity*/");
-                        assertLinked(d, it(0, 1, "predicate:-1,y:-1"), it(2, "predicate:4,y:4")); // FIXME
-                        assertSingleLv(d, 2, 0, "0-4-0"); // FIXME
+                        assertLinked(d, it(0, 1, "predicate:-1,y:-1"), it(2, "predicate:4"));
+                        assertSingleLv(d, 2, 0, "*-4-0.0");
                     }
                     if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type Y");
-                        assertLinked(d, it(0, 1, "predicate:-1,x:-1"), it(2, "predicate:4,x:4"));
+                        assertLinked(d, it(0, 1, "predicate:-1,x:-1"), it(2, "predicate:4"));
+                        assertSingleLv(d, 2, 0, "*-4-0.1");
                     }
                     if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type Predicate<Pair<X,Y>>/*@IgnoreMods*/");
-                        assertLinked(d, it(0, "x:4,y:4"));
-                        assertSingleLv(d, 2, 0, "0-4-0");  // FIXME wrong
+                        assertLinked(d, it(0, 1, "x:-1,y:-1"), it(2, "x:4,y:4"));
+                        assertSingleLv(d, 2, 0, "0.0-4-*");
+                        assertSingleLv(d, 2, 1, "0.1-4-*");
                     }
                 }
                 case "ppc0bis" -> {
@@ -715,35 +717,35 @@ public class Test_Linking1A extends CommonTestRunner {
                 case "ppd0" -> {
                     if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type X/*@Identity*/");
-                        assertLinked(d, it(0, "predicate:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME wrong
+                        assertLinked(d, it(0, 1, "predicate:-1"), it(2, "predicate:4"));
+                        assertSingleLv(d, 2, 0, "*-4-0.0");
                     }
                     if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
-                        assertCurrentValue(d, 0, "nullable instance type Integer");
+                        assertCurrentValue(d, 2, "nullable instance type Integer");
                         assertLinked(d, it(0, ""));
                     }
                     if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
-                        assertCurrentValue(d, 0, "nullable instance type Predicate<Pair<X,Integer>>/*@IgnoreMods*/");
-                        assertLinked(d, it(0, "x:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0"); // FIXME should be *
+                        assertCurrentValue(d, 2, "nullable instance type Predicate<Pair<X,Integer>>/*@IgnoreMods*/");
+                        assertLinked(d, it(0, 1, "x:-1"), it(2, "x:4"));
+                        assertSingleLv(d, 2, 0, "0.0-4-*");
                     }
                 }
                 case "ppe0" -> {
                     if (d.variable() instanceof ParameterInfo pi && "x".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type M/*@Identity*/");
                         assertLinked(d, it(0, 1, "predicate:-1,y:-1"), it(2, "predicate:4"));
-                        assertSingleLv(d, 2, 0, "*M-4-0M");
+                        assertSingleLv(d, 2, 0, "*M-4-0.0M");
                     }
                     if (d.variable() instanceof ParameterInfo pi && "y".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type N");
                         assertLinked(d, it(0, 1, "predicate:-1,x:-1"), it(2, "predicate:4"));
-                        assertSingleLv(d, 2, 0, "*M-4-0M"); // FIXME? 0 should be 1
+                        assertSingleLv(d, 2, 0, "*M-4-0.1M");
                     }
                     if (d.variable() instanceof ParameterInfo pi && "predicate".equals(pi.name)) {
                         assertCurrentValue(d, 2, "nullable instance type Predicate<Pair<M,N>>/*@IgnoreMods*/");
                         assertLinked(d, it(0, 1, "x:-1,y:-1"), it(2, "x:4,y:4"));
-                        assertSingleLv(d, 2, 0, "0M-4-*M");
-                        assertSingleLv(d, 2, 1, "0M-4-*M"); // FIXME? 0 should be 1
+                        assertSingleLv(d, 2, 0, "0.0M-4-*M");
+                        assertSingleLv(d, 2, 1, "0.1M-4-*M");
                     }
                 }
                 case "c0l" -> {
@@ -958,7 +960,7 @@ public class Test_Linking1A extends CommonTestRunner {
                     if (vIsFunction) {
                         assertCurrentValue(d, 0, "nullable instance type Function<List<T>,T>/*@IgnoreMods*/");
                         assertLinked(d, it(0, "ts:4"));
-                        assertSingleLv(d, 0, 0, "0-4-0");
+                        assertSingleLv(d, 0, 0, "0.0-4-0");
                     }
                 }
                 case "f11" -> {

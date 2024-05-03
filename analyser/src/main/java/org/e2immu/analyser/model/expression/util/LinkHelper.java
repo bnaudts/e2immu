@@ -827,18 +827,15 @@ public class LinkHelper {
                         }
                         boolean mutable = MultiLevel.isMutable(typeImmutable);
                         int i = all.getHiddenContentIndex();
-                        NamedType namedType = methodTargetType.namedType();
-                        boolean accept = hiddenContentTypes.isAssignableTo(inspectionProvider, namedType, i);
-                        if (accept) {
-                            assert hctMethodToHctSource != null;
-                            // the indices contain a single number, the index in the hidden content types of the source.
-                            HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(new Indices(i));
-                            assert indicesAndType != null;
-                            Indices iInHctSource = indicesAndType.indices();
-                            if (iInHctSource != null) {
-                                linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
-                            }// else: no type parameters available, see e.g. Linking_0P.reverse5
-                        }
+
+                        assert hctMethodToHctSource != null;
+                        // the indices contain a single number, the index in the hidden content types of the source.
+                        HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(new Indices(i));
+                        assert indicesAndType != null;
+                        Indices iInHctSource = indicesAndType.indices();
+                        if (iInHctSource != null) {
+                            linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
+                        }// else: no type parameters available, see e.g. Linking_0P.reverse5
                     } else {
                         // both are CsSet, we'll set mutable what is mutable, in a common way
                         if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
@@ -974,14 +971,7 @@ public class LinkHelper {
             if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
                 return MultiLevel.INDEPENDENT_HC_DV;
             }
-            if (hiddenContentSelectorOfTarget.isAll()) {
-                // look at the whole object
-                DV immutablePt = evaluationContext.immutable(targetType);
-                if (immutablePt.isDelayed()) return immutablePt;
-                if (MultiLevel.isAtLeastImmutableHC(immutablePt)) {
-                    return MultiLevel.INDEPENDENT_HC_DV;
-                }
-            } else if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet csSet) {
+            if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet csSet) {
                 // if all types of the hcs are independent HC, then we can upgrade
                 Map<Integer, Indices> selectorSet = csSet.getMap();
                 boolean allIndependentHC = true;

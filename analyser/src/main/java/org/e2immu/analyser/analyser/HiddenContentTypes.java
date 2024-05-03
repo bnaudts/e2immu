@@ -30,7 +30,6 @@ or without hidden content), e.g. List.of(...), List.copyOf(...).
  */
 public class HiddenContentTypes {
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of(), Map.of());
-    public static HiddenContentTypes OF_OBJECT = new HiddenContentTypes(null, true, Map.of(), Map.of());
 
     private final TypeInfo typeInfo;
     private final boolean typeIsExtensible;
@@ -87,12 +86,6 @@ public class HiddenContentTypes {
     }
 
     // accessible, not accessible
-
-    public Set<Integer> selectAll() {
-        Set<Integer> set = new HashSet<>(indexToType.keySet());
-        if (forMethod()) set.addAll(hcsTypeInfo.indexToType.keySet());
-        return set;
-    }
 
     public static HiddenContentTypes compute(InspectionProvider inspectionProvider, TypeInspection typeInspection) {
         return compute(inspectionProvider, typeInspection, true);
@@ -161,6 +154,23 @@ public class HiddenContentTypes {
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             addFromSuperType(inspectionProvider, interfaceType, shallow, typeInfo, fromThis, superTypeToIndex);
         }
+        /*
+         Finally, we add hidden content types from extensible fields without type parameters.
+
+         NOTE: Linking to extensible fields with type parameters is done at the level of those type parameters ONLY
+         in the current implementation, which does not allow for the combination of ALL and CsSet.
+         */
+        if (!shallow) {
+            for (FieldInfo f : typeInspection.fields()) {
+                TypeInfo bestType = Objects.requireNonNullElse(f.type.bestTypeInfo(inspectionProvider),
+                        inspectionProvider.getPrimitives().objectTypeInfo());
+                TypeInspection bestTypeInspection = inspectionProvider.getTypeInspection(bestType);
+                if (bestTypeInspection.typeParameters().isEmpty() && bestTypeInspection.isExtensible()) {
+                    int index = fromThis.size();
+                    //   fromThis.putIfAbsent(bestType, index);
+                }
+            }
+        }
         return new HiddenContentTypes(typeInfo, typeInspection.isExtensible(), Map.copyOf(fromThis),
                 Map.copyOf(superTypeToIndex));
     }
@@ -210,16 +220,6 @@ public class HiddenContentTypes {
 
     public boolean hasHiddenContent() {
         return typeIsExtensible || size() > 0;
-    }
-
-    // if T is hidden, then ? extends T is hidden as well! all wildcards have been stripped.
-    public boolean contains(ParameterizedType parameterizedType) {
-        NamedType namedType = namedType(parameterizedType);
-        if (namedType != null) {
-            if (typeToIndex.containsKey(namedType)) return true;
-            if (hcsTypeInfo != null) return hcsTypeInfo.contains(parameterizedType);
-        }
-        return false;
     }
 
     private static NamedType namedType(ParameterizedType type) {
@@ -310,19 +310,6 @@ public class HiddenContentTypes {
                 .map(NamedType::simpleName).sorted().collect(Collectors.joining(", "));
     }
 
-    public static HiddenContentTypes from(ParameterizedType formalTargetType) {
-        TypeInfo targetTi;
-        if (formalTargetType.typeParameter != null) {
-            Either<TypeInfo, MethodInfo> owner = formalTargetType.typeParameter.getOwner();
-            targetTi = owner.isLeft() ? owner.getLeft() : owner.getRight().typeInfo;
-        } else if (formalTargetType.typeInfo != null) {
-            targetTi = formalTargetType.typeInfo;
-        } else {
-            return OF_OBJECT;
-        }
-        return targetTi.typeResolution.get().hiddenContentTypes();
-    }
-
     public Map<Integer, Integer> mapMethodToTypeIndices(ParameterizedType parameterizedType) {
         // FIXME this is not a good implementation
         Map<Integer, Integer> result = new HashMap<>();
@@ -334,6 +321,12 @@ public class HiddenContentTypes {
 
     public MethodInfo getMethodInfo() {
         return methodInfo;
+    }
+
+    public boolean isExtensible(Integer single) {
+        if (single == null) return false;
+        NamedType nt = typeByIndex(single);
+        return nt instanceof TypeInfo;
     }
 
     /*
@@ -369,9 +362,7 @@ public class HiddenContentTypes {
             if (from.arrays > 0 && hiddenContentSelector.selectArrayElement(from.arrays)) {
                 LV.Indices indices = new LV.Indices(Set.of(LV.Index.createZeroes(from.arrays)));
                 iat = new IndicesAndType(indices, to);
-            } else if(from.typeParameter != null) {
-                iat = new IndicesAndType(entry1.getKey(), to);
-            } else if (LV.ALL_INDICES.equals(entry1.getKey())) {
+            } else if (from.typeParameter != null || from.equals(to)) {
                 iat = new IndicesAndType(entry1.getKey(), to);
             } else {
                 iat = findAll(inspectionProvider, entry1.getKey(), entry1.getValue(), from, to);
@@ -419,11 +410,6 @@ public class HiddenContentTypes {
             // the last entry
             assert from.typeInfo != null;
             ParameterizedType formalFrom = from.typeInfo.asParameterizedType(inspectionProvider);
-            if (atPos >= formalFrom.parameters.size()) {
-                // we must use ptFrom, rather than formalFrom.parameters...
-                int posOfPtFrom = indexOf(ptFrom, to);
-                return new IndicesAndType(new LV.Indices(posOfPtFrom), ptFrom);
-            }
             assert formalFrom.parameters.get(atPos).equals(ptFrom);
             if (formalFrom.typeInfo == to.typeInfo) {
                 ParameterizedType concrete;
@@ -461,15 +447,6 @@ public class HiddenContentTypes {
         throw new UnsupportedOperationException();
     }
 
-    private static int indexOf(ParameterizedType what, ParameterizedType in) {
-        int i = 0;
-        for (ParameterizedType pt : in.parameters) {
-            if (what.equals(pt)) return i;
-            i++;
-        }
-        throw new UnsupportedOperationException();
-    }
-
     public HiddenContentTypes getHcsTypeInfo() {
         return hcsTypeInfo;
     }
@@ -486,28 +463,7 @@ public class HiddenContentTypes {
         return typeToIndex;
     }
 
-    public boolean isAssignableTo(InspectionProvider inspectionProvider, NamedType namedType, int i) {
-        NamedType nt = typeByIndex(i);
-        assert nt != null;
-        if (namedType.equals(nt)) return true;
-        if (nt instanceof TypeParameter tp && namedType instanceof TypeParameter tp2) {
-            assert !tp.isMethodTypeParameter() && !tp2.isMethodTypeParameter() : "Not implemented";
-            TypeInfo owner = tp.getOwner().getLeft();
-            TypeInfo owner2 = tp2.getOwner().getLeft();
-            if (owner.equals(owner2)) return tp.equals(tp2);
-            ParameterizedType type = owner.asParameterizedType(inspectionProvider);
-            ParameterizedType type2 = owner2.asParameterizedType(inspectionProvider);
-            if (!type.isAssignableFrom(inspectionProvider, type2)) {
-                return false;
-            }
-            // do they map onto the same type?
-            Map<NamedType, ParameterizedType> map = owner2.mapInTermsOfParametersOfSubType(inspectionProvider, type);
-            assert map != null;
-            ParameterizedType translated = map.get(tp2);
-            return translated != null && tp.equals(translated.typeParameter);
-        }
-        ParameterizedType formal = nt.asParameterizedType(inspectionProvider);
-        ParameterizedType concrete = namedType.asParameterizedType(inspectionProvider);
-        return formal.isAssignableFrom(inspectionProvider, concrete);
+    public Stream<Map.Entry<NamedType, Integer>> typesOfExtensibleFields() {
+        return typeToIndex.entrySet().stream().filter(e -> e.getKey() instanceof TypeInfo);
     }
 }
