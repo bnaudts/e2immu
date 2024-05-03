@@ -15,51 +15,81 @@
 package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.analyser.delay.DelayFactory;
-import org.e2immu.analyser.analyser.delay.SimpleCause;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.TreeMap;
 
 import static org.e2immu.analyser.analyser.LV.LINK_DEPENDENT;
-import static org.e2immu.analyser.analyser.LinkedVariables.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWeightedGraph_3 extends CommonWG {
 
-    Variable d, n, node, nodeDependsOn, t, dependsOn, thisVar;
+    Variable element, subList, copy, list;
     WeightedGraph wg;
 
     @BeforeEach
     public void beforeEach() {
-        d = makeVariable("d");
-        n = makeVariable("n");
-        node = makeVariable("node");
-        nodeDependsOn = makeVariable("nodeDependsOn");
-        t = makeVariable("t");
-        dependsOn = makeVariable("dependsOn");
-        thisVar = makeVariable("thisVar");
+        /*
+        element *-4-0 subList 0--2--0 list 0--4--0 copy
+         */
+        element = makeVariable("e");
+        subList = makeVariable("s");
+        copy = makeVariable("c");
+        list = makeVariable("l");
 
         wg = new WeightedGraphImpl();
-        wg.addNode(d, Map.of(node, v4, nodeDependsOn, v4, dependsOn, v4, thisVar, delay));
-        wg.addNode(n, Map.of());
-        wg.addNode(node, Map.of(nodeDependsOn, v2, dependsOn, v4));
-        wg.addNode(nodeDependsOn, Map.of(dependsOn, v4));
-        wg.addNode(t, Map.of(thisVar, delay));
-        wg.addNode(thisVar, Map.of(t, delay));
+        LV.Links star0 = new LV.Links(Map.of(LV.ALL_INDICES, new LV.Link(new LV.Indices(0), true)));
+        LV star0Lv = LV.createHC(star0);
+        assertEquals("*M-4-0M", star0Lv.toString());
+        wg.addNode(element, Map.of(subList, star0Lv));
+        LV.Links d00M = new LV.Links(Map.of(i0, new LV.Link(i0, true)));
+        LV d00Lv = LV.createDependent(d00M);
+        assertEquals("0M-2-0M", d00Lv.toString());
+        wg.addNode(subList, Map.of(list, d00Lv));
+        LV hcd00Lv = LV.createHC(d00M);
+        assertEquals("0M-4-0M", hcd00Lv.toString());
+        wg.addNode(list, Map.of(copy, hcd00Lv));
     }
 
     @Test
     public void test1() {
-        Map<Variable, LV> thisLinks = wg.shortestPath().links(thisVar, LINK_DEPENDENT);
-        assertEquals(3, thisLinks.size());
+        Map<Variable, LV> links = wg.shortestPath().links(element, null);
+        assertEquals(4, links.size());
+        assertEquals("-0-", links.get(element).toString());
+        assertEquals("*M-4-0M", links.get(subList).toString());
+        assertEquals("*M-4-0M", links.get(list).toString());
+        assertEquals("*M-4-0M", links.get(copy).toString());
+    }
+
+    @Test
+    public void test2() {
+        Map<Variable, LV> links = wg.shortestPath().links(subList, null);
+        assertEquals(4, links.size());
+        assertEquals("-0-", links.get(subList).toString());
+        assertEquals("0M-4-*M", links.get(element).toString());
+        assertEquals("0M-2-0M", links.get(list).toString());
+        assertEquals("0M-4-0M", links.get(copy).toString());
+    }
+
+    @Test
+    public void test3() {
+        Map<Variable, LV> links = wg.shortestPath().links(list, null);
+        assertEquals(4, links.size());
+        assertEquals("-0-", links.get(list).toString());
+        assertEquals("0M-4-*M", links.get(element).toString());
+        assertEquals("0M-2-0M", links.get(subList).toString());
+        assertEquals("0M-4-0M", links.get(copy).toString());
+    }
+
+    @Test
+    public void test4() {
+        Map<Variable, LV> links = wg.shortestPath().links(copy, null);
+        assertEquals(4, links.size());
+        assertEquals("-0-", links.get(copy).toString());
+        assertEquals("0M-4-*M", links.get(element).toString());
+        assertEquals("0M-4-0M", links.get(subList).toString());
+        assertEquals("0M-4-0M", links.get(list).toString());
     }
 }
