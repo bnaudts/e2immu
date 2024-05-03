@@ -253,7 +253,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                     HiddenContentSelector theirs = HiddenContentSelector.selectAll(hiddenContentTypes, pi.parameterizedType);
                     // System.arrayCopy... what we mean is: 0-0
                     LV.Links links;
-                    if (mine.isNone() && theirs.isNone() && "java.lang.System".equals(typeInfo.fullyQualifiedName)) {
+                    if ("java.lang.System.arraycopy(Object,int,Object,int,int)".equals(methodInfo.fullyQualifiedName)) {
                         HiddenContentTypes hctObject = primitives.objectTypeInfo().typeResolution.get().hiddenContentTypes();
                         HiddenContentSelector select0 = new HiddenContentSelector.CsSet(hctObject, Map.of(0, new LV.Indices(0)));
                         links = LV.matchingLinks(select0, select0);
