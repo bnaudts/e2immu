@@ -107,6 +107,14 @@ public class Test_Linking0 extends CommonTestRunner {
                         assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
                         assertSingleLv(d, 2, 0, "*M-4-0M");
                     }
+                    case "m1bb" -> {
+                        if ("1".equals(d.statementId())) {
+                            assertCurrentValue(d, 2, "(new ArrayList<>(list)).get(0)");
+                            assertLinked(d, it(0, 1, "al:-1,list:-1"), it(2, "al:4,list:4"));
+                            assertSingleLv(d, 2, 0, "*M-4-0M");
+                            assertSingleLv(d, 2, 1, "*M-4-0M");
+                        }
+                    }
                     case "m2" -> {
                         assertCurrentValue(d, 0, "list.get(0)");
                         assertLinked(d, it(0, "list:4"));
@@ -228,6 +236,13 @@ public class Test_Linking0 extends CommonTestRunner {
                     }
                     default -> {
                     }
+                }
+            }
+            if ("m1bb".equals(d.methodInfo().name)) {
+                if ("al".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    assertCurrentValue(d, 0, "new ArrayList<>(list)");
+                    assertLinked(d, it(0, 1, "list:-1"), it(2, "list:4"));
+                    assertSingleLv(d, 2, 0, "0M-4-0M");
                 }
             }
         };

@@ -834,10 +834,10 @@ public class LinkHelper {
 
                     // NOTE: this type of filtering occurs in 'linkedVariablesOfParameter' as well
                     Set<Map.Entry<Integer, Indices>> entrySet;
-                    if (lv.haveLinks()) {
-                        entrySet = filter(lv.links().map().keySet(), hiddenContentSelectorOfTarget.getMap().entrySet());
-                    } else {
+                    if (hiddenContentSelectorOfTarget.isOnlyAll() || !lv.haveLinks()) {
                         entrySet = hiddenContentSelectorOfTarget.getMap().entrySet();
+                    } else {
+                        entrySet = filter(lv.links().map().keySet(), hiddenContentSelectorOfTarget.getMap().entrySet());
                     }
                     for (Map.Entry<Integer, Indices> entry : entrySet) {
                         Indices indicesInTargetWrtMethod = entry.getValue();
@@ -860,25 +860,17 @@ public class LinkHelper {
                             correctForVarargsMutable = mutable;
                         }
 
-                        Indices indicesInSourceWrtMethod;
-                        Indices indicesInSourceWrtType;
-                        //   if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet cs) {
-                        indicesInSourceWrtMethod = hiddenContentSelectorOfSource.getMap().get(entry.getKey());
+                        Indices indicesInSourceWrtMethod = hiddenContentSelectorOfSource.getMap().get(entry.getKey());
+                        assert indicesInSourceWrtMethod != null;
                         HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
                         assert indicesAndType != null;
-                        indicesInSourceWrtType = indicesAndType.indices();
+                        Indices indicesInSourceWrtType = indicesAndType.indices();
                         assert indicesInSourceWrtType != null;
-                        //  } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.All all) {
-                        // FIXME verify
-                        //     indicesInSourceWrtMethod = ALL_INDICES;
-                        //     indicesInSourceWrtType = ALL_INDICES;
-                        //   } else throw new UnsupportedOperationException();
-                        assert indicesInSourceWrtMethod != null;
 
-
-                        // FIXME this feels rather arbitrary, see Linking_0P.reverse4
-                        //   yet the 2nd clause seems needed for 1A.f10()
-                        Indices indicesInTargetWrtType = lv.theirsIsAll() && entrySet.size() < hiddenContentSelectorOfTarget.getMap().size() && reverse ? ALL_INDICES : targetAndType.indices();
+                        // FIXME this feels rather arbitrary, see Linking_0P.reverse4 yet the 2nd clause seems needed for 1A.f10()
+                        Indices indicesInTargetWrtType = (lv.theirsIsAll()
+                                                          && entrySet.size() < hiddenContentSelectorOfTarget.getMap().size()
+                                                          && reverse) ? ALL_INDICES : targetAndType.indices();
                         Indices correctedIndicesInTargetWrtType;
                         if (correctForVarargsMutable != null) {
                             correctedIndicesInTargetWrtType = ALL_INDICES;
@@ -1079,8 +1071,9 @@ public class LinkHelper {
         LinkHelper lh = new LinkHelper(context, hct, hcsSource);
         DV immutable = context.evaluationContext().immutable(fieldType);
         DV independent = immutable.isDelayed() ? immutable : MultiLevel.independentCorrespondingToImmutable(immutable);
-        return lh.linkedVariables(hcsSource, scopeType, formalScopeType, hcsSource, linkedVariables, false,
-                independent, fieldType, formalFieldType, hcsTarget, false);
+      //  return lh.linkedVariables(hcsSource, scopeType, formalScopeType, hcsSource, linkedVariables, false,
+      //          independent, fieldType, formalFieldType, hcsTarget, false);
+        return LinkedVariables.EMPTY; // FIXME temp
     }
 
     public static Links factoryMethodLinks(HiddenContentTypes hct,

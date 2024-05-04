@@ -31,6 +31,12 @@ public class Linking_0 {
     }
 
     // rv ->4->list, corrected to allow modifications
+
+    static M m1bb(List<M> list) {
+        ArrayList<M> al = new ArrayList<>(list);
+        return al.get(0);
+    }
+
     static M m1b(List<M> list) {
         return new ArrayList<>(list).get(0);
     }

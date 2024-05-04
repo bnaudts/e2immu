@@ -187,7 +187,7 @@ public class HiddenContentSelector {
                                                                   Stack<Integer> prefix,
                                                                   Map<Integer, LV.Indices> map) {
         Integer index = hiddenContentTypes.indexOfOrNull(type.copyWithoutArrays());
-        if (index != null && type.parameters.isEmpty()) {
+        if (index != null && type.parameters.isEmpty() && !prefix.isEmpty()) {
             map.merge(index, new LV.Indices(Set.of(new LV.Index(List.copyOf(prefix)))), LV.Indices::merge);
         } else {
             int i = 0;

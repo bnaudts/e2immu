@@ -204,7 +204,14 @@ public class HiddenContentTypes {
                 NamedType typeInParent = hctParent.indexToType.get(e.getValue()); // this step is necessary for recursively computed...
                 ParameterizedType typeHere = fromMeToParent.get(typeInParent);
                 if (typeHere != null) {
-                    Integer indexHere = fromThis.get(typeHere.typeParameter != null ? typeHere.typeParameter : typeHere.typeInfo);
+                    NamedType namedTypeHere = typeHere.typeParameter != null ? typeHere.typeParameter : typeHere.typeInfo;
+                    Integer indexHere = fromThis.get(namedTypeHere);
+                    if (indexHere == null && !shallow) {
+                        // no field with this type, but we must still add it, as it exists in the parent
+                        // if shallow, it has already been added, there is no check on fields
+                        indexHere = fromThis.size();
+                        fromThis.put(namedTypeHere, indexHere);
+                    }
                     if (indexHere != null) {
                         superTypeToIndex.put(e.getKey(), indexHere);
                     }

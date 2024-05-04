@@ -222,7 +222,7 @@ public class Test_Linking0M extends CommonTestRunner {
 
         testClass("Linking_0M", 0, 0, new DebugConfiguration.Builder()
               //  .addEvaluationResultVisitor(evaluationResultVisitor)
-              //  .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                // .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addBreakDelayVisitor(breakDelayVisitor)
                 .build());
