@@ -37,7 +37,7 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+        builder.setHiddenContentSelector(HiddenContentSelector.NONE);
         constructor.setAnalysis(builder.build());
 
         HiddenContentTypes hcsType = constructor.typeInfo.typeResolution.get().hiddenContentTypes();
@@ -61,8 +61,8 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @DisplayName("direct assignment of mutable type, delayed")
     public void test2() {
         MethodInfo constructor = constructorOneArgument(mutablePt, mutable2Pt, null,
-                HiddenContentSelector.None.INSTANCE,
-                HiddenContentSelector.None.INSTANCE);
+                HiddenContentSelector.NONE,
+                HiddenContentSelector.NONE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt, mutable2Pt);
         assertEquals("a:-1", er.linkedVariablesOfExpression().toString());
@@ -74,8 +74,8 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     public void test2b() {
         MethodInfo constructor = constructorOneArgument(mutablePt, mutable2Pt,
                 MultiLevel.DEPENDENT_DV,
-                HiddenContentSelector.None.INSTANCE,
-                HiddenContentSelector.None.INSTANCE);
+                HiddenContentSelector.NONE,
+                HiddenContentSelector.NONE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor, mutablePt, mutable2Pt);
         assertEquals("a:2", er.linkedVariablesOfExpression().toString());
@@ -86,9 +86,9 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @DisplayName("direct assignment of mutable type, independent HC, 1")
     public void test2c() {
         MethodInfo constructor1 = constructorOneArgument(mutablePt, tp0Pt, MultiLevel.INDEPENDENT_HC_DV,
-                HiddenContentSelector.None.INSTANCE,
-                HiddenContentSelector.None.INSTANCE);
-        // the parameter has HiddenContentSelector == HiddenContentSelector.None.INSTANCE
+                HiddenContentSelector.NONE,
+                HiddenContentSelector.NONE);
+        // the parameter has HiddenContentSelector == HiddenContentSelector.NONE
         assertThrows(AssertionError.class, () -> evaluateConstructorOneArgument(constructor1, mutablePt, tp0Pt));
     }
 
@@ -98,9 +98,10 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
     @Test
     @DisplayName("direct assignment of mutable type, independent HC, 2")
     public void test2cb() {
-        HiddenContentSelector select0 = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
+        HiddenContentSelector select0 = HiddenContentSelector.selectTypeParameter(null,0);
         MethodInfo constructor = constructorOneArgument(mutablePtWithOneTypeParameter, tp0Pt,
-                MultiLevel.INDEPENDENT_HC_DV, select0, new HiddenContentSelector.All(null, 0));
+                MultiLevel.INDEPENDENT_HC_DV, select0,
+                new HiddenContentSelector(null, Map.of(0, LV.ALL_INDICES)));
 
         ParameterInfo p0 = constructor.methodInspection.get().getParameters().get(0);
         assertEquals("Type param T", p0.parameterizedType.toString());
@@ -117,8 +118,8 @@ public class TestConstructorCallLinkedVariables extends CommonTest {
         MethodInfo constructor = constructorOneArgument(primitives.stringParameterizedType(),
                 mutablePt,
                 MultiLevel.INDEPENDENT_DV,
-                HiddenContentSelector.None.INSTANCE,
-                HiddenContentSelector.None.INSTANCE);
+                HiddenContentSelector.NONE,
+                HiddenContentSelector.NONE);
 
         EvaluationResult er = evaluateConstructorOneArgument(constructor, primitives.stringParameterizedType(), mutablePt);
         assertTrue(er.linkedVariablesOfExpression().isEmpty());

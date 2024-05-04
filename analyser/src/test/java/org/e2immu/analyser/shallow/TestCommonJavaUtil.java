@@ -215,9 +215,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL_DV, p0.getProperty(Property.NOT_NULL_PARAMETER));
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
-        if (p0.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-            assertEquals(1, all.getHiddenContentIndex());
-        } else fail();
+        assertTrue(p0.getHiddenContentSelector().isOnlyAll());
+        assertEquals(1, p0.getHiddenContentSelector().getMap().keySet().stream().findFirst().orElseThrow());
         assertEquals("return of:4", p0.getLinkedVariables().toString());
         assertEquals("*-4-0", p0.getLinkedVariables().select(0).toString());
     }
@@ -534,9 +533,8 @@ public class TestCommonJavaUtil extends CommonAnnotatedAPI {
         assertEquals("1-4-*", methodAnalysis.getLinkedVariables().select(1).toString());
 
         ParameterAnalysis p1 = methodAnalysis.getParameterAnalyses().get(1);
-        if (p1.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-            assertEquals(3, all.getHiddenContentIndex());
-        } else fail();
+        assertTrue(p1.getHiddenContentSelector().isOnlyAll());
+        assertEquals(3, p1.getHiddenContentSelector().getMap().keySet().stream().findFirst().orElseThrow());
         assertEquals("return of:4", p1.getLinkedVariables().toString());
         assertEquals("*-4-1", p1.getLinkedVariables().select(0).toString());
     }

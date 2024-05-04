@@ -14,6 +14,7 @@
 
 package org.e2immu.analyser.resolver;
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestMethodCall extends CommonTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestMethodCall.class);
 
-    private void localInspectAndResolve(Class<?> clazz, String formalParameterType) throws IOException {
+    private TypeMap localInspectAndResolve(Class<?> clazz, String formalParameterType) throws IOException {
         TypeMap typeMap = inspectAndResolve(clazz);
         TypeInfo typeInfo = typeMap.get(clazz);
         MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 0);
@@ -49,6 +50,7 @@ public class TestMethodCall extends CommonTest {
                 assertEquals(formalParameterType, p0.parameterizedType.toString());
             } else fail();
         } else fail();
+        return typeMap;
     }
 
     private void localInspectAndResolve(Class<?> clazz, String[] expectedMethodFqns, int paramsOfTest) throws IOException {
@@ -165,7 +167,17 @@ public class TestMethodCall extends CommonTest {
 
     @Test
     public void test_15() throws IOException {
-        localInspectAndResolve(MethodCall_15.class, "Type String");
+        TypeMap typeMap = localInspectAndResolve(MethodCall_15.class, "Type String");
+        TypeInfo typeInfo = typeMap.get(MethodCall_15.class);
+        HiddenContentTypes hct = typeInfo.typeResolution.get().hiddenContentTypes();
+        assertEquals("MethodCall_15:S", hct.toString());
+        // NOTE: T is not present in any of the fields
+        MethodInfo test = typeInfo.findUniqueMethod("test", 1);
+        HiddenContentTypes hctTest = test.methodResolution.get().hiddenContentTypes();
+        assertEquals("MethodCall_15:S - test:T", hctTest.toString());
+        MethodInfo test2 = typeInfo.findUniqueMethod("test2", 2);
+        HiddenContentTypes hctTest2 = test2.methodResolution.get().hiddenContentTypes();
+        assertEquals("MethodCall_15:S - test2:T", hctTest2.toString());
     }
 
     @Test

@@ -887,7 +887,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public HiddenContentSelector getHiddenContentSelector() {
             // must add a default, for ShallowAnalyser/CompanionAnalyser
             // must add a default, for ShallowAnalyser/CompanionAnalyser
-            return hiddenContentSelector.getOrDefault(HiddenContentSelector.None.INSTANCE);
+            return hiddenContentSelector.getOrDefault(HiddenContentSelector.NONE);
         }
 
         public Builder setHiddenContentSelector(HiddenContentSelector hiddenContentSelector) {

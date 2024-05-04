@@ -81,10 +81,11 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         MethodInfo methodInfo = typeInfo.findUniqueMethod("apply", 1);
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         assertEquals(DV.TRUE_DV, methodAnalysis.getProperty(Property.MODIFIED_METHOD));
-        assertEquals("*", methodAnalysis.getHiddenContentSelector().toString());
-        if (methodAnalysis.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-            assertEquals(1, all.getHiddenContentIndex());
-        } else fail();
+        HiddenContentSelector hcs = methodAnalysis.getHiddenContentSelector();
+        assertEquals("*", hcs.toString());
+        assertTrue(hcs.isOnlyAll());
+        assertEquals(1, hcs.getMap().keySet().stream().findFirst().orElseThrow());
+
         HiddenContentTypes hct = methodInfo.methodResolution.get().hiddenContentTypes();
         assertEquals("R, T - ", hct.sortedTypes());
 
@@ -95,9 +96,9 @@ public class TestCommonJavaUtilFunction extends CommonAnnotatedAPI {
         ParameterAnalysis p0 = methodInfo.parameterAnalysis(0);
         assertEquals(DV.TRUE_DV, p0.getProperty(Property.MODIFIED_VARIABLE), "in " + methodInfo.fullyQualifiedName);
         assertEquals("*", p0.getHiddenContentSelector().toString());
-        if (p0.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-            assertEquals(0, all.getHiddenContentIndex());
-        } else fail();
+        assertTrue(p0.getHiddenContentSelector().isOnlyAll());
+        assertEquals(0, p0.getHiddenContentSelector().getMap().keySet().stream().findFirst().orElseThrow());
+
 
         assertEquals(MultiLevel.INDEPENDENT_HC_DV, p0.getProperty(Property.INDEPENDENT));
         assertEquals(MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, p0.getProperty(Property.IMMUTABLE));

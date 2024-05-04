@@ -260,16 +260,16 @@ public class Test_Linking0P extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("f".equals(d.methodInfo().name)) {
                 HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
-                if (hcs instanceof HiddenContentSelector.All all) {
-                    assertEquals(0, all.getHiddenContentIndex());
-                } else fail();
+                assertTrue(hcs.isOnlyAll());
+                assertEquals(0, hcs.getMap().keySet().stream().findFirst().orElseThrow());
+
                 assertEquals("f", d.methodAnalysis().getSetField().toString());
             }
             if ("g".equals(d.methodInfo().name)) {
                 HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
-                if (hcs instanceof HiddenContentSelector.All all) {
-                    assertEquals(1, all.getHiddenContentIndex());
-                } else fail();
+                assertTrue(hcs.isOnlyAll());
+                assertEquals(1, hcs.getMap().keySet().stream().findFirst().orElseThrow());
+
                 assertEquals("g", d.methodAnalysis().getSetField().toString());
             }
             if ("pair".equals(d.methodInfo().name)) {

@@ -105,7 +105,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
                                               boolean p1Varargs) {
         ParameterInspectionImpl.Builder param0Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p0Type, "p0", 0);
-        HiddenContentSelector p0Hcs = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
+        HiddenContentSelector p0Hcs = HiddenContentSelector.selectTypeParameter(null,0);
         ParameterInspection.Builder param1Inspection = new ParameterInspectionImpl.Builder(newId(),
                 p1Type, "p1", 1).setVarArgs(p1Varargs);
 
@@ -158,7 +158,7 @@ public class TestMethodCallLinkedVariablesBetweenParameters extends CommonTest {
         builder.setProperty(Property.IDENTITY, DV.FALSE_DV);
         builder.setProperty(Property.FLUENT, DV.FALSE_DV);
         builder.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_DV);
-        builder.setHiddenContentSelector(HiddenContentSelector.None.INSTANCE);
+        builder.setHiddenContentSelector(HiddenContentSelector.NONE);
         method.setAnalysis(builder.build());
 
         return method;

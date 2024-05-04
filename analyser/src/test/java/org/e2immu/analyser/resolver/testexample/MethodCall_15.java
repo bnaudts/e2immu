@@ -33,4 +33,9 @@ public record MethodCall_15<T extends Comparable, S>(S s) {
     public void test(T t) {
         accept(t);
     }
+
+    public void test2(T t1, T t2) {
+        accept(t1);
+        accept(t2);
+    }
 }

@@ -985,12 +985,13 @@ public class Test_Linking1A extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             HiddenContentTypes hct = d.methodInfo().methodResolution.get().hiddenContentTypes();
             String enclosingMethod = d.enclosingMethod() != null ? d.enclosingMethod().name : "";
+            HiddenContentSelector hcs = d.methodAnalysis().getHiddenContentSelector();
             if ("get".equals(d.methodInfo().name) && "s0l".equals(enclosingMethod)) {
                 // () -> supplier.get() ~ public X get() { return supplier.get(); }
                 assertDv(d, MultiLevel.EFFECTIVELY_IMMUTABLE_HC_DV, Property.IMMUTABLE);
-                if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-                    assertEquals(0, all.getHiddenContentIndex());
-                } else fail();
+                assertTrue(hcs.isOnlyAll());
+                assertEquals(0, hcs.getMap().keySet().stream().findFirst().orElseThrow());
+
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
                 assertLinked(d, lvs, it0("supplier:-1"), it(1, "supplier:4"));
                 assertSingleLv(d, lvs, 1, 0, "*-4-0");
@@ -998,9 +999,9 @@ public class Test_Linking1A extends CommonTestRunner {
             if ("get".equals(d.methodInfo().name) && "s0a".equals(enclosingMethod)) {
                 assertEquals("$2:X - get:", hct.toString());
                 assertDv(d, 1, MultiLevel.INDEPENDENT_HC_DV, Property.INDEPENDENT);
-                if (d.methodAnalysis().getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-                    assertEquals(0, all.getHiddenContentIndex());
-                } else fail();
+                assertTrue(hcs.isOnlyAll());
+                assertEquals(0, hcs.getMap().keySet().stream().findFirst().orElseThrow());
+
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
                 assertLinked(d, lvs, it0("supplier:-1"), it(0, "supplier:4"));
                 assertSingleLv(d, lvs, 1, 0, "*-4-0");
@@ -1012,28 +1013,27 @@ public class Test_Linking1A extends CommonTestRunner {
                 assertEquals("X - ", hct.sortedTypes());
                 assertFalse(hct.isEmpty());
                 assertEquals(1, hct.size());
-                assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
+                assertTrue(hcs.isNone());
             }
             if ("test".equals(d.methodInfo().name) && "p1l".equals(enclosingMethod)) {
                 String expected = d.iteration() == 0 ? "<m:test>" : "predicate.test(t)";
                 assertEquals(expected, d.methodAnalysis().getSingleReturnValue().toString());
                 // result is a boolean, so 'none'
                 assertEquals(" - ", hct.sortedTypes());
-                assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
+                assertTrue(hcs.isNone());
             }
             if ("accept".equals(d.methodInfo().name) && "c0a".equals(enclosingMethod)) {
                 assertEquals("X - ", hct.sortedTypes());
                 assertDv(d, 0, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
+                assertTrue(hcs.isNone());
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
                 assertLinked(d, lvs, it(0, ""));
 
                 ParameterAnalysis pa = d.methodAnalysis().getParameterAnalyses().get(0);
-                if (pa.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-                    assertEquals(0, all.getHiddenContentIndex());
-                    assertEquals("java.util.function.Consumer.accept(T)",
-                            all.hiddenContentTypes().getMethodInfo().fullyQualifiedName);
-                } else fail();
+                assertTrue(pa.getHiddenContentSelector().isOnlyAll());
+                assertEquals(0, pa.getHiddenContentSelector().getMap().keySet().stream().findFirst().orElseThrow());
+                assertEquals("java.util.function.Consumer.accept(T)",
+                        pa.getHiddenContentSelector().hiddenContentTypes().getMethodInfo().fullyQualifiedName);
                 assertLinked(d, pa.getLinkedVariables(), it0("NOT_YET_SET"),
                         it1("consumer:-1,this:-1,x:-1"),
                         it(2, "consumer:4"));
@@ -1043,16 +1043,15 @@ public class Test_Linking1A extends CommonTestRunner {
             if ("accept".equals(d.methodInfo().name) && "c1a".equals(enclosingMethod)) {
                 assertEquals(" - ", hct.sortedTypes());
                 assertDv(d, 0, MultiLevel.INDEPENDENT_DV, Property.INDEPENDENT);
-                assertTrue(d.methodAnalysis().getHiddenContentSelector().isNone());
+                assertTrue(hcs.isNone());
                 LinkedVariables lvs = d.methodAnalysis().getLinkedVariables();
                 assertLinked(d, lvs, it(0, ""));
 
                 ParameterAnalysis pa = d.methodAnalysis().getParameterAnalyses().get(0);
-                if (pa.getHiddenContentSelector() instanceof HiddenContentSelector.All all) {
-                    assertEquals(0, all.getHiddenContentIndex());
-                    assertEquals("java.util.function.Consumer.accept(T)",
-                            all.hiddenContentTypes().getMethodInfo().fullyQualifiedName);
-                } else fail();
+                assertTrue(pa.getHiddenContentSelector().isOnlyAll());
+                assertEquals(0, pa.getHiddenContentSelector().getMap().keySet().stream().findFirst().orElseThrow());
+                assertEquals("java.util.function.Consumer.accept(T)",
+                        pa.getHiddenContentSelector().hiddenContentTypes().getMethodInfo().fullyQualifiedName);
                 assertLinked(d, pa.getLinkedVariables(), it0("NOT_YET_SET"),
                         it1("consumer:-1,m:-1,this:-1"),
                         it(2, 2, "consumer:-1"),

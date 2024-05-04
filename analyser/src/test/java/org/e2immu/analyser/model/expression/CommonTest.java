@@ -108,7 +108,7 @@ public abstract class CommonTest {
             mab.setProperty(Property.INDEPENDENT, MultiLevel.INDEPENDENT_HC_DV);
             mab.setProperty(Property.IDENTITY, DV.FALSE_DV);
             mab.setProperty(Property.FLUENT, DV.FALSE_DV);
-            mab.setHiddenContentSelector(new HiddenContentSelector.All(hcs, 0));
+            mab.setHiddenContentSelector(new HiddenContentSelector(hcs, Map.of(0, LV.ALL_INDICES)));
             mi.methodAnalysis.set(mab.build());
 
             mi.methodResolution.set(new MethodResolution(Set.of(), Set.of(), MethodResolution.CallStatus.NON_PRIVATE,

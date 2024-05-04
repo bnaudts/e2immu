@@ -15,8 +15,10 @@
 package org.e2immu.analyser.resolver;
 
 
+import org.e2immu.analyser.analyser.HiddenContentTypes;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ConstructorCall;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.*;
@@ -64,6 +66,22 @@ public class TestConstructor extends CommonTest {
         TypeMap typeMap = inspectAndResolve(Constructor_2.class);
         TypeInfo typeInfo = typeMap.get(Constructor_2.class);
         assertNotNull(typeInfo);
+        HiddenContentTypes hctTypeInfo = typeInfo.typeResolution.get().hiddenContentTypes();
+        assertEquals("Constructor_2:", hctTypeInfo.toString());
+        assertEquals(0, hctTypeInfo.size());
+        assertTrue(hctTypeInfo.isTypeIsExtensible());
+        assertTrue(hctTypeInfo.hasHiddenContent());
+
+        MethodInfo methodInfo = typeInfo.findUniqueMethod("test", 0);
+        Statement s0 = methodInfo.methodInspection.get().getMethodBody().getStructure().statements().get(0);
+        if (s0 instanceof ExpressionAsStatement eas
+            && eas.expression instanceof LocalVariableCreation lvc
+            && lvc.localVariableReference.assignmentExpression instanceof VariableExpression ve
+            && ve.getScopeValue() instanceof ConstructorCall cc) {
+            HiddenContentTypes hctAnon = cc.anonymousClass().typeResolution.get().hiddenContentTypes();
+            assertEquals("$1:", hctAnon.toString());
+            // TypeToken has a type parameter, but it is not in use
+        } else fail();
     }
 
     @Test

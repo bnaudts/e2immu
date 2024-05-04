@@ -16,7 +16,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.support.Either;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +29,7 @@ or without hidden content), e.g. List.of(...), List.copyOf(...).
  */
 public class HiddenContentTypes {
     public static HiddenContentTypes OF_PRIMITIVE = new HiddenContentTypes(null, false, Map.of(), Map.of());
+    public static final int UNSPECIFIED_EXTENSION = -2; // extension of the type itself, only if typeIsExtensible == true
 
     private final TypeInfo typeInfo;
     private final boolean typeIsExtensible;
@@ -50,8 +50,13 @@ public class HiddenContentTypes {
         Map<NamedType, Integer> combined = new HashMap<>(myTypeToIndex);
         combined.putAll(superTypeToIndex);
         this.typeToIndex = Map.copyOf(combined);
-        this.indexToType = myTypeToIndex.entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+        try {
+            this.indexToType = myTypeToIndex.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+        } catch (IllegalStateException ise) {
+
+            throw ise;
+        }
         startOfMethodParameters = myTypeToIndex.size();
         methodInfo = null;
         hcsTypeInfo = null;
@@ -93,13 +98,20 @@ public class HiddenContentTypes {
 
     public static HiddenContentTypes compute(HiddenContentTypes hcsTypeInfo, MethodInspection methodInspection) {
         assert hcsTypeInfo != null : "For method " + methodInspection.getMethodInfo();
-        Map<NamedType, Integer> typeToIndex = methodInspection.getTypeParameters().stream()
-                .collect(Collectors.toUnmodifiableMap(tp -> tp, TypeParameter::getIndex));
-    /*    List<ParameterizedType> typesInParameters = methodInspection.getParameters().stream()
-                .flatMap(pi -> expand(pi.parameterizedType))
-                .filter(pt -> )
-                .sorted()
-                .toList();*/
+
+        Map<NamedType, Integer> typeToIndex = new HashMap<>();
+        int max = 0;
+        for (TypeParameter tp : methodInspection.getTypeParameters()) {
+            typeToIndex.put(tp, tp.getIndex());
+            max = Math.max(max, tp.getIndex());
+        }
+        // are any of the parameter's type's a type parameter, not yet used in the fields? See resolve.Method_15
+        for (ParameterInfo pi : methodInspection.getParameters()) {
+            TypeParameter tp = pi.parameterizedType.typeParameter;
+            if (tp != null && tp.getOwner().isLeft() && !hcsTypeInfo.typeToIndex.containsKey(tp)) {
+                typeToIndex.put(tp, ++max);
+            }
+        }
         return new HiddenContentTypes(hcsTypeInfo, methodInspection.getMethodInfo(), typeToIndex);
     }
 
@@ -162,12 +174,14 @@ public class HiddenContentTypes {
          */
         if (!shallow) {
             for (FieldInfo f : typeInspection.fields()) {
-                TypeInfo bestType = Objects.requireNonNullElse(f.type.bestTypeInfo(inspectionProvider),
-                        inspectionProvider.getPrimitives().objectTypeInfo());
-                TypeInspection bestTypeInspection = inspectionProvider.getTypeInspection(bestType);
-                if (bestTypeInspection.typeParameters().isEmpty() && bestTypeInspection.isExtensible()) {
-                    int index = fromThis.size();
-                    //   fromThis.putIfAbsent(bestType, index);
+                if (!f.type.isTypeParameter()) {
+                    TypeInfo bestType = Objects.requireNonNullElse(f.type.bestTypeInfo(inspectionProvider),
+                            inspectionProvider.getPrimitives().objectTypeInfo());
+                    TypeInspection bestTypeInspection = inspectionProvider.getTypeInspection(bestType);
+                    if (bestTypeInspection.typeParameters().isEmpty() && bestTypeInspection.isExtensible()) {
+                        int index = fromThis.size();
+                        fromThis.putIfAbsent(bestType, index);
+                    }
                 }
             }
         }
@@ -189,11 +203,12 @@ public class HiddenContentTypes {
             for (Map.Entry<NamedType, Integer> e : hctParent.typeToIndex.entrySet()) {
                 NamedType typeInParent = hctParent.indexToType.get(e.getValue()); // this step is necessary for recursively computed...
                 ParameterizedType typeHere = fromMeToParent.get(typeInParent);
-                assert typeHere != null;
-                Integer indexHere = fromThis.get(typeHere.typeParameter != null ? typeHere.typeParameter : typeHere.typeInfo);
-                if (indexHere != null) {
-                    superTypeToIndex.put(e.getKey(), indexHere);
-                }
+                if (typeHere != null) {
+                    Integer indexHere = fromThis.get(typeHere.typeParameter != null ? typeHere.typeParameter : typeHere.typeInfo);
+                    if (indexHere != null) {
+                        superTypeToIndex.put(e.getKey(), indexHere);
+                    }
+                } // see e.g. resolve.Constructor_2
             }
         }
     }
@@ -347,6 +362,7 @@ public class HiddenContentTypes {
      The result maps 'indices' 0 to the combination of "M" and indices 0.
     */
 
+    // FIXME move to HCS, and use the HCT of the HCS
     public record IndicesAndType(LV.Indices indices, ParameterizedType type) {
     }
 
@@ -465,5 +481,9 @@ public class HiddenContentTypes {
 
     public Stream<Map.Entry<NamedType, Integer>> typesOfExtensibleFields() {
         return typeToIndex.entrySet().stream().filter(e -> e.getKey() instanceof TypeInfo);
+    }
+
+    public boolean isTypeIsExtensible() {
+        return typeIsExtensible;
     }
 }

@@ -16,7 +16,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestHiddenContentTypes2 {
+public class TestHiddenContentTypeSelector2 {
     private final Primitives primitives = new PrimitivesImpl();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
 
@@ -122,7 +122,8 @@ public class TestHiddenContentTypes2 {
 
     @Test
     public void test2() {
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, new LV.Indices(0)));
+        HiddenContentTypes hctList = list.typeResolution.get().hiddenContentTypes();
+        HiddenContentSelector hcs = new HiddenContentSelector(hctList, Map.of(0, new LV.Indices(0)));
         assertEquals("0", hcs.toString());
         ParameterizedType pt = new ParameterizedType(list, List.of(primitives.stringParameterizedType()));
         assertEquals("Type com.foo.List<String>", pt.toString());
@@ -131,7 +132,8 @@ public class TestHiddenContentTypes2 {
 
     @Test
     public void test2b() {
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, new LV.Indices(Set.of(new LV.Index(List.of(0, 0))))));
+        HiddenContentTypes hctList = list.typeResolution.get().hiddenContentTypes();
+        HiddenContentSelector hcs = new HiddenContentSelector(hctList, Map.of(0, new LV.Indices(Set.of(new LV.Index(List.of(0, 0))))));
         assertEquals("0=0.0", hcs.toString());
         ParameterizedType pt = new ParameterizedType(list, List.of(new ParameterizedType(arrayList, List.of(primitives.stringParameterizedType()))));
         assertEquals("Type com.foo.List<com.foo.ArrayList<String>>", pt.toString());
@@ -142,10 +144,14 @@ public class TestHiddenContentTypes2 {
     @DisplayName("allOccurrencesOf")
     public void test3() {
         ParameterizedType pt = new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt));
-        assertEquals("1;2", LV.Indices.allOccurrencesOf(tpList0Pt, pt).toString());
+        LV.Indices indices = LV.Indices.allOccurrencesOf(tpList0Pt, pt);
+        assertNotNull(indices);
+        assertEquals("1;2", indices.toString());
 
         ParameterizedType pt2 = new ParameterizedType(list, List.of(new ParameterizedType(list, List.of(tpAl0Pt, tpList0Pt, tpList0Pt))));
-        assertEquals("0.1;0.2", LV.Indices.allOccurrencesOf(tpList0Pt, pt2).toString());
+        LV.Indices indices2 = LV.Indices.allOccurrencesOf(tpList0Pt, pt2);
+        assertNotNull(indices2);
+        assertEquals("0.1;0.2", indices2.toString());
     }
 
     @Test
@@ -153,7 +159,7 @@ public class TestHiddenContentTypes2 {
     public void test4a() {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
         LV.Indices i0 = new LV.Indices(0);
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i0));
+        HiddenContentSelector hcs = new HiddenContentSelector(hctAl, Map.of(0, i0));
         // from is expressed in terms of the hidden content of hctAl
         ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
         assertEquals("Type com.foo.Collection<EA>", from.toString());
@@ -175,7 +181,7 @@ public class TestHiddenContentTypes2 {
     public void test4b() {
         HiddenContentTypes hctAl = arrayList.typeResolution.get().hiddenContentTypes();
         LV.Indices i0 = new LV.Indices(0);
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i0));
+        HiddenContentSelector hcs = new HiddenContentSelector(hctAl, Map.of(0, i0));
         // from is expressed in terms of the hidden content of hctAl
         ParameterizedType from = new ParameterizedType(collection, List.of(tpAl0Pt));
         assertEquals("Type com.foo.Collection<EA>", from.toString());
@@ -198,7 +204,7 @@ public class TestHiddenContentTypes2 {
         HiddenContentTypes hctMap = map.typeResolution.get().hiddenContentTypes();
         LV.Indices i00 = new LV.Indices(Set.of(new LV.Index(List.of(0, 0))));
         LV.Indices i01 = new LV.Indices(Set.of(new LV.Index(List.of(0, 1))));
-        HiddenContentSelector hcs = new HiddenContentSelector.CsSet(null, Map.of(0, i00, 1, i01));
+        HiddenContentSelector hcs = new HiddenContentSelector(hctMap, Map.of(0, i00, 1, i01));
         assertEquals("0=0.0,1=0.1", hcs.toString());
 
         // from is expressed in terms of the hidden content of hctMap
@@ -224,5 +230,16 @@ public class TestHiddenContentTypes2 {
         assertEquals(primitives.integerTypeInfo().asSimpleParameterizedType(), iat1.type());
     }
 
+    @Test
+    @DisplayName("Hidden content selector on map")
+    public void testHcsMap() {
+        HiddenContentTypes hctMap = map.typeResolution.get().hiddenContentTypes();
+        HiddenContentSelector all0 = new HiddenContentSelector(hctMap, Map.of(0, LV.ALL_INDICES));
+        assertTrue(all0.isOnlyAll());
+        assertEquals("*", all0.toString());
+        HiddenContentSelector all011 = new HiddenContentSelector(hctMap, Map.of(0, LV.ALL_INDICES, 1, new LV.Indices(1)));
+        assertFalse(all011.isOnlyAll());
+        assertEquals("*,1", all011.toString());
+    }
 
 }

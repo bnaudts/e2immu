@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
 
-    private final HiddenContentSelector SELECT_0 = HiddenContentSelector.CsSet.selectTypeParameter(null,0);
+    private final HiddenContentSelector SELECT_0 = HiddenContentSelector.selectTypeParameter(null,0);
 
     private MethodInfo methodWithTwoArgs(DV identity,
                                          DV fluent,
@@ -67,11 +67,11 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         ParameterInfo param1 = methodInfo.methodInspection.get().getParameters().get(1);
         ParameterAnalysis p0Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param0)
-                .setHiddenContentSelector(HiddenContentSelector.None.INSTANCE)
+                .setHiddenContentSelector(HiddenContentSelector.NONE)
                 .build();
         ParameterAnalysis p1Analysis = (ParameterAnalysis) new ParameterAnalysisImpl
                 .Builder(primitives, analysisProvider, param1)
-                .setHiddenContentSelector(HiddenContentSelector.None.INSTANCE)
+                .setHiddenContentSelector(HiddenContentSelector.NONE)
                 .build();
 
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(Analysis.AnalysisMode.CONTRACTED,
@@ -80,7 +80,7 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
         builder.setProperty(Property.IDENTITY, identity);
         builder.setProperty(Property.FLUENT, fluent);
         builder.setProperty(Property.INDEPENDENT, independent);
-        builder.setHiddenContentSelector(Objects.requireNonNullElse(hiddenContentSelector, HiddenContentSelector.None.INSTANCE));
+        builder.setHiddenContentSelector(Objects.requireNonNullElse(hiddenContentSelector, HiddenContentSelector.NONE));
         methodInfo.setAnalysis(builder.build());
         return methodInfo;
     }
@@ -332,7 +332,8 @@ public class TestMethodCallLinkedVariablesFromObjectToValue extends CommonTest {
     @DisplayName("mutable object, method independent HC, immutable(mutable)")
     public void test10() {
         MethodInfo methodInfo = methodWithTwoArgs(DV.FALSE_DV, DV.FALSE_DV, MultiLevel.INDEPENDENT_HC_DV,
-                new HiddenContentSelector.All(null,0), tpHc0Pt, immutableHcWithOneTypeParameter);
+                new HiddenContentSelector(null,Map.of(0, LV.ALL_INDICES)),
+                tpHc0Pt, immutableHcWithOneTypeParameter);
         ParameterizedType immutableMutable = new ParameterizedType(immutableHcWithOneTypeParameter, List.of(mutablePt));
         LinkedVariables lv = callMethodWithTwoArgs(methodInfo, immutableMutable, LINK_STATICALLY_ASSIGNED, LINK_DEPENDENT,
                 lv0hc0);

@@ -61,7 +61,7 @@ record HardCodedParameterAnalysis(String fullyQualifiedName) implements Paramete
 
     @Override
     public HiddenContentSelector getHiddenContentSelector() {
-        return HiddenContentSelector.None.INSTANCE;
+        return HiddenContentSelector.NONE;
     }
 
     @Override

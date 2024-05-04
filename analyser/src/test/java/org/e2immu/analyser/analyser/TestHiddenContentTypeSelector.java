@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.inspector.MethodResolution;
+import org.e2immu.analyser.inspector.impl.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.impl.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.impl.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
@@ -13,12 +14,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class TestHiddenContentTypes {
+public class TestHiddenContentTypeSelector {
     private final Primitives primitives = new PrimitivesImpl();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
 
@@ -27,6 +26,10 @@ public class TestHiddenContentTypes {
     private TypeParameter methodTp0;
 
     private HiddenContentTypes barHct;
+    private final TypeInfo extensible = new TypeInfo("com.foo", "Extensible");
+    private final TypeInfo typeWithExtensibleField = new TypeInfo("com.foo", "TypeWithExtensibleField");
+    private FieldInfo extensibleField;
+    private HiddenContentTypes typeWithExtensibleHct;
 
     private final TypeInfo someTypeWithHC = new TypeInfo("com.foo", "HC");
     private final TypeParameter tp0 = new TypeParameterImpl(someTypeWithHC, "T", 0).noTypeBounds();
@@ -36,7 +39,6 @@ public class TestHiddenContentTypes {
     private final TypeInfo set = new TypeInfo("com.foo", "Set");
     private final TypeParameter tpSet0 = new TypeParameterImpl(set, "E", 0).noTypeBounds();
     private final ParameterizedType tpSet0Pt = new ParameterizedType(tpSet0, 0, ParameterizedType.WildCard.NONE);
-    private final ParameterizedType setPt = new ParameterizedType(set, List.of(tpSet0Pt));
 
     private final TypeInfo someTypeOfString = new TypeInfo("com.foo", "SomeTypeOfString");
 
@@ -44,12 +46,26 @@ public class TestHiddenContentTypes {
     private final TypeParameter mapMap0 = new TypeParameterImpl(mapMap, "T0", 0).noTypeBounds();
     private final TypeParameter mapMap1 = new TypeParameterImpl(mapMap, "T1", 1).noTypeBounds();
     private final TypeParameter mapMap2 = new TypeParameterImpl(mapMap, "T2", 2).noTypeBounds();
-    private final ParameterizedType mapMapPt = new ParameterizedType(mapMap, List.of(mapMap0.toParameterizedType(),
-            mapMap1.toParameterizedType(), mapMap2.toParameterizedType()));
     private HiddenContentTypes mapMapHct;
 
     @BeforeEach
     public void beforeEach() {
+        extensible.typeInspection.set(new TypeInspectionImpl.Builder(extensible, Inspector.BY_HAND)
+                .setParentClass(primitives.objectParameterizedType())
+                .setAccess(Inspection.Access.PUBLIC)
+                .build(inspectionProvider));
+        extensibleField = new FieldInfo(Identifier.CONSTANT, extensible.asParameterizedType(inspectionProvider),
+                "extensible", typeWithExtensibleField);
+        extensibleField.fieldInspection.set(new FieldInspectionImpl.Builder(extensibleField)
+                .setAccess(Inspection.Access.PUBLIC).build(inspectionProvider));
+        typeWithExtensibleField.typeInspection.set(new TypeInspectionImpl.Builder(typeWithExtensibleField, Inspector.BY_HAND)
+                .setParentClass(primitives.objectParameterizedType())
+                .setAccess(Inspection.Access.PUBLIC)
+                .addField(extensibleField)
+                .build(inspectionProvider));
+        typeWithExtensibleHct = HiddenContentTypes.compute(inspectionProvider,
+                typeWithExtensibleField.typeInspection.get(), false);
+
         TypeInspection objectTi = new TypeInspectionImpl.Builder(primitives.objectTypeInfo(), Inspector.BY_HAND)
                 .setAccess(Inspection.Access.PUBLIC).build(inspectionProvider);
         primitives.objectParameterizedType().typeInfo.typeInspection.set(objectTi);
@@ -104,7 +120,7 @@ public class TestHiddenContentTypes {
     }
 
     @Test
-    @DisplayName("HCT indices")
+    @DisplayName("HCT indices Bar")
     public void test() {
         assertEquals("Bar:T", barHct.toString());
         assertEquals("{0=T as #0 in com.foo.HC}", barHct.getIndexToType().toString());
@@ -116,65 +132,27 @@ public class TestHiddenContentTypes {
         assertEquals(0, hctMethod.indexOf(tp0Pt));
         assertEquals(1, hctMethod.indexOf(methodTp0));
         assertEquals(1, hctMethod.indexOf(methodTp0.toParameterizedType()));
+    }
 
+    @Test
+    @DisplayName("HCT indices MapMap")
+    public void test2() {
         assertEquals("MapMap:T0, T1, T2", mapMapHct.toString());
         assertEquals(2, mapMapHct.indexOf(mapMap2));
     }
-/*
-    @Test
-    @DisplayName("mapTypes, simple situation")
-    public void test1() {
-        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, primitives.stringParameterizedType(), tp0Pt, false);
-        assertEquals("{0=Type String}", map.toString());
-
-        ParameterizedType someString = new ParameterizedType(someTypeWithHC, List.of(primitives.stringParameterizedType()));
-        assertEquals("Type com.foo.HC<String>", someString.toString());
-        Map<Integer, ParameterizedType> map2 = barHct.mapTypesRecursively(inspectionProvider, someString, someTypeWithHCPt, false);
-        assertEquals("{0=Type String}", map2.toString());
-
-        assertEquals("Type com.foo.Set<E>", setPt.toString());
-        ParameterizedType setSomeType = new ParameterizedType(set, List.of(someTypeWithHCPt));
-        assertEquals("Type com.foo.Set<com.foo.HC<T>>", setSomeType.toString());
-
-        ParameterizedType setSomeTypeString = new ParameterizedType(set, List.of(someString));
-        assertEquals("Type com.foo.Set<com.foo.HC<String>>", setSomeTypeString.toString());
-
-        Map<Integer, ParameterizedType> map3 = barHct.mapTypesRecursively(inspectionProvider, setSomeTypeString, setSomeType, false);
-        assertEquals("{0=Type String}", map3.toString());
-    }
 
     @Test
-    @DisplayName("SomeTypeOfString extends HC<String>")
-    public void test2() {
-        ParameterizedType stsPt = someTypeOfString.asParameterizedType(inspectionProvider);
-        assertEquals("Type com.foo.SomeTypeOfString", stsPt.toString());
-
-        Map<Integer, ParameterizedType> map = barHct.mapTypesRecursively(inspectionProvider, stsPt, someTypeWithHCPt, false);
-        assertEquals("{0=Type String}", map.toString());
-    }
-
-    @Test
+    @DisplayName("Extensible")
     public void test3() {
-        Map<Integer, ParameterizedType> map = mapMapHct.mapTypesRecursively(inspectionProvider,
-                primitives.stringParameterizedType(), mapMap1.toParameterizedType(), false);
-        assertEquals("{1=Type String}", map.toString());
+        assertEquals(1, typeWithExtensibleHct.size());
+        assertEquals(0, typeWithExtensibleHct.indexOf(extensibleField.type));
+    }
 
-        ParameterizedType someMapMap = new ParameterizedType(mapMap, List.of(primitives.stringParameterizedType(),
-                primitives.integerTypeInfo().asSimpleParameterizedType(), primitives.boxedBooleanParameterizedType()));
-        assertEquals("Type com.foo.MapMap<String,Integer,Boolean>", someMapMap.toString());
-        Map<Integer, ParameterizedType> map2 = mapMapHct.mapTypesRecursively(inspectionProvider, someMapMap, mapMapPt, false);
-        assertEquals("{0=Type String, 1=Type Integer, 2=Type Boolean}", map2.toString());
-
-        ParameterizedType set1 = new ParameterizedType(set, List.of(mapMap1.toParameterizedType()));
-        assertEquals("Type com.foo.Set<T1>", set1.toString());
-        ParameterizedType stringSet = new ParameterizedType(set, List.of(primitives.stringParameterizedType()));
-        Map<Integer, ParameterizedType> map3 = mapMapHct.mapTypesRecursively(inspectionProvider, stringSet, set1, false);
-        assertEquals("{1=Type String}", map3.toString());
-
-        ParameterizedType someType1 = new ParameterizedType(someTypeWithHC, List.of(mapMap2.toParameterizedType()));
-        assertEquals("Type com.foo.HC<T2>", someType1.toString());
-        Map<Integer, ParameterizedType> map4 = mapMapHct.mapTypesRecursively(inspectionProvider,
-                someTypeOfString.asSimpleParameterizedType(), someType1, false);
-        assertEquals("{2=Type String}", map4.toString());
-    }*/
+    @Test
+    @DisplayName("HCS.selectAll")
+    public void test4() {
+        ParameterizedType formalTWE = typeWithExtensibleField.asParameterizedType(inspectionProvider);
+        HiddenContentSelector hcs = HiddenContentSelector.selectAll(typeWithExtensibleHct, formalTWE);
+        assertEquals("0", hcs.toString());
+    }
 }

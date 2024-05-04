@@ -262,16 +262,15 @@ public class LinkHelper {
                 mutable = MUTABLE_DV;
             }
             if (!MultiLevel.isAtLeastEventuallyRecursivelyImmutable(mutable)) {
-                Links links;
-                if (hcs instanceof HiddenContentSelector.All all) {
-                    Indices indices = new Indices(all.getHiddenContentIndex());
+                Map<Indices, Link> correctedMap = new HashMap<>();
+                for (int hctIndex : hcs.set()) {
+                    Indices indices = new Indices(hctIndex);
                     // see e.g. Linking_1A,f9m(): we correct 0 to 0;1, and 1 to 0;1
                     Indices corrected = indices.allOccurrencesOf(context.getAnalyserContext(), concreteFunctionalType);
                     Link link = new Link(indices, MultiLevel.isMutable(mutable));
-                    links = new Links(Map.of(corrected, link));
-                } else {
-                    throw new UnsupportedOperationException();
+                    correctedMap.put(corrected, link);
                 }
+                Links links = new Links(correctedMap);
                 LV lv = independentHC ? LV.createHC(links) : LV.createDependent(links);
                 map.put(e.getKey(), lv);
             }
@@ -601,7 +600,7 @@ public class LinkHelper {
         ParameterizedType methodReturnType = context.getAnalyserContext().getMethodInspection(methodInfo).getReturnType();
 
         HiddenContentSelector hcsTarget = Objects.requireNonNullElse(methodAnalysis.getHiddenContentSelector(),
-                HiddenContentSelector.None.INSTANCE).correct(mapMethodHCTIndexToTypeHCTIndex);
+                HiddenContentSelector.NONE).correct(mapMethodHCTIndexToTypeHCTIndex);
 
         return linkedVariables(hcsSource, objectType,
                 methodType, hcsSource, linkedVariablesOfObject,
@@ -692,7 +691,7 @@ public class LinkHelper {
 
         // special code block for functional interfaces with both return value and parameters (i.e. variants
         // on Function<T,R>, BiFunction<T,S,R> etc. Not Consumers (no return value) nor Suppliers (no parameters))
-        if (hiddenContentSelectorOfTarget.isAll() && INDEPENDENT_HC_DV.equals(transferIndependent)) {
+        if (hiddenContentSelectorOfTarget.isOnlyAll() && INDEPENDENT_HC_DV.equals(transferIndependent)) {
             HiddenContentTypes hctContext;
             if (context.getCurrentMethod() != null) {
                 hctContext = context.getCurrentMethod().getMethodInfo().methodResolution.get().hiddenContentTypes();
@@ -706,39 +705,37 @@ public class LinkHelper {
             if (!set.isEmpty()) {
                 List<LinkedVariables> lvsList = new ArrayList<>();
                 for (int index : set) {
-                    if (hcsSourceContext instanceof HiddenContentSelector.CsSet s) {
-                        Indices indices = s.getMap().get(index);
-                        if (indices.containsSize2Plus()) {
-                            Indices newIndices = indices.size2PlusDropOne();
-                            Indices base = indices.first();
-                            HiddenContentSelector.CsSet newHiddenContentSelectorOfSource
-                                    = new HiddenContentSelector.CsSet(hctContext, Map.of(index, newIndices));
-                            ParameterizedType newSourceType = base.find(inspectionProvider, sourceType);
-                            Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier =
-                                    () -> Map.of(newIndices, new HiddenContentTypes.IndicesAndType(newIndices, newSourceType));
-                            HiddenContentSelector newHcsTarget;
-                            ParameterizedType newTargetType;
-                            if (reverse && !targetType.isTypeParameter()) {
-                                // List<T> as parameter
-                                newHcsTarget = newHiddenContentSelectorOfSource;
-                                newTargetType = newSourceType;
-                            } else if (!reverse && !targetType.isTypeParameter()) {
-                                // List<T> as return type
-                                newTargetType = targetType;
-                                newHcsTarget = newHiddenContentSelectorOfSource;
-                            } else {
-                                // object -> return
-                                newHcsTarget = new HiddenContentSelector.All(hctContext, index);
-                                newTargetType = targetType;
-                            }
-
-                            LinkedVariables lvs = continueLinkedVariables(inspectionProvider, hctContext,
-                                    newHiddenContentSelectorOfSource,
-                                    sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource,
-                                    newTargetType, newTargetType, newHcsTarget, hctMethodToHctSourceSupplier,
-                                    reverse);
-                            lvsList.add(lvs);
+                    Indices indices = hcsSourceContext.getMap().get(index);
+                    if (indices.containsSize2Plus()) {
+                        Indices newIndices = indices.size2PlusDropOne();
+                        Indices base = indices.first();
+                        HiddenContentSelector newHiddenContentSelectorOfSource
+                                = new HiddenContentSelector(hctContext, Map.of(index, newIndices));
+                        ParameterizedType newSourceType = base.find(inspectionProvider, sourceType);
+                        Supplier<Map<Indices, HiddenContentTypes.IndicesAndType>> hctMethodToHctSourceSupplier =
+                                () -> Map.of(newIndices, new HiddenContentTypes.IndicesAndType(newIndices, newSourceType));
+                        HiddenContentSelector newHcsTarget;
+                        ParameterizedType newTargetType;
+                        if (reverse && !targetType.isTypeParameter()) {
+                            // List<T> as parameter
+                            newHcsTarget = newHiddenContentSelectorOfSource;
+                            newTargetType = newSourceType;
+                        } else if (!reverse && !targetType.isTypeParameter()) {
+                            // List<T> as return type
+                            newTargetType = targetType;
+                            newHcsTarget = newHiddenContentSelectorOfSource;
+                        } else {
+                            // object -> return
+                            newHcsTarget = new HiddenContentSelector(hctContext, Map.of(index, ALL_INDICES));
+                            newTargetType = targetType;
                         }
+
+                        LinkedVariables lvs = continueLinkedVariables(inspectionProvider, hctContext,
+                                newHiddenContentSelectorOfSource,
+                                sourceLvs, sourceIsVarArgs, transferIndependent, immutableOfSource,
+                                newTargetType, newTargetType, newHcsTarget, hctMethodToHctSourceSupplier,
+                                reverse);
+                        lvsList.add(lvs);
                     }
                 }
                 if (!lvsList.isEmpty()) {
@@ -812,7 +809,7 @@ public class LinkHelper {
                         this is the only place during computational analysis where we create common HC links.
                         all other links are created in the ShallowMethodAnalyser.
                          */
-                    if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.All all) {
+                 /*   if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.All all) {
                         DV typeImmutable = context.evaluationContext().immutable(targetType);
                         if (typeImmutable.isDelayed()) {
                             causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
@@ -828,76 +825,71 @@ public class LinkHelper {
                         if (iInHctSource != null) {
                             linkMap.put(ALL_INDICES, new Link(iInHctSource, mutable));
                         }// else: no type parameters available, see e.g. Linking_0P.reverse5
+                    } else {*/
+                    // both are CsSet, we'll set mutable what is mutable, in a common way
+
+                    Boolean correctForVarargsMutable = null;
+
+                    assert hctMethodToHctSource != null;
+
+                    // NOTE: this type of filtering occurs in 'linkedVariablesOfParameter' as well
+                    Set<Map.Entry<Integer, Indices>> entrySet;
+                    if (lv.haveLinks()) {
+                        entrySet = filter(lv.links().map().keySet(), hiddenContentSelectorOfTarget.getMap().entrySet());
                     } else {
-                        // both are CsSet, we'll set mutable what is mutable, in a common way
-                        if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet mineCsSet) {
-                            Boolean correctForVarargsMutable = null;
-
-                            assert hctMethodToHctSource != null;
-
-                            // NOTE: this type of filtering occurs in 'linkedVariablesOfParameter' as well
-                            Set<Map.Entry<Integer, Indices>> entrySet;
-                            if (lv.haveLinks()) {
-                                entrySet = filter(lv.links().map().keySet(), mineCsSet.getMap().entrySet());
-                            } else {
-                                entrySet = mineCsSet.getMap().entrySet();
-                            }
-                            for (Map.Entry<Integer, Indices> entry : entrySet) {
-                                Indices indicesInTargetWrtMethod = entry.getValue();
-                                HiddenContentTypes.IndicesAndType targetAndType = hctMethodToHcsTarget.get(indicesInTargetWrtMethod);
-                                assert targetAndType != null;
-                                ParameterizedType type = targetAndType.type();
-                                assert type != null;
-
-                                DV typeImmutable = context.evaluationContext().immutable(type);
-                                if (typeImmutable.isDelayed()) {
-                                    causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
-                                    typeImmutable = MUTABLE_DV;
-                                }
-                                if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)) {
-                                    continue;
-                                }
-                                boolean mutable = isMutable(typeImmutable);
-                                if (sourceIsVarArgs) {
-                                    // we're in a varargs situation: the first element is the type itself
-                                    correctForVarargsMutable = mutable;
-                                }
-
-                                Indices indicesInSourceWrtMethod;
-                                boolean isAll;
-                                Indices indicesInSourceWrtType;
-                                if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet cs) {
-                                    indicesInSourceWrtMethod = cs.getMap().get(entry.getKey());
-                                    isAll = false;
-                                    HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
-                                    assert indicesAndType != null;
-                                    indicesInSourceWrtType = indicesAndType.indices();
-                                    assert indicesInSourceWrtType != null;
-                                } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.All all) {
-                                    // FIXME verify
-                                    indicesInSourceWrtMethod = ALL_INDICES;
-                                    isAll = true;
-                                    indicesInSourceWrtType = ALL_INDICES;
-                                } else throw new UnsupportedOperationException();
-                                assert indicesInSourceWrtMethod != null;
-
-
-                                // FIXME this feels rather arbitrary, see Linking_0P.reverse4
-                                //   yet the 2nd clause seems needed for 1A.f10()
-                                Indices indicesInTargetWrtType = lv.theirsIsAll() && entrySet.size() < mineCsSet.getMap().size() && reverse ? ALL_INDICES : targetAndType.indices();
-                                Indices correctedIndicesInTargetWrtType;
-                                if (correctForVarargsMutable != null) {
-                                    correctedIndicesInTargetWrtType = ALL_INDICES;
-                                } else {
-                                    correctedIndicesInTargetWrtType = indicesInTargetWrtType;
-                                }
-                                assert correctedIndicesInTargetWrtType != null;
-                                linkMap.put(correctedIndicesInTargetWrtType, new Link(indicesInSourceWrtType, mutable));
-                            }
-                        } else {
-                            throw new UnsupportedOperationException();
-                        }
+                        entrySet = hiddenContentSelectorOfTarget.getMap().entrySet();
                     }
+                    for (Map.Entry<Integer, Indices> entry : entrySet) {
+                        Indices indicesInTargetWrtMethod = entry.getValue();
+                        HiddenContentTypes.IndicesAndType targetAndType = hctMethodToHcsTarget.get(indicesInTargetWrtMethod);
+                        assert targetAndType != null;
+                        ParameterizedType type = targetAndType.type();
+                        assert type != null;
+
+                        DV typeImmutable = context.evaluationContext().immutable(type);
+                        if (typeImmutable.isDelayed()) {
+                            causesOfDelay = causesOfDelay.merge(typeImmutable.causesOfDelay());
+                            typeImmutable = MUTABLE_DV;
+                        }
+                        if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(typeImmutable)) {
+                            continue;
+                        }
+                        boolean mutable = isMutable(typeImmutable);
+                        if (sourceIsVarArgs) {
+                            // we're in a varargs situation: the first element is the type itself
+                            correctForVarargsMutable = mutable;
+                        }
+
+                        Indices indicesInSourceWrtMethod;
+                        Indices indicesInSourceWrtType;
+                        //   if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.CsSet cs) {
+                        indicesInSourceWrtMethod = hiddenContentSelectorOfSource.getMap().get(entry.getKey());
+                        HiddenContentTypes.IndicesAndType indicesAndType = hctMethodToHctSource.get(indicesInSourceWrtMethod);
+                        assert indicesAndType != null;
+                        indicesInSourceWrtType = indicesAndType.indices();
+                        assert indicesInSourceWrtType != null;
+                        //  } else if (hiddenContentSelectorOfSource instanceof HiddenContentSelector.All all) {
+                        // FIXME verify
+                        //     indicesInSourceWrtMethod = ALL_INDICES;
+                        //     indicesInSourceWrtType = ALL_INDICES;
+                        //   } else throw new UnsupportedOperationException();
+                        assert indicesInSourceWrtMethod != null;
+
+
+                        // FIXME this feels rather arbitrary, see Linking_0P.reverse4
+                        //   yet the 2nd clause seems needed for 1A.f10()
+                        Indices indicesInTargetWrtType = lv.theirsIsAll() && entrySet.size() < hiddenContentSelectorOfTarget.getMap().size() && reverse ? ALL_INDICES : targetAndType.indices();
+                        Indices correctedIndicesInTargetWrtType;
+                        if (correctForVarargsMutable != null) {
+                            correctedIndicesInTargetWrtType = ALL_INDICES;
+                        } else {
+                            correctedIndicesInTargetWrtType = indicesInTargetWrtType;
+                        }
+                        assert correctedIndicesInTargetWrtType != null;
+                        linkMap.put(correctedIndicesInTargetWrtType, new Link(indicesInSourceWrtType, mutable));
+                    }
+
+
                     boolean createDependentLink = MultiLevel.isMutable(immutable) && isDependent(transferIndependent,
                             correctedIndependent, immutableOfFormalSource, lv);
                     if (createDependentLink) {
@@ -962,29 +954,29 @@ public class LinkHelper {
             if (MultiLevel.isAtLeastImmutableHC(immutableOfSource)) {
                 return MultiLevel.INDEPENDENT_HC_DV;
             }
-            if (hiddenContentSelectorOfTarget instanceof HiddenContentSelector.CsSet csSet) {
-                // if all types of the hcs are independent HC, then we can upgrade
-                Map<Integer, Indices> selectorSet = csSet.getMap();
-                boolean allIndependentHC = true;
-                assert hctMethodToHcsTarget != null;
-                for (Map.Entry<Indices, HiddenContentTypes.IndicesAndType> entry : hctMethodToHcsTarget.entrySet()) {
-                    if (selectorSet.containsValue(entry.getKey())) {
-                        if(hiddenContentSelectorOfTarget.hiddenContentTypes().isExtensible(entry.getKey().single())) {
-                            return INDEPENDENT_HC_DV;
-                        }
-                        DV immutablePt = evaluationContext.immutable(entry.getValue().type());
-                        if (immutablePt.isDelayed()) return immutablePt;
-                        if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
-                            allIndependentHC = false;
-                            break;
-                        }
+
+            // if all types of the hcs are independent HC, then we can upgrade
+            Map<Integer, Indices> selectorSet = hiddenContentSelectorOfTarget.getMap();
+            boolean allIndependentHC = true;
+            assert hctMethodToHcsTarget != null;
+            for (Map.Entry<Indices, HiddenContentTypes.IndicesAndType> entry : hctMethodToHcsTarget.entrySet()) {
+                if (selectorSet.containsValue(entry.getKey())) {
+                    if (hiddenContentSelectorOfTarget.hiddenContentTypes().isExtensible(entry.getKey().single())) {
+                        return INDEPENDENT_HC_DV;
+                    }
+                    DV immutablePt = evaluationContext.immutable(entry.getValue().type());
+                    if (immutablePt.isDelayed()) return immutablePt;
+                    if (!MultiLevel.isAtLeastImmutableHC(immutablePt)) {
+                        allIndependentHC = false;
+                        break;
                     }
                 }
-                if (allIndependentHC) return MultiLevel.INDEPENDENT_HC_DV;
             }
+            if (allIndependentHC) return MultiLevel.INDEPENDENT_HC_DV;
+
         }
         if (MultiLevel.INDEPENDENT_HC_DV.equals(independent)) {
-            if (hiddenContentSelectorOfTarget.isAll()) {
+            if (hiddenContentSelectorOfTarget.isOnlyAll()) {
                 DV immutablePt = evaluationContext.immutable(targetType);
                 if (immutablePt.isDelayed()) return immutablePt;
                 if (MultiLevel.isAtLeastEventuallyRecursivelyImmutable(immutablePt)) {
@@ -1076,12 +1068,11 @@ public class LinkHelper {
         }
         HiddenContentTypes hct = scopeType.typeInfo.typeResolution.get().hiddenContentTypes();
         HiddenContentSelector hcsTarget = HiddenContentSelector.selectAll(hct, formalFieldType);
-        if (hcsTarget instanceof HiddenContentSelector.All all && formalFieldType.isTypeParameter() && !fieldType.parameters.isEmpty()) {
-            ParameterizedType ft = fieldType;
+        if (hcsTarget.isOnlyAll() && formalFieldType.isTypeParameter() && !fieldType.parameters.isEmpty()) {
+            int index = hcsTarget.getMap().keySet().stream().findFirst().orElseThrow();
             ParameterizedType fft = fieldType.typeInfo.asParameterizedType(context.getAnalyserContext());
-            ParameterizedType st = fieldType;
-            LinkedVariables recursive = forFieldAccess(context, linkedVariables, ft, fft, st);
-            return recursive.map(lv -> lv.prefixTheirs(all.getHiddenContentIndex()));
+            LinkedVariables recursive = forFieldAccess(context, linkedVariables, fieldType, fft, fieldType);
+            return recursive.map(lv -> lv.prefixTheirs(index));
         }
         ParameterizedType formalScopeType = scopeType.typeInfo.asParameterizedType(context.getAnalyserContext());
         HiddenContentSelector hcsSource = HiddenContentSelector.selectAll(hct, formalScopeType);
@@ -1097,27 +1088,18 @@ public class LinkHelper {
                                            HiddenContentSelector hcsTo,
                                            boolean isDependent) {
         if (hcsFrom.isNone() || hcsTo.isNone()) return null;
-        if (hcsFrom.isAll() && hcsTo.isAll()) return null;
+        if (hcsFrom.isOnlyAll() && hcsTo.isOnlyAll()) return null;
         Map<LV.Indices, LV.Link> linkMap = new HashMap<>();
         Map<Integer, Integer> correct = hct.mapMethodToTypeIndices(null);
-        if (hcsFrom instanceof HiddenContentSelector.All fromAll) {
-            int allIndex = correct.getOrDefault(fromAll.getHiddenContentIndex(), fromAll.getHiddenContentIndex());
-            LV.Indices to = new LV.Indices(allIndex);
-            linkMap.put(LV.ALL_INDICES, new LV.Link(to, false));
-        } else if (hcsFrom instanceof HiddenContentSelector.CsSet fromSet) {
-            if (hcsTo instanceof HiddenContentSelector.All toAll) {
-                int allIndex = correct.getOrDefault(toAll.getHiddenContentIndex(), toAll.getHiddenContentIndex());
-                LV.Indices from = new LV.Indices(allIndex);
-                linkMap.put(ALL_INDICES, new LV.Link(from, false));
-            } else if (hcsTo instanceof HiddenContentSelector.CsSet toSet) {
-                for (Map.Entry<Integer, LV.Indices> entry : fromSet.getMap().entrySet()) {
-                    LV.Indices to = toSet.getMap().get(entry.getKey());
-                    if (to != null) {
-                        linkMap.put(to, new LV.Link(entry.getValue(), false));
-                    } // FIXME: else to be reviewed
-                }
-            } else throw new UnsupportedOperationException();
-        } else throw new UnsupportedOperationException();
+
+        for (Map.Entry<Integer, LV.Indices> entry : hcsFrom.getMap().entrySet()) {
+            LV.Indices to = hcsTo.getMap().get(entry.getKey());
+            if (to != null) {
+                Indices correctedTo = to.map(i -> correct.getOrDefault(i, i));
+                linkMap.put(correctedTo, new LV.Link(entry.getValue(), false));
+            } // FIXME: else to be reviewed
+        }
+
         if (linkMap.isEmpty()) return null;
         return new LV.Links(linkMap);
     }
