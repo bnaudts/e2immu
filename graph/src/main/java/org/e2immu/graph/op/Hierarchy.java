@@ -3,6 +3,7 @@ package org.e2immu.graph.op;
 import org.e2immu.graph.V;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,6 +22,19 @@ public record Hierarchy<T>(List<Set<V<T>>> list) {
 
     public Stream<T> sortedStream(Comparator<T> comparator) {
         return list.stream().flatMap(set -> set.stream().map(V::t).sorted(comparator));
+    }
+
+    // used in JFocus
+    public <S> Stream<S> sortedStream(Comparator<T> comparator, BiFunction<T, Integer, S> addGroup) {
+        int group = 0;
+        Stream<S> concat = Stream.of();
+        for (Set<V<T>> set : list) {
+            int fGroup = group;
+            Stream<S> s = set.stream().map(V::t).sorted(comparator).map(t -> addGroup.apply(t, fGroup));
+            concat = Stream.concat(concat, s);
+            group++;
+        }
+        return concat;
     }
 
     public void append(Hierarchy<T> other) {

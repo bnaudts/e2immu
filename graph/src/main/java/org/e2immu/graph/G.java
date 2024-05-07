@@ -11,10 +11,10 @@ This class uses linked maps and sets (as opposed to Map.copyOf, Set.copyOf, new 
 to behave in a consistent way across tests.
  */
 public class G<T> {
-    private final Set<V<T>> vertices;
+    private final Map<T, V<T>> vertices;
     private final Map<V<T>, Map<V<T>, Long>> edges;
 
-    private G(Set<V<T>> vertices,
+    private G(Map<T, V<T>> vertices,
               Map<V<T>, Map<V<T>, Long>> edges) {
         this.vertices = vertices;
         this.edges = edges;
@@ -27,18 +27,16 @@ public class G<T> {
     }
 
     public static <T> G<T> create(Map<T, Map<T, Long>> initialGraph) {
-        Set<V<T>> vertices = new LinkedHashSet<>();
+        Map<T, V<T>> vertices = new LinkedHashMap<>();
         Map<V<T>, Map<V<T>, Long>> edges = new LinkedHashMap<>();
-        Map<T, V<T>> elements = new LinkedHashMap<>();
         for (T t : initialGraph.keySet()) {
             V<T> v = new V<>(t);
-            vertices.add(v);
-            elements.put(t, v);
+            vertices.put(t, v);
         }
         for (Map.Entry<T, Map<T, Long>> entry : initialGraph.entrySet()) {
-            V<T> from = elements.get(entry.getKey());
+            V<T> from = vertices.get(entry.getKey());
             for (Map.Entry<T, Long> e2 : entry.getValue().entrySet()) {
-                V<T> to = elements.get(e2.getKey());
+                V<T> to = vertices.get(e2.getKey());
                 assert to != null;
                 edges.computeIfAbsent(from, f -> new LinkedHashMap<>()).put(to, e2.getValue());
             }
@@ -46,9 +44,8 @@ public class G<T> {
         return new G<>(vertices, edges);
     }
 
-    // ! expensive operation, no map
     public V<T> vertex(T t) {
-        return vertices.stream().filter(v -> t.equals(v.t())).findFirst().orElseThrow();
+        return vertices.get(t);
     }
 
     // based on a map of T elements
@@ -129,6 +126,7 @@ public class G<T> {
     }
 
     public G<T> subGraph(Set<V<T>> subSet) {
+        Map<T, V<T>> subMap = new LinkedHashMap<>();
         Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
             Map<V<T>, Long> localEdges = edges.get(v);
@@ -144,11 +142,13 @@ public class G<T> {
                     newEdges.put(v, newLocal);
                 }
             }
+            subMap.put(v.t(), v);
         }
-        return new G<T>(new LinkedHashSet<>(subSet), newEdges);
+        return new G<>(subMap, newEdges);
     }
 
     public G<T> mutableReverseSubGraph(Set<V<T>> subSet) {
+        Map<T, V<T>> subMap = new LinkedHashMap<>();
         Map<V<T>, Map<V<T>, Long>> newEdges = new LinkedHashMap<>();
         for (V<T> v : subSet) {
             Map<V<T>, Long> localEdges = edges.get(v);
@@ -159,13 +159,14 @@ public class G<T> {
                     newLocal.put(v, entry.getValue());
                 }
             }
+            subMap.put(v.t(), v);
         }
         // freeze edge maps
-        return new G<T>(subSet, newEdges);
+        return new G<T>(subMap, newEdges);
     }
 
-    public Set<V<T>> vertices() {
-        return vertices;
+    public Collection<V<T>> vertices() {
+        return vertices.values();
     }
 
     public Map<V<T>, Long> edges(V<T> v) {

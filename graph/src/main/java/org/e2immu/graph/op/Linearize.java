@@ -4,6 +4,8 @@ import org.e2immu.graph.G;
 import org.e2immu.graph.V;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 public class Linearize {
@@ -28,6 +30,14 @@ public class Linearize {
             Stream<T> s1 = linearized.sortedStream(comparator);
             Stream<T> s2 = remainingCycles.sortedStream(comparator);
             Stream<T> s3 = attachedToCycles.sortedStream(comparator);
+            return Stream.concat(s1, Stream.concat(s2, s3)).toList();
+        }
+
+        public <S> List<S> asList(Comparator<T> comparator, BiFunction<T, Integer, S> addGroupLinearized,
+                                  Function<T, S> addGroupRemaining, BiFunction<T, Integer, S> addGroupAttached) {
+            Stream<S> s1 = linearized.sortedStream(comparator, addGroupLinearized);
+            Stream<S> s2 = remainingCycles.sortedStream(comparator, addGroupRemaining);
+            Stream<S> s3 = attachedToCycles.sortedStream(comparator, addGroupAttached);
             return Stream.concat(s1, Stream.concat(s2, s3)).toList();
         }
 

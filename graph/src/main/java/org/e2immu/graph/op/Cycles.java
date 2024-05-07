@@ -3,6 +3,7 @@ package org.e2immu.graph.op;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,6 +18,13 @@ public record Cycles<T>(Set<Cycle<T>> cycles) implements Iterable<Cycle<T>> {
         CycleComparator cc = new CycleComparator(comparator);
         return cycles.stream().sorted(cc).flatMap(cycle -> cycle.sortedStream(comparator));
     }
+
+    // used in JFocus
+    public <S> Stream<S> sortedStream(Comparator<T> comparator, Function<T, S> addGroup) {
+        CycleComparator cc = new CycleComparator(comparator);
+        return cycles.stream().sorted(cc).flatMap(cycle -> cycle.sortedStream(comparator)).map(addGroup::apply);
+    }
+
 
     public boolean isEmpty() {
         return cycles.isEmpty();

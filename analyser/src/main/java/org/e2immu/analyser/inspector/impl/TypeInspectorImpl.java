@@ -475,10 +475,8 @@ public class TypeInspectorImpl implements TypeInspector {
         and also no default constructor override.
         The latter condition is verified in the builder.ensureConstructor() method.
          */
-        if (TypeNature.RECORD == builder.typeNature()) {
-            if (countCompactConstructors == 0) {
-                ensureCompactConstructor(recordFields, typeContext, subContext);
-            }
+        if (fullInspection && TypeNature.RECORD == builder.typeNature() && countCompactConstructors == 0) {
+            ensureCompactConstructor(recordFields, typeContext, subContext);
         }
 
         // finally, add synthetic methods if needed
