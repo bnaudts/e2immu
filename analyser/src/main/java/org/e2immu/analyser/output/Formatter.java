@@ -75,7 +75,7 @@ public record Formatter(FormattingOptions options) {
     // guides typically organised as  ( S int i, M int j, M int k E )
 
     public void write(OutputBuilder outputBuilder, Writer writer) throws IOException {
-        List<OutputElement> list = new ArrayList<>(outputBuilder.list);
+        List<OutputElement> list = optionallyRemoveComments(outputBuilder.list);
         Stack<Tab> tabs = new Stack<>();
         int pos = 0;
         int end = list.size();
@@ -129,6 +129,24 @@ public record Formatter(FormattingOptions options) {
         }
         while (!tabs.isEmpty()) pop(tabs, "", writer);
         if (!writeNewLine) writer.write("\n"); // end on a newline
+    }
+
+    private List<OutputElement> optionallyRemoveComments(List<OutputElement> list) {
+        if (options.skipComments()) {
+            List<OutputElement> elements = new ArrayList<>(list.size());
+            int commentDepth = 0;
+            for (OutputElement outputElement : list) {
+                if (Symbol.LEFT_BLOCK_COMMENT.equals(outputElement)) {
+                    commentDepth++;
+                } else if (Symbol.RIGHT_BLOCK_COMMENT.equals(outputElement)) {
+                    commentDepth--;
+                } else if (commentDepth == 0) {
+                    elements.add(outputElement);
+                }
+            }
+            return elements;
+        }
+        return new ArrayList<>(list);
     }
 
     private static void pop(Stack<Tab> tabs, String writeBefore, Writer writer) throws IOException {

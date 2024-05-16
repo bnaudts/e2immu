@@ -25,7 +25,8 @@ public record FormattingOptions(int lengthOfLine,
                                 boolean binaryOperatorsAtEndOfLine,
                                 boolean compact,
                                 boolean allFieldsRequireThis,
-                                boolean allStaticFieldsRequireType) {
+                                boolean allStaticFieldsRequireType,
+                                boolean skipComments) {
 
     public static final FormattingOptions DEFAULT = new Builder().build();
 
@@ -39,6 +40,7 @@ public record FormattingOptions(int lengthOfLine,
         private boolean compact;
         private boolean allFieldsRequireThis;
         private boolean allStaticFieldsRequireType;
+        private boolean skipComments;
 
         public Builder() {
             this.lengthOfLine = 120;
@@ -93,10 +95,15 @@ public record FormattingOptions(int lengthOfLine,
             return this;
         }
 
+        public Builder setSkipComments(boolean skipComments) {
+            this.skipComments = skipComments;
+            return this;
+        }
+
         @NotModified
         public FormattingOptions build() {
             return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, compact,
-                    allFieldsRequireThis, allStaticFieldsRequireType);
+                    allFieldsRequireThis, allStaticFieldsRequireType, skipComments);
         }
     }
 }

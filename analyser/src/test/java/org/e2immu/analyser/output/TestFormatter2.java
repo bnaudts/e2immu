@@ -459,6 +459,15 @@ public class TestFormatter2 {
                 new Formatter(options).write(createExample2()));
     }
 
+    @Test
+    public void testExample2Skip() {
+        FormattingOptions options = new FormattingOptions.Builder().setSkipComments(true).build();
+        assertEquals("""
+                        static int test() {List<String> list = new ArrayList(); if(list.size() > 0) { return 3; } return list.size() + 4; }
+                        """,
+                new Formatter(options).write(createExample2()));
+    }
+
     // slightly larger version of 2
     private OutputBuilder createExample3() {
         Guide.GuideGenerator gg57 = Guide.generatorForBlock();

@@ -97,8 +97,62 @@ public class SwitchStatementOldStyle extends StatementWithExpression implements 
         OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.SWITCH)
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output(qualification)).add(Symbol.RIGHT_PARENTHESIS);
         outputBuilder.add(Symbol.LEFT_BRACE);
-        if (statementAnalysis.navigationHasSubBlocks() &&
-                statementAnalysis.navigationBlock0IsPresent()) {
+        if (statementAnalysis == null) {
+            Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
+            outputBuilder.add(guideGenerator.start());
+
+            Guide.GuideGenerator statementGg = null;
+            LimitedStatementAnalysis sa = statementAnalysis;
+            boolean notFirst = false;
+            boolean notFirstInCase = false;
+            int statementCount = 0;
+            Map<Integer, List<SwitchLabel>> switchLabelMap = switchLabels.stream()
+                    .collect(Collectors.toUnmodifiableMap(sl -> sl.from, List::of,
+                            (l1, l2) -> Stream.concat(l1.stream(), l2.stream())
+                                    .toList()));
+       /*     for (Statement statement : structure.getStatements()) {
+                if (switchLabelMap.containsKey(statementCount)) {
+                    if (statementGg != null) {
+                        outputBuilder.add(statementGg.end());
+                    }
+                    if (!notFirst) notFirst = true;
+                    else outputBuilder.add(guideGenerator.mid());
+                    for (SwitchLabel switchLabel : switchLabelMap.get(statementCount)) {
+                        outputBuilder.add(switchLabel.output(qualification));
+                        guideGenerator.mid();
+                    }
+                    statementGg = Guide.generatorForBlock();
+                    outputBuilder.add(statementGg.start());
+                    notFirstInCase = false;
+                }
+                assert statementGg != null;
+                if (sa.navigationReplacementIsSet()) {
+                    if (!notFirstInCase) notFirstInCase = true;
+                    else outputBuilder.add(statementGg.mid());
+                    outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                            .add(new Text("code will be replaced"))
+                            .add(statementGg.mid())
+                            .add(sa.statement().output(qualification, sa));
+
+                    LimitedStatementAnalysis moreReplaced = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
+                    if (moreReplaced != null) {
+                        statementsString(qualification, outputBuilder, statementGg, moreReplaced, true); // recursion!
+                    }
+                    outputBuilder.add(statementGg.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
+                    sa = sa.navigationReplacementGet();
+                }
+                if (!notFirstInCase) notFirstInCase = true;
+                else outputBuilder.add(statementGg.mid());
+                outputBuilder.add(sa.statement().output(qualification, sa));
+                sa = sa.navigationNextIsSet() ? sa.navigationNextGetOrElseNull() : null;
+            }
+            if (statementGg != null) {
+                outputBuilder.add(statementGg.end());
+            }*/
+
+            outputBuilder.add(guideGenerator.end());
+        } else if (statementAnalysis.navigationHasSubBlocks() &&
+                   statementAnalysis.navigationBlock0IsPresent()) {
             Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
             LimitedStatementAnalysis firstStatement = statementAnalysis.navigationBlock0OrElseNull();
