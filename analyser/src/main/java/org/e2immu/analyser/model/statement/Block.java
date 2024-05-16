@@ -16,7 +16,6 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -304,10 +303,5 @@ public class Block extends StatementWithStructure {
 
     public boolean isEmpty() {
         return structure.statements().isEmpty();
-    }
-
-    @Override
-    public Structure getStructure() {
-        return structure;
     }
 }

@@ -23,6 +23,8 @@ import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
+import java.util.stream.Stream;
+
 public abstract class StatementWithStructure extends ElementImpl implements Statement {
     public final Structure structure;
     public final String label;
@@ -56,5 +58,10 @@ public abstract class StatementWithStructure extends ElementImpl implements Stat
             ob.add(Space.ONE).add(new Text(label)).add(Symbol.COLON_LABEL).add(Space.ONE_IS_NICE_EASY_SPLIT);
         }
         return ob;
+    }
+
+    @Override
+    public Stream<Block> subBlockStream() {
+        return structure.subBlockStream();
     }
 }

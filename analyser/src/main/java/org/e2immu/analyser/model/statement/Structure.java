@@ -87,6 +87,19 @@ public record Structure(List<Expression> initialisers,
         return block != null && block.structure.statements.isEmpty();
     }
 
+    public Stream<Block> subBlockStream() {
+        Stream<Block> thisBlockStream;
+        if (block != null) {
+            thisBlockStream = Stream.of(block);
+        } else if (statements != null && !statements.isEmpty()) {
+            // note: we can have an empty block, but we cannot have an empty statement list
+            thisBlockStream = Stream.of(new Block.BlockBuilder(Identifier.CONSTANT).addStatements(statements).build());
+        } else {
+            thisBlockStream = Stream.of();
+        }
+        return Stream.concat(thisBlockStream, subStatements.stream().flatMap(Structure::subBlockStream));
+    }
+
     public static class Builder {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry

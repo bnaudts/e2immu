@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.Bundle;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface Statement extends Element {
 
@@ -79,4 +80,10 @@ public interface Statement extends Element {
     }
 
     int getComplexity();
+
+    /*
+    convenience method used in JFocus. Removes all variation with respect to a sub-block being actually
+    present as a block, or as statements.
+     */
+    Stream<Block> subBlockStream();
 }
