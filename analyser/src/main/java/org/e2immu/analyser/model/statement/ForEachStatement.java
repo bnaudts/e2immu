@@ -65,9 +65,9 @@ public class ForEachStatement extends LoopStatement {
         if (obj == this) return true;
         if (obj instanceof ForEachStatement other) {
             return identifier.equals(other.identifier)
-                    && expression.equals(other.expression)
-                    && structure.block().equals(other.structure.block())
-                    && structure.initialisers().equals(other.structure.initialisers());
+                   && expression.equals(other.expression)
+                   && structure.block().equals(other.structure.block())
+                   && structure.initialisers().equals(other.structure.initialisers());
         }
         return false;
     }
@@ -80,8 +80,8 @@ public class ForEachStatement extends LoopStatement {
     @Override
     public int getComplexity() {
         return 1 + expression.getComplexity()
-                + structure.initialisers().stream().mapToInt(Expression::getComplexity).sum()
-                + structure.block().getComplexity();
+               + structure.initialisers().stream().mapToInt(Expression::getComplexity).sum()
+               + structure.block().getComplexity();
     }
 
     @Override
@@ -124,10 +124,7 @@ public class ForEachStatement extends LoopStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder();
-        if (label != null) {
-            outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
-        }
+        OutputBuilder outputBuilder = outputBuilderWithLabel();
         LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         LocalVariable lv = lvc.localVariableReference.variable;
         return outputBuilder.add(Keyword.FOR)

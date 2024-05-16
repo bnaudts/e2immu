@@ -81,7 +81,8 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Keyword.SYNCHRONIZED)
+        return outputBuilderWithLabel()
+                .add(Keyword.SYNCHRONIZED)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

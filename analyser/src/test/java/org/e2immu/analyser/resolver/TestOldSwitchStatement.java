@@ -16,9 +16,11 @@ package org.e2immu.analyser.resolver;
 
 
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.Qualification;
 import org.e2immu.analyser.model.StatementExecution;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.resolver.testexample.NewSwitchStatement_0;
 import org.e2immu.analyser.resolver.testexample.OldSwitchStatement_0;
@@ -54,6 +56,10 @@ public class TestOldSwitchStatement extends CommonTest {
 
         SwitchStatementOldStyle.SwitchLabel sed = stmt.switchLabels.get(2);
         assertEquals("<default>", sed.expression().toString());
+
+        OutputBuilder withoutAnalysis = stmt.output(Qualification.EMPTY, null);
+        assertEquals(" a:switch(dataType){case 3:{s=\"x\";break;}case 4:s=\"z\"; b:break a;default:s=\"y\";}",
+                withoutAnalysis.toString());
     }
 
 }

@@ -91,7 +91,8 @@ public class WhileStatement extends LoopStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Keyword.WHILE)
+        return outputBuilderWithLabel()
+                .add(Keyword.WHILE)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

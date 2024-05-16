@@ -18,6 +18,10 @@ import org.e2immu.analyser.model.Comment;
 import org.e2immu.analyser.model.Identifier;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.impl.ElementImpl;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 
 public abstract class StatementWithStructure extends ElementImpl implements Statement {
     public final Structure structure;
@@ -44,5 +48,13 @@ public abstract class StatementWithStructure extends ElementImpl implements Stat
     @Override
     public String label() {
         return label;
+    }
+
+    protected OutputBuilder outputBuilderWithLabel() {
+        OutputBuilder ob = new OutputBuilder();
+        if (label != null) {
+            ob.add(Space.ONE).add(new Text(label)).add(Symbol.COLON_LABEL).add(Space.ONE_IS_NICE_EASY_SPLIT);
+        }
+        return ob;
     }
 }

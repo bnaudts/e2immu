@@ -53,9 +53,9 @@ public class IfElseStatement extends StatementWithExpression {
         if (obj == this) return true;
         if (obj instanceof IfElseStatement other) {
             return identifier.equals(other.identifier)
-                    && expression.equals(other.expression)
-                    && structure.block().equals(other.structure.block())
-                    && elseBlock.equals(other.elseBlock);
+                   && expression.equals(other.expression)
+                   && structure.block().equals(other.structure.block())
+                   && elseBlock.equals(other.elseBlock);
         }
         return false;
     }
@@ -112,7 +112,8 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.IF)
+        OutputBuilder outputBuilder = outputBuilderWithLabel()
+                .add(Keyword.IF)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression().output(qualification))
                 .add(Symbol.RIGHT_PARENTHESIS)

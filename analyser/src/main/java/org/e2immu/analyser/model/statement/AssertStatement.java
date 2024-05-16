@@ -72,7 +72,7 @@ public class AssertStatement extends StatementWithStructure {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder()
+        return outputBuilderWithLabel()
                 .add(Keyword.ASSERT)
                 .add(Space.ONE)
                 .add(structure.expression().output(qualification))

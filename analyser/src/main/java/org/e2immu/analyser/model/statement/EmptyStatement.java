@@ -51,7 +51,7 @@ public class EmptyStatement extends StatementWithStructure {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Symbol.SEMICOLON);
+        return outputBuilderWithLabel().add(Symbol.SEMICOLON);
     }
 
     @Override

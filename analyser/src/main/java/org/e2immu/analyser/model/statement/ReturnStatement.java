@@ -66,7 +66,7 @@ public class ReturnStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.RETURN);
+        OutputBuilder outputBuilder = outputBuilderWithLabel().add(Keyword.RETURN);
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Space.ONE).add(expression.output(qualification));
         }

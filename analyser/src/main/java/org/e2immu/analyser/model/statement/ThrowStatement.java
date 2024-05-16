@@ -87,7 +87,8 @@ public class ThrowStatement extends StatementWithExpression {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Keyword.THROW)
+        return outputBuilderWithLabel()
+                .add(Keyword.THROW)
                 .add(Space.ONE).add(expression.output(qualification))
                 .add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
     }

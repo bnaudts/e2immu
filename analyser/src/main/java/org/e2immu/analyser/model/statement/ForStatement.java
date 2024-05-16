@@ -114,10 +114,7 @@ public class ForStatement extends LoopStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder();
-        if (label != null) {
-            outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
-        }
+        OutputBuilder outputBuilder = outputBuilderWithLabel();
         return outputBuilder.add(Keyword.FOR)
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.initialisers().stream().map(expression1 -> expression1.output(qualification)).collect(OutputBuilder.joining(Symbol.COMMA)))

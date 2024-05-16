@@ -34,7 +34,7 @@ public class BreakStatement extends BreakOrContinueStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder().add(Keyword.BREAK);
+        OutputBuilder outputBuilder = outputBuilderWithLabel().add(Keyword.BREAK);
         if (goToLabel != null) {
             outputBuilder.add(Space.ONE).add(new Text(goToLabel));
         }

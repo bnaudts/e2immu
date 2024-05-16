@@ -109,10 +109,7 @@ public class Block extends StatementWithStructure {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        OutputBuilder outputBuilder = new OutputBuilder();
-        if (label != null) {
-            outputBuilder.add(Space.ONE).add(new Text(label)).add(Symbol.COLON_LABEL);
-        }
+        OutputBuilder outputBuilder = outputBuilderWithLabel();
         outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis == null) {
             if (!structure.statements().isEmpty()) {

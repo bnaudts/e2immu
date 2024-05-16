@@ -85,7 +85,8 @@ public class DoStatement extends LoopStatement {
 
     @Override
     public OutputBuilder output(Qualification qualification, LimitedStatementAnalysis statementAnalysis) {
-        return new OutputBuilder().add(Keyword.DO)
+        return outputBuilderWithLabel()
+                .add(Keyword.DO)
                 .add(structure.block().output(qualification, LimitedStatementAnalysis.startOfBlock(statementAnalysis, 0)))
                 .add(Keyword.WHILE)
                 .add(Symbol.LEFT_PARENTHESIS)
